@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Настройки - Дистанционное Банковское Обслуживание</title>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-base-100 text-base-content font-sans">
+
+  <div class="drawer drawer-mobile">
+    <input id="drawer-settings" type="checkbox" class="drawer-toggle" />
+    <div class="drawer-content flex flex-col min-h-screen">
+      <!-- Navbar -->
+      <div class="w-full navbar bg-primary text-primary-content shadow-lg">
+        <div class="flex-none lg:hidden">
+          <label for="drawer-settings" class="btn btn-square btn-ghost">
+            <svg xmlns="http://www.w3.org/2000/svg" class="inline-block w-6 h-6 stroke-current" fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+          </label>
+        </div>
+        <div class="flex-1 px-2 mx-2 text-xl font-bold">ДБО Система</div>
+        <div class="flex-none hidden lg:block">
+          <ul class="menu menu-horizontal px-1">
+            <li><a href="index.html">Главная</a></li>
+            <li><a href="accounts.html">Счета</a></li>
+            <li><a href="transfers.html">Переводы</a></li>
+            <li><a href="history.html">История</a></li>
+            <li><a class="active">Настройки</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <main class="p-6 flex-1 overflow-y-auto max-w-4xl mx-auto">
+        <h1 class="text-4xl font-bold mb-6">Настройки пользователя</h1>
+
+        <section class="mb-8">
+          <h2 class="text-2xl font-semibold mb-4">Профиль</h2>
+          <form class="space-y-6 bg-base-200 p-6 rounded-lg shadow-lg">
+            <div>
+              <label class="label" for="fullName">Полное имя</label>
+              <input type="text" id="fullName" placeholder="Иван Иванов" class="input input-bordered w-full" />
+            </div>
+            <div>
+              <label class="label" for="email">Электронная почта</label>
+              <input type="email" id="email" placeholder="ivan@example.com" class="input input-bordered w-full" />
+            </div>
+            <div>
+              <label class="label" for="phone">Телефон</label>
+              <input type="tel" id="phone" placeholder="+7 999 123-45-67" class="input input-bordered w-full" />
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg w-full">Сохранить профиль</button>
+          </form>
+        </section>
+
+        <section class="mb-8">
+          <h2 class="text-2xl font-semibold mb-4">Безопасность</h2>
+          <form class="space-y-6 bg-base-200 p-6 rounded-lg shadow-lg">
+            <div>
+              <label class="label" for="currentPassword">Текущий пароль</label>
+              <input type="password" id="currentPassword" placeholder="Введите текущий пароль" class="input input-bordered w-full" />
+            </div>
+            <div>
+              <label class="label" for="newPassword">Новый пароль</label>
+              <input type="password" id="newPassword" placeholder="Введите новый пароль" class="input input-bordered w-full" />
+            </div>
+            <div>
+              <label class="label" for="confirmPassword">Подтвердите новый пароль</label>
+              <input type="password" id="confirmPassword" placeholder="Подтвердите новый пароль" class="input input-bordered w-full" />
+            </div>
+            <button type="submit" class="btn btn-warning btn-lg w-full">Изменить пароль</button>
+          </form>
+        </section>
+
+        <section>
+          <h2 class="text-2xl font-semibold mb-4">Настройки уведомлений</h2>
+          <form class="space-y-4 bg-base-200 p-6 rounded-lg shadow-lg">
+            <label class="flex items-center space-x-4">
+              <input type="checkbox" class="toggle toggle-primary" checked />
+              <span>Получать уведомления о новых операциях</span>
+            </label>
+            <label class="flex items-center space-x-4">
+              <input type="checkbox" class="toggle toggle-primary" />
+              <span>Получать новости и акции банка</span>
+            </label>
+            <label class="flex items-center space-x-4">
+              <input type="checkbox" class="toggle toggle-primary" checked />
+              <span>Получать уведомления о безопасности</span>
+            </label>
+            <button type="submit" class="btn btn-primary btn-lg w-full">Сохранить настройки</button>
+          </form>
+        </section>
+      </main>
+
+        <!-- Sidebar -->
+        <div class="drawer-side bg-base-200">
+          <label for="drawer-settings" class="drawer-overlay"></label>
+          <ul class="menu p-4 w-80 text-base-content">
+            <li><a class="font-bold text-lg mb-4">Меню</a></li>
+            <li><a href="/" class="active">Главная</a></li>
+            <li><a href="/accounts">Счета</a></li>
+            <li><a href="/transfers">Переводы</a></li>
+            <li><a href="/history">История</a></li>
+            <li><a href="/settings">Настройки</a></li>
+            <li class="mt-6">
+              <button class="btn btn-primary btn-block">Выйти</button>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+</body>
+</html>
