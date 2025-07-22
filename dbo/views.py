@@ -14,3 +14,8 @@ def history(request):
 
 def settings(request):
     return render(request, 'settings.html')
+
+
+
+def dashboard(request):
+    return render(request, 'dashboard.html')

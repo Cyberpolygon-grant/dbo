@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Дашборд - Дистанционное Банковское Обслуживание</title>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-base-100 text-base-content font-sans">
+
+  <div class="drawer drawer-mobile min-h-screen">
+    <input id="dashboard-drawer" type="checkbox" class="drawer-toggle" />
+    <div class="drawer-content flex flex-col">
+
+      {% include 'header.html' %}
+
+      <main class="p-6 flex-1 overflow-y-auto">
+        <h1 class="text-4xl font-bold mb-6">Дашборд</h1>
+
+        <div class="tabs tabs-boxed mb-6">
+          <a href="#user" class="tab tab-lg tab-active">Пользователь</a>
+          <a href="#operator" class="tab tab-lg">Оператор</a>
+          <a href="#admin" class="tab tab-lg">Администратор</a>
+        </div>
+
+        <div id="user" class="tab-content">
+          <h2 class="text-2xl font-semibold mb-4">Функции для Пользователей</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <!-- User Account Management Accordion -->
+            <div tabindex="0" class="collapse collapse-arrow border border-base-300 bg-base-200 rounded-box collapse-open">
+              <input type="checkbox" checked="checked" class="peer" />
+              <div class="collapse-title text-lg font-medium">
+                Управление аккаунтом
+              </div>
+              <div class="collapse-content">
+                <ul class="list-disc list-inside space-y-2">
+                  <li>Регистрация (логин, пароль, секретный вопрос)</li>
+                  <li>Вход в систему</li>
+                  <li>Смена пароля и секретного вопроса</li>
+                  <li>Просмотр личных данных</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- User Accounts Accordion -->
+            <div tabindex="0" class="collapse collapse-arrow border border-base-300 bg-base-200 rounded-box collapse-open">
+              <input type="checkbox" checked="checked" class="peer" />
+              <div class="collapse-title text-lg font-medium">
+                Работа со счетами
+              </div>
+              <div class="collapse-content">
+                <ul class="list-disc list-inside space-y-2">
+                  <li>Просмотр списка счетов (текущий, депозитный, кредитный)</li>
+                  <li>Открытие/закрытие счетов</li>
+                  <li>Запрос выписки по счету</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- User Financial Operations Accordion -->
+            <div tabindex="0" class="collapse collapse-arrow border border-base-300 bg-base-200 rounded-box collapse-open">
+              <input type="checkbox" checked="checked" class="peer" />
+              <div class="collapse-title text-lg font-medium">
+                Финансовые операции
+              </div>
+              <div class="collapse-content">
+                <ul class="list-disc list-inside space-y-2">
+                  <li>Переводы между своими счетами</li>
+                  <li>Переводы другим клиентам по номеру счета/телефона</li>
+                  <li>Оплата услуг (ЖКХ, налоги, подписки)</li>
+                  <li>Конвертация валют</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- User Services Management Accordion -->
+            <div tabindex="0" class="collapse collapse-arrow border border-base-300 bg-base-200 rounded-box collapse-open">
+              <input type="checkbox" checked="checked" class="peer" />
+              <div class="collapse-title text-lg font-medium">
+                Управление услугами
+              </div>
+              <div class="collapse-content">
+                <ul class="list-disc list-inside space-y-2">
+                  <li>Просмотр каталога доступных услуг</li>
+                  <li>Покупка/отключение услуг</li>
+                  <li>История подключенных услуг</li>
+                </ul>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div id="operator" class="tab-content hidden">
+          <h2 class="text-2xl font-semibold mb-4">Функции для Операторов</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <!-- Operator Client Management Accordion -->
+            <div tabindex="0" class="collapse collapse-arrow border border-base-300 bg-base-200 rounded-box">
+              <input type="checkbox" class="peer" />
+              <div class="collapse-title text-lg font-medium">
+                Работа с клиентами
+              </div>
+              <div class="collapse-content">
+                <ul class="list-disc list-inside space-y-2">
+                  <li>Поиск клиентов по ID/ФИО</li>
+                  <li>Просмотр информации о клиенте (счета, операции)</li>
+                  <li>Помощь в восстановлении доступа</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Operator Transaction Management Accordion -->
+            <div tabindex="0" class="collapse collapse-arrow border border-base-300 bg-base-200 rounded-box">
+              <input type="checkbox" class="peer" />
+              <div class="collapse-title text-lg font-medium">
+                Проведение операций
+              </div>
+              <div class="collapse-content">
+                <ul class="list-disc list-inside space-y-2">
+                  <li>Ручное подтверждение переводов (при превышении лимитов)</li>
+                  <li>Отмена ошибочных транзакций</li>
+                  <li>Помощь в проведении сложных операций</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Operator Request Processing Accordion -->
+            <div tabindex="0" class="collapse collapse-arrow border border-base-300 bg-base-200 rounded-box">
+              <input type="checkbox" class="peer" />
+              <div class="collapse-title text-lg font-medium">
+                Обработка запросов
+              </div>
+              <div class="collapse-content">
+                <ul class="list-disc list-inside space-y-2">
+                  <li>Прием и обработка заявок на новые услуги</li>
+                  <li>Консультации по продуктам ДБО</li>
+                </ul>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div id="admin" class="tab-content hidden">
+          <h2 class="text-2xl font-semibold mb-4">Функции для Администраторов</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <!-- Admin System Management Accordion -->
+            <div tabindex="0" class="collapse collapse-arrow border border-base-300 bg-base-200 rounded-box">
+              <input type="checkbox" class="peer" />
+              <div class="collapse-title text-lg font-medium">
+                Управление системой
+              </div>
+              <div class="collapse-content">
+                <ul class="list-disc list-inside space-y-2">
+                  <li>Добавление/удаление операторов</li>
+                  <li>Настройка лимитов операций</li>
+                  <li>Управление тарифами на услуги</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Admin Security Control Accordion -->
+            <div tabindex="0" class="collapse collapse-arrow border border-base-300 bg-base-200 rounded-box">
+              <input type="checkbox" class="peer" />
+              <div class="collapse-title text-lg font-medium">
+                Контроль безопасности
+              </div>
+              <div class="collapse-content">
+                <ul class="list-disc list-inside space-y-2">
+                  <li>Блокировка подозрительных операций</li>
+                  <li>Просмотр логов безопасности</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Admin Services Management Accordion -->
+            <div tabindex="0" class="collapse collapse-arrow border border-base-300 bg-base-200 rounded-box">
+              <input type="checkbox" class="peer" />
+              <div class="collapse-title text-lg font-medium">
+                Управление услугами
+              </div>
+              <div class="collapse-content">
+                <ul class="list-disc list-inside space-y-2">
+                  <li>Создание/редактирование услуг</li>
+                  <li>Назначение цен и условий</li>
+                  <li>Анализ популярности услуг</li>
+                </ul>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </main>
+
+    </div>
+
+    <!-- Sidebar -->
+    <div class="drawer-side bg-base-200">
+      <label for="dashboard-drawer" class="drawer-overlay"></label>
+      <ul class="menu p-4 w-80 text-base-content">
+        <li><a class="font-bold text-lg mb-4">Меню</a></li>
+        <li><a href="#user" class="active tab tab-lg">Пользователь</a></li>
+        <li><a href="#operator" class="tab tab-lg">Оператор</a></li>
+        <li><a href="#admin" class="tab tab-lg">Администратор</a></li>
+        <li class="mt-6">
+          <button class="btn btn-primary btn-block">Выйти</button>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    // Tab navigation logic
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', e => {
+        e.preventDefault();
+        const target = tab.getAttribute('href').substring(1);
+
+        tabs.forEach(t => t.classList.remove('tab-active'));
+        tab.classList.add('tab-active');
+
+        tabContents.forEach(tc => {
+          if (tc.id === target) {
+            tc.classList.remove('hidden');
+          } else {
+            tc.classList.add('hidden');
+          }
+        });
+      });
+    });
+  </script>
+
+</body>
+</html>

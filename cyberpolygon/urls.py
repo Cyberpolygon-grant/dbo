@@ -27,4 +27,5 @@ urlpatterns = [
     path("transfers/", views.transfers, name="transfers"),
     path("history/", views.history, name="history"),
     path("settings/", views.settings, name="settings"),
+    path("dashboard/", views.dashboard, name="dashboard"),
 ]  + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

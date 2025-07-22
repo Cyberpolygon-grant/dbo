@@ -1,291 +1,133 @@
-<!DOCTYPE html>
-<html lang="ru" data-theme="light">
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Дистанционное Банковское Обслуживание</title>
+  <meta charset="utf-8" />
+  <title>daisyAI Landing Page</title>
+  <meta name="description" content="AI App Landing page" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="shortcut icon" href="./images/favicon.ico" />
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
   <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <link rel="stylesheet" href="./static/css/output.css" />
 </head>
-<body class="bg-base-100 text-base-content font-sans">
+<body class="bg-base-100 text-base-content">
 
-  <div id="splash-screen" class="remove">
-    <img alt="Logo" src="https://picsum.photos/48/48" style="height: 48px" />
-  </div>
+    {% include 'header.html' %}
 
-  <div id="root">
-    <div class="drawer drawer-mobile">
-      <input id="my-drawer" type="checkbox" class="drawer-toggle" />
-      <div class="drawer-content flex flex-col">
-        <!-- Navbar -->
-        <div class="w-full navbar bg-primary text-primary-content shadow-lg">
-          <div class="flex-none lg:hidden">
-            <label for="my-drawer" class="btn btn-square btn-ghost">
-              <svg xmlns="http://www.w3.org/2000/svg" class="inline-block w-6 h-6 stroke-current" fill="none" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-              </svg>
-            </label>
-          </div>
-          <div class="flex-1 px-2 mx-2 text-xl font-bold">ДБО Система</div>
-          <div class="flex-none hidden lg:block">
-            <ul class="menu menu-horizontal px-1">
-              <li><a href="/" class="active">Главная</a></li>
-              <li><a href="/accounts">Счета</a></li>
-              <li><a href="/transfers">Переводы</a></li>
-              <li><a href="/history">История</a></li>
-              <li><a href="/settings">Настройки</a></li>
-            </ul>
-          </div>
-          <div class="flex-none">
-            <button class="btn btn-square btn-ghost" aria-label="Toggle Theme" id="theme-toggle">
-              <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m8.485-8.485l-.707.707M4.222 4.222l-.707.707M21 12h-1M4 12H3m16.485 4.485l-.707-.707M4.222 19.778l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-              <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z" />
-              </svg>
-            </button>
+    <!-- Drawer for small screens -->
+
+
+
+  <!-- Hero Section -->
+  <section id="home" class="relative pt-24 pb-16 bg-gradient-to-b from-primary to-primary-focus text-primary-content">
+    <div class="container mx-auto px-4">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+        <div>
+          <h1 class="text-4xl font-extrabold mb-4">daisyAI - Empowering Your Journey with Efficiency, Innovation, and Seamless Convenience</h1>
+          <p class="mb-6 text-lg max-w-xl">Empower your mobile experience with daisyAI, the next-gen app delivering performance at your fingertips.</p>
+          <div class="flex space-x-4">
+            <a href="#"><img src="https://picsum.photos/120/40?random=1" alt="Appstore" class="h-10"/></a>
+            <a href="#"><img src="https://picsum.photos/120/40?random=2" alt="Play store" class="h-10"/></a>
           </div>
         </div>
-
-        <!-- Main Content -->
-        <main class="p-6 overflow-y-auto flex-1">
-          <!-- Hero -->
-          <section class="hero min-h-[300px] bg-base-200 rounded-lg p-6 mb-8">
-            <div class="hero-content flex-col lg:flex-row">
-              <div>
-                <h1 class="text-4xl font-bold mb-4">Добро пожаловать в систему Дистанционного Банковского Обслуживания</h1>
-                <p class="max-w-md mb-6">Управляйте своими счетами, переводите деньги и следите за историей операций в удобном и безопасном интерфейсе.</p>
-                <button class="btn btn-primary btn-lg">Начать</button>
-              </div>
-              <img src="https://picsum.photos/400/300" alt="Banking Illustration" class="rounded-lg shadow-lg" />
+        <div class="relative">
+          <img src="https://picsum.photos/300/600?random=3" alt="Mobile" class="rounded-lg shadow-lg mx-auto" />
+          <div class="absolute top-4 left-4 bg-primary-content text-primary rounded-lg p-3 flex items-center space-x-2 shadow-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            <div>
+              <p class="font-bold text-primary">Boosted</p>
+              <p class="text-primary-content">Your Productivity</p>
             </div>
-          </section>
-
-          <!-- Stats -->
-          <section class="stats stats-vertical lg:stats-horizontal shadow mb-8">
-            <div class="stat">
-              <div class="stat-title">Активные счета</div>
-              <div class="stat-value">6</div>
-              <div class="stat-desc">Общий баланс: 2 100 000 ₽</div>
-            </div>
-            <div class="stat">
-              <div class="stat-title">Переводы за месяц</div>
-              <div class="stat-value">130</div>
-              <div class="stat-desc">Общая сумма: 3 800 000 ₽</div>
-            </div>
-            <div class="stat">
-              <div class="stat-title">Новые уведомления</div>
-              <div class="stat-value">4</div>
-              <div class="stat-desc">Последнее: 30 минут назад</div>
-            </div>
-          </section>
-
-          <!-- Accounts Cards -->
-          <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="card bg-base-100 shadow-xl">
-              <div class="card-body">
-                <h3 class="card-title">Счет №123456789</h3>
-                <p>Тип: Текущий</p>
-                <p>Баланс: 900 000 ₽</p>
-                <div class="card-actions justify-end">
-                  <button class="btn btn-primary btn-sm">Подробнее</button>
-                </div>
+          </div>
+          <div class="absolute bottom-4 right-4 bg-primary-content text-primary rounded-lg p-3 flex items-center space-x-2 shadow-lg">
+            <div class="avatar">
+              <div class="mask mask-squircle w-10 h-10">
+                <img src="https://picsum.photos/40/40?random=4" alt="Avatar" />
               </div>
             </div>
-            <div class="card bg-base-100 shadow-xl">
-              <div class="card-body">
-                <h3 class="card-title">Счет №987654321</h3>
-                <p>Тип: Сберегательный</p>
-                <p>Баланс: 1 000 000 ₽</p>
-                <div class="card-actions justify-end">
-                  <button class="btn btn-primary btn-sm">Подробнее</button>
-                </div>
-              </div>
+            <div class="flex space-x-1 text-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.974a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.287 3.973c.3.922-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.838-.196-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118L2.045 9.4c-.783-.57-.38-1.81.588-1.81h4.18a1 1 0 00.95-.69l1.286-3.974z"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.974a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.287 3.973c.3.922-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.838-.196-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118L2.045 9.4c-.783-.57-.38-1.81.588-1.81h4.18a1 1 0 00.95-.69l1.286-3.974z"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.974a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.287 3.973c.3.922-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.838-.196-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118L2.045 9.4c-.783-.57-.38-1.81.588-1.81h4.18a1 1 0 00.95-.69l1.286-3.974z"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.974a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.287 3.973c.3.922-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.838-.196-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118L2.045 9.4c-.783-.57-.38-1.81.588-1.81h4.18a1 1 0 00.95-.69l1.286-3.974z"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.974a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.39 2.462a1 1 0 00-.364 1.118l1.287 3.973c.3.922-.755 1.688-1.54 1.118l-3.39-2.462a1 1 0 00-1.175 0l-3.39 2.462c-.784.57-1.838-.196-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118L2.045 9.4c-.783-.57-.38-1.81.588-1.81h4.18a1 1 0 00.95-.69l1.286-3.974z"/></svg>
             </div>
-            <div class="card bg-base-100 shadow-xl">
-              <div class="card-body">
-                <h3 class="card-title">Кредитный лимит</h3>
-                <p>Доступно: 250 000 ₽</p>
-                <p>Использовано: 50 000 ₽</p>
-                <div class="card-actions justify-end">
-                  <button class="btn btn-primary btn-sm">Управление</button>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- Tabs for Sections -->
-          <section class="mb-8">
-            <div class="tabs tabs-box tabs-lift">
-              <button class="tab tab-active">История операций</button>
-              <button class="tab">Переводы</button>
-              <button class="tab">Настройки</button>
-            </div>
-            <div class="tab-content p-4 border border-base-300 rounded-b-lg bg-base-100">
-              <!-- History Table -->
-              <div>
-                <h2 class="text-2xl font-semibold mb-4">Последние операции</h2>
-                <div class="overflow-x-auto">
-                  <table class="table table-zebra w-full">
-                    <thead>
-                      <tr>
-                        <th>Дата</th>
-                        <th>Описание</th>
-                        <th>Сумма</th>
-                        <th>Статус</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td>2024-06-05</td>
-                        <td>Перевод на счет №987654321</td>
-                        <td>75 000 ₽</td>
-                        <td><span class="badge badge-success">Выполнено</span></td>
-                      </tr>
-                      <tr>
-                        <td>2024-06-03</td>
-                        <td>Оплата ЖКХ</td>
-                        <td>6 500 ₽</td>
-                        <td><span class="badge badge-success">Выполнено</span></td>
-                      </tr>
-                      <tr>
-                        <td>2024-06-01</td>
-                        <td>Пополнение счета</td>
-                        <td>150 000 ₽</td>
-                        <td><span class="badge badge-info">В обработке</span></td>
-                      </tr>
-                      <tr>
-                        <td>2024-05-28</td>
-                        <td>Снятие наличных</td>
-                        <td>30 000 ₽</td>
-                        <td><span class="badge badge-warning">Ожидание</span></td>
-                      </tr>
-                      <tr>
-                        <td>2024-05-25</td>
-                        <td>Покупка в магазине</td>
-                        <td>12 000 ₽</td>
-                        <td><span class="badge badge-error">Отклонено</span></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- Transfer Form -->
-          <section class="mb-8">
-            <h2 class="text-2xl font-semibold mb-4">Новый перевод</h2>
-            <form class="space-y-6 bg-base-200 p-6 rounded-lg shadow-lg max-w-lg">
-              <div>
-                <label class="label" for="fromAccount">Счет отправителя</label>
-                <select id="fromAccount" class="select select-bordered w-full">
-                  <option>Счет №123456789</option>
-                  <option>Счет №987654321</option>
-                  <option>Кредитный лимит</option>
-                </select>
-              </div>
-              <div>
-                <label class="label" for="toAccount">Счет получателя</label>
-                <input type="text" id="toAccount" placeholder="Введите номер счета" class="input input-bordered w-full" />
-              </div>
-              <div>
-                <label class="label" for="amount">Сумма перевода</label>
-                <input type="number" id="amount" placeholder="Введите сумму" class="input input-bordered w-full" />
-              </div>
-              <div>
-                <label class="label" for="comment">Комментарий</label>
-                <textarea id="comment" placeholder="Комментарий к переводу" class="textarea textarea-bordered w-full"></textarea>
-              </div>
-              <button type="submit" class="btn btn-primary btn-lg w-full">Отправить</button>
-            </form>
-          </section>
-
-          <!-- Notifications Accordion -->
-          <section>
-            <h2 class="text-2xl font-semibold mb-4">Уведомления</h2>
-            <div class="collapse collapse-arrow border border-base-300 bg-base-100 rounded-box">
-              <input type="radio" name="notifications" checked="checked" />
-              <div class="collapse-title text-lg font-medium">
-                Новое сообщение от банка
-              </div>
-              <div class="collapse-content">
-                <p>Уважаемый клиент, ваш счет был успешно пополнен на 150 000 ₽.</p>
-              </div>
-            </div>
-            <div class="collapse collapse-arrow border border-base-300 bg-base-100 rounded-box mt-2">
-              <input type="radio" name="notifications" />
-              <div class="collapse-title text-lg font-medium">
-                Важное обновление условий
-              </div>
-              <div class="collapse-content">
-                <p>С 1 июля изменяются тарифы на обслуживание кредитных карт.</p>
-              </div>
-            </div>
-            <div class="collapse collapse-arrow border border-base-300 bg-base-100 rounded-box mt-2">
-              <input type="radio" name="notifications" />
-              <div class="collapse-title text-lg font-medium">
-                Напоминание о платеже
-              </div>
-              <div class="collapse-content">
-                <p>Не забудьте оплатить коммунальные услуги до 10 июня.</p>
-              </div>
-            </div>
-          </section>
-        </main>
-      </div>
-
-      <!-- Sidebar -->
-      <div class="drawer-side bg-base-200">
-        <label for="my-drawer" class="drawer-overlay"></label>
-        <ul class="menu p-4 w-80 text-base-content">
-          <li><a class="font-bold text-lg mb-4">Меню</a></li>
-          <li><a class="active">Главная</a></li>
-          <li><a>Счета</a></li>
-          <li><a>Переводы</a></li>
-          <li><a>История</a></li>
-          <li><a>Настройки</a></li>
-          <li class="mt-6">
-            <button class="btn btn-primary btn-block">Выйти</button>
-          </li>
-        </ul>
+            <p class="text-primary-content">daisyAI is a game-changer! The virtual assistant boosted my productivity.</p>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
 
+  <!-- Features Section -->
+  <section id="features" class="container mx-auto px-4 py-16">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div>
+        <p class="text-primary text-xl font-semibold mb-4">Why choose the daisyAI?</p>
+        <p class="mb-6 max-w-lg">Your AI companion delivers natural language understanding, personalized experiences, and predictive analytics, seamlessly integrating voice commands, image recognition, and context-aware interactions for a smarter, more efficient digital life.</p>
+        <div class="space-y-4">
+          <div class="flex items-center space-x-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <p>Efficient Task Automation & Syncing</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <p>Security and vulnerability Detection</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <p>Real-time Assistance & Learning</p>
+          </div>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="card card-bordered">
+          <div class="card-body">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-3-3v6m-6 6h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+            <p class="font-semibold">Language Understanding</p>
+            <p class="text-sm">SmartAssist harnesses the power of advanced Natural Language Processing (NLP) to understand and interpret human language seamlessly.</p>
+          </div>
+        </div>
+        <div class="card card-bordered">
+          <div class="card-body">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            <p class="font-semibold">Intelligent Virtual Assistant</p>
+            <p class="text-sm">Meet IntelliConnect, your AI-driven personal assistant. It organizes your schedule, answers questions, and adapts to your preferences.</p>
+          </div>
+        </div>
+        <div class="card card-bordered">
+          <div class="card-body">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <p class="font-semibold">Personalized User Experience</p>
+            <p class="text-sm">Discover IntelliConnect: personalized tech that learns from you, tailoring content and streamlining tasks for a unique user experience.</p>
+          </div>
+        </div>
+        <div class="card card-bordered">
+          <div class="card-body">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A2 2 0 0121 9.618v4.764a2 2 0 01-1.447 1.894L15 16v-6z"/></svg>
+            <p class="font-semibold">Voice Command Capabilities</p>
+            <p class="text-sm">Effortlessly command your digital world with IntelliConnects speech recognition. Speak for messaging, calls, and tasks – your voice is the key.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  <!-- Additional sections like How it works, Organize, Testimonial, FAQ, Download, Footer, and Theme Toggle can be added similarly -->
+
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
   <script>
-    // Theme toggle script
-    const themeToggleBtn = document.getElementById('theme-toggle');
-    const iconSun = document.getElementById('icon-sun');
-    const iconMoon = document.getElementById('icon-moon');
-
-    function setTheme(theme) {
-      if (theme === 'dark') {
-        document.documentElement.setAttribute('data-theme', 'dark');
-        iconSun.classList.remove('hidden');
-        iconMoon.classList.add('hidden');
-      } else {
-        document.documentElement.setAttribute('data-theme', 'light');
-        iconSun.classList.add('hidden');
-        iconMoon.classList.remove('hidden');
-      }
-      localStorage.setItem('theme', theme);
-    }
-
-    themeToggleBtn.addEventListener('click', () => {
-      const currentTheme = document.documentElement.getAttribute('data-theme');
-      if (currentTheme === 'light') {
-        setTheme('dark');
-      } else {
-        setTheme('light');
-      }
+    const swiper = new Swiper('#testimonial-swiper', {
+      loop: true,
+      navigation: {
+        nextEl: '.testimonials-button-next',
+        prevEl: '.testimonials-button-prev',
+      },
     });
-
-    // Initialize theme on page load
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    setTheme(savedTheme);
   </script>
 
+    {% include 'footer.html' %}
+    
 </body>
 </html>
