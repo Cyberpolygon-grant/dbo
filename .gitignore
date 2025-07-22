@@ -617,4 +617,4 @@ MigrationBackup/
 
 # End of https://www.toptal.com/developers/gitignore/api/django,vs,python
 
-cyberpolygon/static/css/tailwindcss
+static/css/tailwindcss
