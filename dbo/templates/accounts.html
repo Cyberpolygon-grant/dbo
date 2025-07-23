@@ -1,146 +1,355 @@
 <!DOCTYPE html>
-<html lang="ru" data-theme="light">
+<html lang="ru" data-theme="corporate">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Счета - Дистанционное Банковское Обслуживание</title>
-  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Банк Онлайн | Личный кабинет</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import "tailwindcss";
+        @plugin "daisyui";
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .account-card:hover {
+            transform: translateY(-5px);
+            transition: transform 0.3s ease;
+        }
+    </style>
 </head>
-<body class="bg-base-100 text-base-content">
-
-    {% include 'header.html' %}
-      <!-- Main Content -->
-      <main class="p-6 flex-1 overflow-y-auto">
-        <h1 class="text-4xl font-bold mb-6">Мои счета</h1>
-
-        <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div class="card bg-base-100 shadow-xl">
-            <div class="card-body">
-              <h3 class="card-title">Счет №123456789</h3>
-              <p>Тип: Текущий</p>
-              <p>Баланс: 1 200 000 ₽</p>
-              <p>Валюта: RUB</p>
-              <p>Дата открытия: 01.01.2020</p>
-              <div class="card-actions justify-end">
-                <button class="btn btn-primary btn-sm">Подробнее</button>
-                <button class="btn btn-outline btn-sm">Пополнить</button>
-              </div>
+<body class="bg-base-200 min-h-screen">
+    <!-- Навигационная панель -->
+    <div class="navbar bg-base-100 shadow-md">
+        <div class="navbar-start">
+            <div class="dropdown">
+                <label tabindex="0" class="btn btn-ghost lg:hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" /></svg>
+                </label>
+                <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+                    <li><a>Счета</a></li>
+                    <li><a>Переводы</a></li>
+                    <li><a>Платежи</a></li>
+                    <li><a>Карты</a></li>
+                </ul>
             </div>
-          </div>
-          <div class="card bg-base-100 shadow-xl">
-            <div class="card-body">
-              <h3 class="card-title">Счет №987654321</h3>
-              <p>Тип: Сберегательный</p>
-              <p>Баланс: 1 500 000 ₽</p>
-              <p>Валюта: RUB</p>
-              <p>Дата открытия: 15.03.2021</p>
-              <div class="card-actions justify-end">
-                <button class="btn btn-primary btn-sm">Подробнее</button>
-                <button class="btn btn-outline btn-sm">Пополнить</button>
-              </div>
-            </div>
-          </div>
-          <div class="card bg-base-100 shadow-xl">
-            <div class="card-body">
-              <h3 class="card-title">Кредитный лимит</h3>
-              <p>Доступно: 300 000 ₽</p>
-              <p>Использовано: 75 000 ₽</p>
-              <p>Процентная ставка: 12%</p>
-              <div class="card-actions justify-end">
-                <button class="btn btn-primary btn-sm">Управление</button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="mb-8">
-          <h2 class="text-3xl font-semibold mb-4">Детали счета №123456789</h2>
-          <div class="overflow-x-auto">
-            <table class="table table-zebra w-full">
-              <thead>
-                <tr>
-                  <th>Дата</th>
-                  <th>Описание</th>
-                  <th>Сумма</th>
-                  <th>Баланс после операции</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>2024-06-05</td>
-                  <td>Пополнение</td>
-                  <td>+100 000 ₽</td>
-                  <td>1 200 000 ₽</td>
-                </tr>
-                <tr>
-                  <td>2024-06-01</td>
-                  <td>Оплата услуг</td>
-                  <td>-5 000 ₽</td>
-                  <td>1 100 000 ₽</td>
-                </tr>
-                <tr>
-                  <td>2024-05-28</td>
-                  <td>Перевод на счет №987654321</td>
-                  <td>-50 000 ₽</td>
-                  <td>1 105 000 ₽</td>
-                </tr>
-                <tr>
-                  <td>2024-05-25</td>
-                  <td>Проценты по вкладу</td>
-                  <td>+2 000 ₽</td>
-                  <td>1 155 000 ₽</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section>
-          <h2 class="text-3xl font-semibold mb-4">Управление счетами</h2>
-          <form class="space-y-6 bg-base-200 p-6 rounded-lg shadow-lg max-w-lg">
-            <div>
-              <label class="label" for="accountType">Тип счета</label>
-              <select id="accountType" class="select select-bordered w-full">
-                <option>Текущий</option>
-                <option>Сберегательный</option>
-                <option>Кредитный</option>
-              </select>
-            </div>
-            <div>
-              <label class="label" for="currency">Валюта</label>
-              <select id="currency" class="select select-bordered w-full">
-                <option>RUB</option>
-                <option>USD</option>
-                <option>EUR</option>
-              </select>
-            </div>
-            <div>
-              <label class="label" for="initialDeposit">Начальный депозит</label>
-              <input type="number" id="initialDeposit" placeholder="Введите сумму" class="input input-bordered w-full" />
-            </div>
-            <button type="submit" class="btn btn-primary btn-lg w-full">Создать счет</button>
-          </form>
-        </section>
-      </main>
-
-        <!-- Sidebar -->
-        <div class="drawer-side bg-base-200">
-          <label for="drawer-accounts" class="drawer-overlay"></label>
-          <ul class="menu p-4 w-80 text-base-content">
-            <li><a class="font-bold text-lg mb-4">Меню</a></li>
-            <li><a href="/" class="active">Главная</a></li>
-            <li><a href="/accounts">Счета</a></li>
-            <li><a href="/transfers">Переводы</a></li>
-            <li><a href="/history">История</a></li>
-            <li><a href="/settings">Настройки</a></li>
-            <li class="mt-6">
-              <button class="btn btn-primary btn-block">Выйти</button>
-            </li>
-          </ul>
+            <a class="btn btn-ghost text-xl">
+                <span class="text-primary font-bold">Банк</span>
+                <span class="text-secondary">Онлайн</span>
+            </a>
         </div>
-      </div>
+        <div class="navbar-center hidden lg:flex">
+            <ul class="menu menu-horizontal px-1">
+                <li><a class="active">Счета</a></li>
+                <li><a>Переводы</a></li>
+                <li><a>Платежи</a></li>
+                <li><a>Карты</a></li>
+                <li><a>Вклады</a></li>
+                <li><a>Кредиты</a></li>
+            </ul>
+        </div>
+        <div class="navbar-end gap-4">
+            <div class="dropdown dropdown-end">
+                <label tabindex="0" class="btn btn-ghost btn-circle">
+                    <div class="indicator">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                        <span class="badge badge-xs badge-primary indicator-item"></span>
+                    </div>
+                </label>
+                <div tabindex="0" class="mt-3 z-[1] card card-compact dropdown-content w-72 bg-base-100 shadow">
+                    <div class="card-body">
+                        <span class="font-bold text-lg">Уведомления</span>
+                        <div class="divider my-1"></div>
+                        <div class="alert alert-info">
+                            <span>Пополнение счета +15 000 ₽</span>
+                        </div>
+                        <div class="alert">
+                            <span>Истекает срок карты 12/25</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="dropdown dropdown-end">
+                <label tabindex="0" class="btn btn-ghost btn-circle avatar">
+                    <div class="w-10 rounded-full bg-primary text-primary-content flex items-center justify-center">
+                        <span class="text-xl">ИИ</span>
+                    </div>
+                </label>
+                <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+                    <li><a>Профиль</a></li>
+                    <li><a>Настройки</a></li>
+                    <li><a>Безопасность</a></li>
+                    <div class="divider my-1"></div>
+                    <li><a class="text-error">Выйти</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
 
-  {% include 'footer.html' %}
+    <!-- Основной контент -->
+    <div class="container mx-auto p-4">
+        <div class="flex flex-col md:flex-row gap-6">
+            <!-- Боковая панель -->
+            <div class="md:w-1/4">
+                <div class="card bg-base-100 shadow-md">
+                    <div class="card-body">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="avatar placeholder">
+                                <div class="w-16 rounded-full bg-primary text-primary-content">
+                                    <span class="text-2xl">ИИ</span>
+                                </div>
+                            </div>
+                            <div>
+                                <h2 class="card-title">Иванов Иван</h2>
+                                <p class="text-sm opacity-70">VIP клиент</p>
+                            </div>
+                        </div>
+
+                        <div class="stats stats-vertical shadow bg-base-200">
+                            <div class="stat">
+                                <div class="stat-title">Общий баланс</div>
+                                <div class="stat-value">568 430 ₽</div>
+                                <div class="stat-desc text-success">+15 000 ₽ сегодня</div>
+                            </div>
+                        </div>
+
+                        <div class="divider"></div>
+
+                        <ul class="menu gap-1">
+                            <li><a class="active"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg> Счета</a></li>
+                            <li><a><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Переводы</a></li>
+                            <li><a><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg> Платежи</a></li>
+                            <li><a><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg> Карты</a></li>
+                            <li><a><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg> Вклады</a></li>
+                            <li><a><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Кредиты</a></li>
+                            <div class="divider"></div>
+                            <li><a><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> Настройки</a></li>
+                            <li><a><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg> Безопасность</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card bg-base-100 shadow-md mt-6">
+                    <div class="card-body">
+                        <h3 class="card-title">Быстрые операции</h3>
+                        <div class="grid grid-cols-2 gap-2 mt-4">
+                            <button class="btn btn-outline">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                Оплатить
+                            </button>
+                            <button class="btn btn-outline">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" /></svg>
+                                Перевести
+                            </button>
+                            <button class="btn btn-outline">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                Пополнить
+                            </button>
+                            <button class="btn btn-outline">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                Выписка
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Основная область -->
+            <div class="md:w-3/4">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Карточка счета -->
+                    <div class="card bg-primary text-primary-content account-card">
+                        <div class="card-body">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h2 class="card-title">Расчетный счет</h2>
+                                    <p>**** 4832</p>
+                                </div>
+                                <div class="badge badge-outline">Основной</div>
+                            </div>
+                            <div class="text-3xl font-bold mt-2">368 240 ₽</div>
+                            <div class="card-actions justify-end mt-4">
+                                <button class="btn btn-secondary">Перевести</button>
+                                <button class="btn btn-outline btn-accent">Пополнить</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Карточка вклада -->
+                    <div class="card bg-secondary text-secondary-content account-card">
+                        <div class="card-body">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h2 class="card-title">Накопительный счет</h2>
+                                    <p>**** 7815</p>
+                                </div>
+                                <div class="badge badge-outline">5.3% годовых</div>
+                            </div>
+                            <div class="text-3xl font-bold mt-2">200 190 ₽</div>
+                            <div class="text-sm mt-1">+4 230 ₽ за месяц</div>
+                            <div class="card-actions justify-end mt-4">
+                                <button class="btn btn-primary">Пополнить</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Карточки -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                    <div class="card bg-base-100 shadow-md">
+                        <figure class="px-4 pt-4">
+                            <div class="bg-primary text-primary-content rounded-xl p-4 w-full">
+                                <div class="flex justify-between items-center">
+                                    <span>VISA PLATINUM</span>
+                                    <span class="text-xl">•••• 4512</span>
+                                </div>
+                                <div class="mt-4 flex justify-between">
+                                    <div>
+                                        <div class="text-sm">Иванов И.И.</div>
+                                        <div>12/25</div>
+                                    </div>
+                                    <div class="text-2xl font-bold">56 780 ₽</div>
+                                </div>
+                            </div>
+                        </figure>
+                        <div class="card-body">
+                            <div class="card-actions justify-between">
+                                <button class="btn btn-sm btn-outline">Детали</button>
+                                <button class="btn btn-sm btn-primary">Оплатить</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card bg-base-100 shadow-md">
+                        <figure class="px-4 pt-4">
+                            <div class="bg-secondary text-secondary-content rounded-xl p-4 w-full">
+                                <div class="flex justify-between items-center">
+                                    <span>МИР</span>
+                                    <span class="text-xl">•••• 8921</span>
+                                </div>
+                                <div class="mt-4 flex justify-between">
+                                    <div>
+                                        <div class="text-sm">Иванов И.И.</div>
+                                        <div>10/26</div>
+                                    </div>
+                                    <div class="text-2xl font-bold">34 560 ₽</div>
+                                </div>
+                            </div>
+                        </figure>
+                        <div class="card-body">
+                            <div class="card-actions justify-between">
+                                <button class="btn btn-sm btn-outline">Детали</button>
+                                <button class="btn btn-sm btn-secondary">Оплатить</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card bg-base-100 shadow-md">
+                        <div class="card-body items-center text-center">
+                            <div class="avatar placeholder">
+                                <div class="w-16 rounded-full bg-neutral text-neutral-content">
+                                    <span class="text-2xl">+</span>
+                                </div>
+                            </div>
+                            <h3 class="card-title mt-2">Оформить новую карту</h3>
+                            <p class="text-sm opacity-70">Выберите из наших выгодных предложений</p>
+                            <div class="card-actions mt-4">
+                                <button class="btn btn-primary">Выбрать</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- История операций -->
+                <div class="card bg-base-100 shadow-md mt-6">
+                    <div class="card-body">
+                        <h2 class="card-title">Последние операции</h2>
+                        <div class="overflow-x-auto">
+                            <table class="table table-zebra">
+                                <thead>
+                                    <tr>
+                                        <th>Дата</th>
+                                        <th>Описание</th>
+                                        <th>Сумма</th>
+                                        <th>Статус</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>15.05.2024</td>
+                                        <td>Пополнение счета</td>
+                                        <td class="text-success">+15 000 ₽</td>
+                                        <td><span class="badge badge-success">Выполнено</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>14.05.2024</td>
+                                        <td>Оплата ЖКХ</td>
+                                        <td class="text-error">-8 430 ₽</td>
+                                        <td><span class="badge badge-success">Выполнено</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>13.05.2024</td>
+                                        <td>Перевод на карту **** 5489</td>
+                                        <td class="text-error">-5 000 ₽</td>
+                                        <td><span class="badge badge-success">Выполнено</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>12.05.2024</td>
+                                        <td>Оплата интернета</td>
+                                        <td class="text-error">-850 ₽</td>
+                                        <td><span class="badge badge-success">Выполнено</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>10.05.2024</td>
+                                        <td>Зарплата</td>
+                                        <td class="text-success">+125 000 ₽</td>
+                                        <td><span class="badge badge-success">Выполнено</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="card-actions justify-center mt-4">
+                            <button class="btn btn-outline">Показать все операции</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Футер -->
+    <footer class="footer p-10 bg-base-300 text-base-content mt-12">
+        <div>
+            <span class="footer-title">Банк Онлайн</span>
+            <a class="link link-hover">О банке</a>
+            <a class="link link-hover">Тарифы</a>
+            <a class="link link-hover">Отделения и банкоматы</a>
+            <a class="link link-hover">Контакты</a>
+        </div> 
+        <div>
+            <span class="footer-title">Помощь</span>
+            <a class="link link-hover">Поддержка</a>
+            <a class="link link-hover">Частые вопросы</a>
+            <a class="link link-hover">Инструкции</a>
+        </div> 
+        <div>
+            <span class="footer-title">Безопасность</span>
+            <a class="link link-hover">Защита от мошенников</a>
+            <a class="link link-hover">Рекомендации</a>
+            <a class="link link-hover">Страхование вкладов</a>
+        </div>
+        <div>
+            <span class="footer-title">Контакты</span>
+            <div class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                <span>8 800 555-35-35</span>
+            </div>
+            <div class="flex items-center gap-2 mt-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                <span>support@bank-online.ru</span>
+            </div>
+        </div>
+    </footer>
 </body>
 </html>
