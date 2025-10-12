@@ -1,0 +1,390 @@
+{% extends "base.html" %}
+
+{% block title %}Кредитные продукты{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Заголовок страницы -->
+    <div class="hero bg-gradient-to-r from-success to-primary text-primary-content rounded-lg mb-8">
+        <div class="hero-content text-center">
+            <div class="max-w-md">
+                <h1 class="text-4xl font-bold mb-4">Кредитные продукты</h1>
+                <p class="text-lg opacity-90">Потребительские кредиты, кредитные карты, ипотека на выгодных условиях</p>
+                <div class="badge badge-lg badge-accent mt-4">Подача заявки онлайн</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Кредитные продукты -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Потребительский кредит -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-primary">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                    </svg>
+                    Потребительский кредит
+                </h2>
+                <p class="text-base-content/70">До 2 000 000 ₽ на любые цели</p>
+                <div class="stats stats-vertical shadow">
+                    <div class="stat">
+                        <div class="stat-title">Ставка от</div>
+                        <div class="stat-value text-primary">12.9%</div>
+                        <div class="stat-desc">годовых</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-title">Срок до</div>
+                        <div class="stat-value text-secondary">7 лет</div>
+                        <div class="stat-desc">месяцев</div>
+                    </div>
+                </div>
+                <div class="card-actions justify-end">
+                    <button class="btn btn-primary" onclick="openCreditModal('consumer')">Подать заявку</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Кредитная карта -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-secondary">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                    </svg>
+                    Кредитная карта
+                </h2>
+                <p class="text-base-content/70">Лимит до 500 000 ₽ с льготным периодом</p>
+                <div class="stats stats-vertical shadow">
+                    <div class="stat">
+                        <div class="stat-title">Ставка от</div>
+                        <div class="stat-value text-primary">19.9%</div>
+                        <div class="stat-desc">годовых</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-title">Льготный период</div>
+                        <div class="stat-value text-secondary">55</div>
+                        <div class="stat-desc">дней</div>
+                    </div>
+                </div>
+                <div class="card-actions justify-end">
+                    <button class="btn btn-secondary" onclick="openCreditModal('card')">Оформить карту</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ипотека -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-accent">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                    Ипотека
+                </h2>
+                <p class="text-base-content/70">До 30 000 000 ₽ на покупку недвижимости</p>
+                <div class="stats stats-vertical shadow">
+                    <div class="stat">
+                        <div class="stat-title">Ставка от</div>
+                        <div class="stat-value text-primary">6.5%</div>
+                        <div class="stat-desc">годовых</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-title">Срок до</div>
+                        <div class="stat-value text-secondary">30</div>
+                        <div class="stat-desc">лет</div>
+                    </div>
+                </div>
+                <div class="card-actions justify-end">
+                    <button class="btn btn-accent" onclick="openCreditModal('mortgage')">Рассчитать ипотеку</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Мои кредиты -->
+    <div class="card bg-base-100 shadow-xl mb-8">
+        <div class="card-body">
+            <h2 class="card-title text-2xl mb-4">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Мои кредиты
+            </h2>
+            
+            {% if credits %}
+            <div class="overflow-x-auto">
+                <table class="table table-zebra w-full">
+                    <thead>
+                        <tr>
+                            <th>Тип кредита</th>
+                            <th>Сумма</th>
+                            <th>Ставка</th>
+                            <th>Ежемесячный платеж</th>
+                            <th>Остаток</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for credit in credits %}
+                        <tr>
+                            <td>
+                                <span class="badge badge-outline">
+                                    {% if credit.status == 'active' %}Активный кредит
+                                    {% elif credit.status == 'paid' %}Погашен
+                                    {% elif credit.status == 'overdue' %}Просрочен
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td class="font-bold">{{ credit.amount|floatformat:0 }} ₽</td>
+                            <td>{{ credit.interest_rate }}%</td>
+                            <td>{{ credit.monthly_payment|floatformat:0 }} ₽</td>
+                            <td class="font-bold">{{ credit.remaining_amount|floatformat:0 }} ₽</td>
+                            <td>
+                                {% if credit.status == 'active' %}
+                                    <span class="badge badge-success">Активный</span>
+                                {% elif credit.status == 'paid' %}
+                                    <span class="badge badge-info">Погашен</span>
+                                {% elif credit.status == 'overdue' %}
+                                    <span class="badge badge-error">Просрочен</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="flex gap-2">
+                                    <button class="btn btn-sm btn-primary" onclick="viewCreditDetails({{ credit.id }})">Детали</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="makePayment({{ credit.id }})">Платеж</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <svg class="w-16 h-16 mx-auto text-base-content/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <h3 class="text-xl font-semibold mb-2">У вас пока нет кредитов</h3>
+                <p class="text-base-content/70 mb-4">Выберите подходящий кредитный продукт и подайте заявку онлайн</p>
+                <button class="btn btn-primary" onclick="openCreditModal('consumer')">Подать заявку</button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Калькулятор кредита -->
+    <div class="card bg-base-100 shadow-xl mb-8">
+        <div class="card-body">
+            <h2 class="card-title text-2xl mb-4">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                </svg>
+                Калькулятор кредита
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Сумма кредита</span>
+                    </label>
+                    <input type="number" id="loanAmount" class="input input-bordered" placeholder="100000" min="10000" max="2000000">
+                </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Срок кредита (месяцы)</span>
+                    </label>
+                    <input type="number" id="loanTerm" class="input input-bordered" placeholder="12" min="3" max="84">
+                </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Процентная ставка</span>
+                    </label>
+                    <input type="number" id="interestRate" class="input input-bordered" placeholder="12.9" min="5" max="30" step="0.1">
+                </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Тип платежа</span>
+                    </label>
+                    <select id="paymentType" class="select select-bordered">
+                        <option value="annuity">Аннуитетный</option>
+                        <option value="differentiated">Дифференцированный</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-actions justify-center mt-6">
+                <button class="btn btn-primary" onclick="calculateLoan()">Рассчитать</button>
+            </div>
+            
+            <div id="calculationResult" class="mt-6 hidden">
+                <div class="stats stats-vertical shadow">
+                    <div class="stat">
+                        <div class="stat-title">Ежемесячный платеж</div>
+                        <div class="stat-value text-primary" id="monthlyPayment">0 ₽</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-title">Общая сумма выплат</div>
+                        <div class="stat-value text-secondary" id="totalPayment">0 ₽</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-title">Переплата</div>
+                        <div class="stat-value text-accent" id="overpayment">0 ₽</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Преимущества -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title text-2xl mb-6">Преимущества наших кредитов</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="text-center">
+                    <div class="text-3xl mb-2">⚡</div>
+                    <h3 class="font-semibold mb-1">Быстрое решение</h3>
+                    <p class="text-sm text-base-content/70">Решение за 15 минут</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl mb-2">📱</div>
+                    <h3 class="font-semibold mb-1">Онлайн заявка</h3>
+                    <p class="text-sm text-base-content/70">Подача заявки через интернет</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl mb-2">💰</div>
+                    <h3 class="font-semibold mb-1">Выгодные ставки</h3>
+                    <p class="text-sm text-base-content/70">От 12.9% годовых</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl mb-2">🔒</div>
+                    <h3 class="font-semibold mb-1">Безопасно</h3>
+                    <p class="text-sm text-base-content/70">Защита персональных данных</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для подачи заявки -->
+<div id="creditModal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4" id="modalTitle">Подача заявки на кредит</h3>
+        <form id="creditForm">
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Сумма кредита</span>
+                </label>
+                <input type="number" class="input input-bordered" name="amount" placeholder="100000" min="10000" max="2000000" required>
+            </div>
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Срок кредита (месяцы)</span>
+                </label>
+                <input type="number" class="input input-bordered" name="term" placeholder="12" min="3" max="84" required>
+            </div>
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Цель кредита</span>
+                </label>
+                <select class="select select-bordered" name="purpose" required>
+                    <option value="">Выберите цель</option>
+                    <option value="consumer">Потребительские цели</option>
+                    <option value="car">Покупка автомобиля</option>
+                    <option value="education">Образование</option>
+                    <option value="renovation">Ремонт</option>
+                    <option value="other">Другое</option>
+                </select>
+            </div>
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Ежемесячный доход</span>
+                </label>
+                <input type="number" class="input input-bordered" name="income" placeholder="50000" min="10000" required>
+            </div>
+            <div class="modal-action">
+                <button type="button" class="btn btn-ghost" onclick="closeCreditModal()">Отмена</button>
+                <button type="submit" class="btn btn-primary">Подать заявку</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openCreditModal(type) {
+    const modal = document.getElementById('creditModal');
+    const title = document.getElementById('modalTitle');
+    
+    switch(type) {
+        case 'consumer':
+            title.textContent = 'Подача заявки на потребительский кредит';
+            break;
+        case 'card':
+            title.textContent = 'Оформление кредитной карты';
+            break;
+        case 'mortgage':
+            title.textContent = 'Расчет ипотеки';
+            break;
+    }
+    
+    modal.classList.add('modal-open');
+}
+
+function closeCreditModal() {
+    document.getElementById('creditModal').classList.remove('modal-open');
+}
+
+function viewCreditDetails(creditId) {
+    showAlert('Просмотр деталей кредита #' + creditId, 'info');
+}
+
+function makePayment(creditId) {
+    showAlert('Оплата по кредиту #' + creditId, 'info');
+}
+
+function calculateLoan() {
+    const amount = parseFloat(document.getElementById('loanAmount').value) || 0;
+    const term = parseInt(document.getElementById('loanTerm').value) || 0;
+    const rate = parseFloat(document.getElementById('interestRate').value) || 0;
+    const paymentType = document.getElementById('paymentType').value;
+    
+    if (amount <= 0 || term <= 0 || rate <= 0) {
+        showAlert('Пожалуйста, заполните все поля корректно', 'warning');
+        return;
+    }
+    
+    const monthlyRate = rate / 100 / 12;
+    let monthlyPayment, totalPayment;
+    
+    if (paymentType === 'annuity') {
+        // Аннуитетный платеж
+        monthlyPayment = amount * (monthlyRate * Math.pow(1 + monthlyRate, term)) / (Math.pow(1 + monthlyRate, term) - 1);
+        totalPayment = monthlyPayment * term;
+    } else {
+        // Дифференцированный платеж (упрощенный расчет)
+        const principalPayment = amount / term;
+        const firstPayment = principalPayment + amount * monthlyRate;
+        const lastPayment = principalPayment + principalPayment * monthlyRate;
+        monthlyPayment = (firstPayment + lastPayment) / 2;
+        totalPayment = monthlyPayment * term;
+    }
+    
+    const overpayment = totalPayment - amount;
+    
+    document.getElementById('monthlyPayment').textContent = Math.round(monthlyPayment).toLocaleString() + ' ₽';
+    document.getElementById('totalPayment').textContent = Math.round(totalPayment).toLocaleString() + ' ₽';
+    document.getElementById('overpayment').textContent = Math.round(overpayment).toLocaleString() + ' ₽';
+    
+    document.getElementById('calculationResult').classList.remove('hidden');
+}
+
+// Обработка формы подачи заявки
+document.getElementById('creditForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    
+    showAlert('Заявка на кредит отправлена! Мы рассмотрим её в течение 1 рабочего дня и свяжемся с вами.', 'success');
+    closeCreditModal();
+    this.reset();
+});
+</script>
+{% endblock %}

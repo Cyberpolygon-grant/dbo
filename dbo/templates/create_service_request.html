@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block title %}Создание заявки на услугу - Клиент ДБО{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Заголовок -->
+    <div class="mb-8">
+        <div class="flex items-center space-x-4">
+            <a href="{% url 'client_dashboard' %}" class="btn btn-outline btn-sm">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Назад
+            </a>
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Создание заявки на услугу</h1>
+                <p class="text-gray-600 dark:text-gray-300">Заполните форму для создания новой услуги в системе ДБО</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Форма -->
+    <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-700">
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Название услуги -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                    </svg>
+                    Название услуги *
+                </label>
+                <input type="text" name="service_name" placeholder="Введите название услуги" 
+                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" 
+                       required>
+            </div>
+
+            <!-- Описание услуги (XSS уязвимость) -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Описание услуги *
+                </label>
+                
+                <!-- Предупреждение о XSS -->
+                <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-4">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-red-600 dark:text-red-400 mr-3 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                        <div>
+                            <h3 class="font-semibold text-red-800 dark:text-red-200 mb-1">⚠️ XSS Уязвимость!</h3>
+                            <p class="text-sm text-red-700 dark:text-red-300 mb-2">
+                                Это поле уязвимо к XSS атакам. Вы можете вставить JavaScript код для демонстрации.
+                            </p>
+                            <div class="text-xs text-red-600 dark:text-red-400">
+                                <strong>Пример:</strong> &lt;script&gt;alert('XSS!')&lt;/script&gt;
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <textarea name="service_description" rows="6" placeholder="Опишите детали услуги..." 
+                          class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" 
+                          required></textarea>
+            </div>
+
+            <!-- Цена -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                    </svg>
+                    Цена услуги (₽) *
+                </label>
+                <input type="number" name="price" placeholder="Введите стоимость услуги" min="0" step="0.01"
+                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" 
+                       required>
+            </div>
+
+            <!-- Категория услуги -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
+                    Категория услуги *
+                </label>
+                <select name="category" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required>
+                    <option value="">Выберите категорию</option>
+                    <option value="payment">Платежи и переводы</option>
+                    <option value="deposit">Депозиты</option>
+                    <option value="credit">Кредиты</option>
+                    <option value="investment">Инвестиции</option>
+                    <option value="insurance">Страхование</option>
+                    <option value="other">Прочие услуги</option>
+                </select>
+            </div>
+
+            <!-- Кнопки -->
+            <div class="flex flex-col sm:flex-row gap-4 pt-6">
+                <button type="submit" class="btn btn-modern flex-1">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Создать заявку
+                </button>
+                
+                <a href="{% url 'client_dashboard' %}" class="btn btn-outline flex-1">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    Отмена
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Информация о XSS уязвимости -->
+    <div class="mt-8">
+        <div class="card-hover bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-2xl p-6 border border-yellow-200 dark:border-yellow-800">
+            <div class="flex items-start">
+                <svg class="w-8 h-8 text-yellow-600 dark:text-yellow-400 mr-4 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+                <div>
+                    <h3 class="text-lg font-bold text-yellow-900 dark:text-yellow-100 mb-2">XSS (Cross-Site Scripting) Уязвимость</h3>
+                    <p class="text-yellow-800 dark:text-yellow-200 mb-3">
+                        Поле описания услуги не санитизируется и позволяет выполнять произвольный JavaScript код.
+                    </p>
+                    <div class="text-sm text-yellow-700 dark:text-yellow-300">
+                        <p><strong>Примеры атак:</strong></p>
+                        <ul class="list-disc list-inside space-y-1 mt-2">
+                            <li>Отображение произвольного контента: <code>&lt;script&gt;alert('XSS!')&lt;/script&gt;</code></li>
+                            <li>Кража сессии: <code>&lt;script&gt;fetch('/steal-session', {method: 'POST', body: document.cookie})&lt;/script&gt;</code></li>
+                            <li>Автоматические действия: <code>&lt;script&gt;fetch('/approve-service-request/1/', {method: 'POST'})&lt;/script&gt;</code></li>
+                        </ul>
+                        <p class="mt-3"><strong>Рекомендации по исправлению:</strong></p>
+                        <ul class="list-disc list-inside space-y-1 mt-2">
+                            <li>Использовать Django template filter |escape</li>
+                            <li>Применять библиотеки для санитизации HTML (bleach)</li>
+                            <li>Настроить Content Security Policy (CSP)</li>
+                            <li>Валидировать пользовательский ввод на сервере</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

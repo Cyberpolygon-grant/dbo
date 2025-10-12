@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+
+{% block title %}Просмотр заявки - Оператор ДБО #2{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Заголовок -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <a href="{% url 'operator2_dashboard' %}" class="btn btn-outline btn-sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Назад
+                </a>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Просмотр заявки</h1>
+                    <p class="text-gray-600 dark:text-gray-300">Детальная информация о заявке на услугу</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                    <span class="text-white text-sm font-medium">{{ operator.user.username|first|upper }}</span>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ operator.user.username }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Оператор ДБО #2</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Основная информация о заявке -->
+    <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-700 mb-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Информация о клиенте -->
+            <div>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Информация о клиенте</h2>
+                <div class="space-y-4">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center">
+                            <span class="text-white text-xl font-bold">{{ service_request.client.full_name|first|upper }}</span>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ service_request.client.full_name }}</h3>
+                            <p class="text-gray-600 dark:text-gray-300">ID: {{ service_request.client.client_id }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div class="flex items-center space-x-3">
+                            <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                            </svg>
+                            <span class="text-gray-900 dark:text-white">{{ service_request.client.email }}</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                            </svg>
+                            <span class="text-gray-900 dark:text-white">{{ service_request.client.phone }}</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <span class="text-gray-900 dark:text-white">Регистрация: {{ service_request.client.created_at|date:"d.m.Y" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Информация о заявке -->
+            <div>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Информация о заявке</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Название услуги</label>
+                        <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <span class="text-gray-900 dark:text-white font-medium">{{ service_request.service_name }}</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Цена</label>
+                        <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <span class="text-green-600 dark:text-green-400 font-bold text-lg">₽{{ service_request.price }}</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Дата создания</label>
+                        <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <span class="text-gray-900 dark:text-white">{{ service_request.created_at|date:"d.m.Y H:i" }}</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Статус</label>
+                        <div class="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                            <span class="text-yellow-800 dark:text-yellow-200 font-medium">Ожидает валидации</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Описание услуги (XSS уязвимость) -->
+    <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-700 mb-8">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Описание услуги</h2>
+        
+        <!-- Предупреждение о XSS -->
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-6">
+            <div class="flex items-start">
+                <svg class="w-6 h-6 text-red-600 dark:text-red-400 mr-3 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+                <div>
+                    <h3 class="font-semibold text-red-800 dark:text-red-200 mb-1">⚠️ XSS Уязвимость!</h3>
+                    <p class="text-sm text-red-700 dark:text-red-300">
+                        Содержимое ниже может содержать вредоносный JavaScript код. 
+                        В реальной системе это поле должно быть санитизировано.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Уязвимое содержимое -->
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-6 border border-gray-200 dark:border-gray-600">
+            <div class="prose dark:prose-invert max-w-none">
+                {{ service_request.service_description|safe }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Действия -->
+    <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-700 mb-8">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Действия с заявкой</h2>
+        
+        <div class="flex flex-wrap gap-4">
+            <form method="post" action="{% url 'approve_service_request' service_request.id %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-modern">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Одобрить заявку
+                </button>
+            </form>
+            
+            <button onclick="rejectRequest()" class="btn btn-outline btn-error">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+                Отклонить заявку
+            </button>
+            
+            <a href="{% url 'operator2_dashboard' %}" class="btn btn-outline">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Вернуться к списку
+            </a>
+        </div>
+    </div>
+
+    <!-- Информация о XSS уязвимости -->
+    <div class="card-hover bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-2xl p-6 border border-yellow-200 dark:border-yellow-800">
+        <div class="flex items-start">
+            <svg class="w-8 h-8 text-yellow-600 dark:text-yellow-400 mr-4 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
+            <div>
+                <h3 class="text-lg font-bold text-yellow-900 dark:text-yellow-100 mb-2">XSS (Cross-Site Scripting) Уязвимость</h3>
+                <p class="text-yellow-800 dark:text-yellow-200 mb-3">
+                    Поле описания услуги отображается без санитизации, что позволяет выполнять произвольный JavaScript код.
+                </p>
+                <div class="text-sm text-yellow-700 dark:text-yellow-300">
+                    <p><strong>Пример вредоносного кода:</strong></p>
+                    <code class="block bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded mt-2 text-xs">
+                        &lt;script&gt;fetch('/approve-service-request/{{ service_request.id }}/', {method: 'POST', headers: {'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value}})&lt;/script&gt;
+                    </code>
+                    <p class="mt-3"><strong>Рекомендации по исправлению:</strong></p>
+                    <ul class="list-disc list-inside space-y-1 mt-2">
+                        <li>Использовать Django template filter |escape</li>
+                        <li>Применять библиотеки для санитизации HTML (bleach)</li>
+                        <li>Настроить Content Security Policy (CSP)</li>
+                        <li>Валидировать пользовательский ввод на сервере</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function rejectRequest() {
+        confirmAction(
+            'Вы уверены, что хотите отклонить эту заявку?',
+            function() {
+                // В реальной системе здесь был бы запрос на сервер
+                showAlert('Заявка отклонена', 'success');
+            }
+        );
+    }
+</script>
+{% endblock %}

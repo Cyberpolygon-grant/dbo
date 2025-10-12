@@ -1,0 +1,404 @@
+{% extends "base.html" %}
+
+{% block title %}Депозитные программы{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Заголовок страницы -->
+    <div class="hero bg-gradient-to-r from-info to-success text-primary-content rounded-lg mb-8">
+        <div class="hero-content text-center">
+            <div class="max-w-md">
+                <h1 class="text-4xl font-bold mb-4">Депозитные программы</h1>
+                <p class="text-lg opacity-90">Выгодные депозиты с высокими процентными ставками и гибкими условиями</p>
+                <div class="badge badge-lg badge-accent mt-4">До 8% годовых</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Депозитные программы -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Срочный депозит -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-primary">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Срочный депозит
+                </h2>
+                <p class="text-base-content/70">Классический депозит с фиксированной ставкой</p>
+                <div class="stats stats-vertical shadow">
+                    <div class="stat">
+                        <div class="stat-title">Ставка до</div>
+                        <div class="stat-value text-primary">8.0%</div>
+                        <div class="stat-desc">годовых</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-title">Срок от</div>
+                        <div class="stat-value text-secondary">3</div>
+                        <div class="stat-desc">месяцев</div>
+                    </div>
+                </div>
+                <div class="card-actions justify-end">
+                    <button class="btn btn-primary" onclick="openDepositModal('term')">Открыть депозит</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Пополняемый депозит -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-secondary">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Пополняемый депозит
+                </h2>
+                <p class="text-base-content/70">Возможность пополнения в течение срока</p>
+                <div class="stats stats-vertical shadow">
+                    <div class="stat">
+                        <div class="stat-title">Ставка до</div>
+                        <div class="stat-value text-primary">7.5%</div>
+                        <div class="stat-desc">годовых</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-title">Пополнение</div>
+                        <div class="stat-value text-secondary">Да</div>
+                        <div class="stat-desc">в любое время</div>
+                    </div>
+                </div>
+                <div class="card-actions justify-end">
+                    <button class="btn btn-secondary" onclick="openDepositModal('replenishable')">Открыть депозит</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Сберегательный счет -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-accent">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                    </svg>
+                    Сберегательный счет
+                </h2>
+                <p class="text-base-content/70">Гибкий доступ к средствам с начислением процентов</p>
+                <div class="stats stats-vertical shadow">
+                    <div class="stat">
+                        <div class="stat-title">Ставка до</div>
+                        <div class="stat-value text-primary">6.0%</div>
+                        <div class="stat-desc">годовых</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-title">Доступ</div>
+                        <div class="stat-value text-secondary">Свободный</div>
+                        <div class="stat-desc">к средствам</div>
+                    </div>
+                </div>
+                <div class="card-actions justify-end">
+                    <button class="btn btn-accent" onclick="openDepositModal('savings')">Открыть счет</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Мои депозиты -->
+    <div class="card bg-base-100 shadow-xl mb-8">
+        <div class="card-body">
+            <h2 class="card-title text-2xl mb-4">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                </svg>
+                Мои депозиты
+            </h2>
+            
+            {% if deposits %}
+            <div class="overflow-x-auto">
+                <table class="table table-zebra w-full">
+                    <thead>
+                        <tr>
+                            <th>Тип депозита</th>
+                            <th>Сумма</th>
+                            <th>Ставка</th>
+                            <th>Срок</th>
+                            <th>Дата открытия</th>
+                            <th>Дата закрытия</th>
+                            <th>Доход</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for deposit in deposits %}
+                        <tr>
+                            <td>
+                                <span class="badge badge-outline">
+                                    {% if deposit.account.account_type == 'savings' %}Сберегательный
+                                    {% elif deposit.account.account_type == 'deposit' %}Депозитный
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td class="font-bold">{{ deposit.amount|floatformat:0 }} ₽</td>
+                            <td>{{ deposit.interest_rate }}%</td>
+                            <td>{{ deposit.term_months }} мес.</td>
+                            <td>{{ deposit.start_date|date:"d.m.Y" }}</td>
+                            <td>{{ deposit.end_date|date:"d.m.Y" }}</td>
+                            <td class="font-bold text-success">
+                                {% widthratio deposit.amount deposit.interest_rate 100 as income %}
+                                {{ income|floatformat:0 }} ₽
+                            </td>
+                            <td>
+                                <div class="flex gap-2">
+                                    <button class="btn btn-sm btn-primary" onclick="viewDepositDetails({{ deposit.id }})">Детали</button>
+                                    {% if deposit.end_date > today %}
+                                        <button class="btn btn-sm btn-secondary" onclick="replenishDeposit({{ deposit.id }})">Пополнить</button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <svg class="w-16 h-16 mx-auto text-base-content/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                </svg>
+                <h3 class="text-xl font-semibold mb-2">У вас пока нет депозитов</h3>
+                <p class="text-base-content/70 mb-4">Откройте депозит и начните получать доход с ваших сбережений</p>
+                <button class="btn btn-primary" onclick="openDepositModal('term')">Открыть депозит</button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Калькулятор депозита -->
+    <div class="card bg-base-100 shadow-xl mb-8">
+        <div class="card-body">
+            <h2 class="card-title text-2xl mb-4">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                </svg>
+                Калькулятор депозита
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Сумма депозита</span>
+                    </label>
+                    <input type="number" id="depositAmount" class="input input-bordered" placeholder="100000" min="1000" max="10000000">
+                </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Срок депозита (месяцы)</span>
+                    </label>
+                    <input type="number" id="depositTerm" class="input input-bordered" placeholder="12" min="1" max="60">
+                </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Процентная ставка</span>
+                    </label>
+                    <input type="number" id="depositRate" class="input input-bordered" placeholder="8.0" min="1" max="15" step="0.1">
+                </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Тип начисления</span>
+                    </label>
+                    <select id="interestType" class="select select-bordered">
+                        <option value="monthly">Ежемесячно</option>
+                        <option value="quarterly">Ежеквартально</option>
+                        <option value="yearly">Ежегодно</option>
+                        <option value="end">В конце срока</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-actions justify-center mt-6">
+                <button class="btn btn-primary" onclick="calculateDeposit()">Рассчитать</button>
+            </div>
+            
+            <div id="depositCalculationResult" class="mt-6 hidden">
+                <div class="stats stats-vertical shadow">
+                    <div class="stat">
+                        <div class="stat-title">Сумма к получению</div>
+                        <div class="stat-value text-primary" id="totalAmount">0 ₽</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-title">Доход по депозиту</div>
+                        <div class="stat-value text-success" id="depositIncome">0 ₽</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-title">Эффективная ставка</div>
+                        <div class="stat-value text-info" id="effectiveRate">0%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Преимущества -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title text-2xl mb-6">Преимущества наших депозитов</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="text-center">
+                    <div class="text-3xl mb-2">💰</div>
+                    <h3 class="font-semibold mb-1">Высокие ставки</h3>
+                    <p class="text-sm text-base-content/70">До 8% годовых</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl mb-2">🔒</div>
+                    <h3 class="font-semibold mb-1">Надежность</h3>
+                    <p class="text-sm text-base-content/70">Страхование вкладов</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl mb-2">📱</div>
+                    <h3 class="font-semibold mb-1">Удобство</h3>
+                    <p class="text-sm text-base-content/70">Управление онлайн</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl mb-2">⚡</div>
+                    <h3 class="font-semibold mb-1">Быстро</h3>
+                    <p class="text-sm text-base-content/70">Открытие за 5 минут</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для открытия депозита -->
+<div id="depositModal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4" id="depositModalTitle">Открытие депозита</h3>
+        <form id="depositForm">
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Тип депозита</span>
+                </label>
+                <select class="select select-bordered" name="deposit_type" required>
+                    <option value="">Выберите тип депозита</option>
+                    <option value="term">Срочный депозит</option>
+                    <option value="replenishable">Пополняемый депозит</option>
+                    <option value="savings">Сберегательный счет</option>
+                </select>
+            </div>
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Сумма депозита</span>
+                </label>
+                <input type="number" class="input input-bordered" name="amount" placeholder="100000" min="1000" max="10000000" required>
+            </div>
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Срок депозита (месяцы)</span>
+                </label>
+                <input type="number" class="input input-bordered" name="term" placeholder="12" min="1" max="60" required>
+            </div>
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Счет для списания</span>
+                </label>
+                <select class="select select-bordered" name="account" required>
+                    <option value="">Выберите счет</option>
+                    {% for account in accounts %}
+                        <option value="{{ account.id }}">{{ account.account_number }} ({{ account.balance|floatformat:0 }} ₽)</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="modal-action">
+                <button type="button" class="btn btn-ghost" onclick="closeDepositModal()">Отмена</button>
+                <button type="submit" class="btn btn-primary">Открыть депозит</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openDepositModal(type) {
+    const modal = document.getElementById('depositModal');
+    const title = document.getElementById('depositModalTitle');
+    
+    switch(type) {
+        case 'term':
+            title.textContent = 'Открытие срочного депозита';
+            break;
+        case 'replenishable':
+            title.textContent = 'Открытие пополняемого депозита';
+            break;
+        case 'savings':
+            title.textContent = 'Открытие сберегательного счета';
+            break;
+    }
+    
+    modal.classList.add('modal-open');
+}
+
+function closeDepositModal() {
+    document.getElementById('depositModal').classList.remove('modal-open');
+}
+
+function viewDepositDetails(depositId) {
+    showAlert('Просмотр деталей депозита #' + depositId, 'info');
+}
+
+function replenishDeposit(depositId) {
+    showAlert('Пополнение депозита #' + depositId, 'info');
+}
+
+function calculateDeposit() {
+    const amount = parseFloat(document.getElementById('depositAmount').value) || 0;
+    const term = parseInt(document.getElementById('depositTerm').value) || 0;
+    const rate = parseFloat(document.getElementById('depositRate').value) || 0;
+    const interestType = document.getElementById('interestType').value;
+    
+    if (amount <= 0 || term <= 0 || rate <= 0) {
+        showAlert('Пожалуйста, заполните все поля корректно', 'warning');
+        return;
+    }
+    
+    const monthlyRate = rate / 100 / 12;
+    let totalAmount, income, effectiveRate;
+    
+    if (interestType === 'monthly') {
+        // Ежемесячная капитализация
+        totalAmount = amount * Math.pow(1 + monthlyRate, term);
+        income = totalAmount - amount;
+        effectiveRate = (Math.pow(1 + monthlyRate, 12) - 1) * 100;
+    } else if (interestType === 'quarterly') {
+        // Ежеквартальная капитализация
+        const quarterlyRate = rate / 100 / 4;
+        const quarters = Math.ceil(term / 3);
+        totalAmount = amount * Math.pow(1 + quarterlyRate, quarters);
+        income = totalAmount - amount;
+        effectiveRate = (Math.pow(1 + quarterlyRate, 4) - 1) * 100;
+    } else if (interestType === 'yearly') {
+        // Ежегодная капитализация
+        const yearlyRate = rate / 100;
+        const years = term / 12;
+        totalAmount = amount * Math.pow(1 + yearlyRate, years);
+        income = totalAmount - amount;
+        effectiveRate = rate;
+    } else {
+        // Простые проценты в конце срока
+        income = amount * rate / 100 * term / 12;
+        totalAmount = amount + income;
+        effectiveRate = rate;
+    }
+    
+    document.getElementById('totalAmount').textContent = Math.round(totalAmount).toLocaleString() + ' ₽';
+    document.getElementById('depositIncome').textContent = Math.round(income).toLocaleString() + ' ₽';
+    document.getElementById('effectiveRate').textContent = effectiveRate.toFixed(2) + '%';
+    
+    document.getElementById('depositCalculationResult').classList.remove('hidden');
+}
+
+// Обработка формы открытия депозита
+document.getElementById('depositForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    
+    alert('Депозит успешно открыт! Средства зарезервированы на вашем счете.');
+    closeDepositModal();
+    this.reset();
+});
+</script>
+{% endblock %}

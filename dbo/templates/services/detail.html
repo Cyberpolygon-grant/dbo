@@ -1,0 +1,452 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ service.name }} - Услуга{% endblock %}
+
+{% csrf_token %}
+
+{% block content %}
+{% csrf_token %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Навигация -->
+    <div class="mb-8">
+        <div class="breadcrumbs text-sm">
+            <ul>
+                <li><a href="{% url 'banking_services' %}" class="link link-hover">Каталог услуг</a></li>
+                <li><a href="{% url 'banking_services' %}?category={{ service.category.id }}" class="link link-hover">{{ service.category.name }}</a></li>
+                <li>{{ service.name }}</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Основная информация -->
+        <div class="lg:col-span-2">
+            <div class="card bg-base-100 shadow-xl overflow-hidden">
+                <!-- Крупная иконка-эмодзи по названию/категории услуги -->
+                <figure class="relative">
+                    <div class="w-full h-56 sm:h-72 md:h-80 lg:h-96 bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 flex items-center justify-center">
+                        {% with name=service.name|lower cat=service.category.name|lower %}
+                            <span class="text-7xl sm:text-8xl md:text-9xl leading-snug text-center select-none">
+                                {% if 'инвест' in name or 'инвест' in cat %}📈📊💹 {% endif %}
+                                {% if 'кредит' in name or 'ипотек' in name or 'кредит' in cat %}💳💸🏦 {% endif %}
+                                {% if 'депозит' in name or 'вклад' in name or 'депозит' in cat %}💰🏦📥 {% endif %}
+                                {% if 'карта' in name or 'карта' in cat %}💳🏧 {% endif %}
+                                {% if 'перевод' in name or 'платеж' in name or 'платёж' in name or 'перевод' in cat or 'плат' in cat %}🔁💱🚀 {% endif %}
+                                {% if 'страх' in name or 'страх' in cat %}🛡️🧾 {% endif %}
+                                {% if 'счет' in name or 'счёт' in name or 'рко' in name or 'счет' in cat %}🏦📒 {% endif %}
+                                {% if 'интернет' in name or 'мобил' in name or 'онлайн' in name %}📱💻🌐 {% endif %}
+                                {% if 'vip' in name or 'премиум' in name %}⭐👑 {% endif %}
+                                {% if 'поддерж' in name or 'консьерж' in name %}👩‍💼🛎️ {% endif %}
+                                🧩✨
+                            </span>
+                        {% endwith %}
+                    </div>
+                    
+                    <!-- Бейджи -->
+                    <div class="absolute top-6 left-6">
+                        <div class="badge badge-primary badge-lg">{{ service.category.name }}</div>
+                    </div>
+                    
+                    <div class="absolute top-6 right-6">
+                        {% if service.is_privileged %}
+                            <div class="badge badge-warning badge-lg gap-2">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                </svg>
+                                Премиум
+                            </div>
+                        {% endif %}
+                    </div>
+                </figure>
+                
+                <div class="card-body p-8">
+                    <!-- Название и описание -->
+                    <div class="mb-6">
+                        <h1 class="text-4xl font-bold text-base-content mb-4">{{ service.name }}</h1>
+                        <p class="text-lg text-base-content/80 leading-relaxed">{{ service.description }}</p>
+                    </div>
+
+                    {% if is_connected %}
+                    <div class="alert alert-success mb-6">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span class="font-semibold">Эта услуга уже подключена вашему аккаунту</span>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Особенности услуги -->
+                    <div class="mb-8">
+                        <h3 class="text-xl font-semibold text-base-content mb-4">Особенности услуги</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="flex items-center gap-3 p-4 bg-base-200 rounded-lg">
+                                <div class="w-10 h-10 bg-success/20 rounded-full flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-base-content">Онлайн подключение</div>
+                                    <div class="text-sm text-base-content/70">Мгновенная активация</div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-3 p-4 bg-base-200 rounded-lg">
+                                <div class="w-10 h-10 bg-info/20 rounded-full flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-base-content">Круглосуточная поддержка</div>
+                                    <div class="text-sm text-base-content/70">24/7 доступность</div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-3 p-4 bg-base-200 rounded-lg">
+                                <div class="w-10 h-10 bg-warning/20 rounded-full flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-base-content">Безопасность</div>
+                                    <div class="text-sm text-base-content/70">Защищенное соединение</div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-3 p-4 bg-base-200 rounded-lg">
+                                <div class="w-10 h-10 bg-secondary/20 rounded-full flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-base-content">Простота использования</div>
+                                    <div class="text-sm text-base-content/70">Интуитивный интерфейс</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Дополнительная информация -->
+                    <div class="alert alert-info">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <div>
+                            <h4 class="font-bold">Важная информация</h4>
+                            <div class="text-sm">Услуга будет подключена мгновенно после подтверждения. Вы можете отключить её в любое время в личном кабинете.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Боковая панель -->
+        <div class="lg:col-span-1">
+            <div class="lg:sticky lg:top-8 space-y-6">
+                <!-- Карточка подключения -->
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body p-6">
+                    <h3 class="card-title text-xl mb-4">Подключение услуги</h3>
+                    
+                    <!-- Цена -->
+                    <div class="text-center mb-6">
+                        {% if service.price > 0 %}
+                            <div class="text-sm text-base-content/70 mb-2">Стоимость услуги</div>
+                            <div class="text-4xl font-bold text-primary mb-2">{{ service.price }} ₽</div>
+                            <div class="text-sm text-base-content/70">за подключение</div>
+                        {% else %}
+                            <div class="text-sm text-base-content/70 mb-2">Стоимость услуги</div>
+                            <div class="text-4xl font-bold text-success mb-2">Бесплатно</div>
+                            <div class="text-sm text-base-content/70">без дополнительных платежей</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Кнопки подключения/отключения -->
+                    <div class="space-y-3">
+                        {% if is_connected %}
+                        <button class="btn btn-error btn-lg w-full" onclick="disconnectService({{ service.id }})">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            Отключить услугу
+                        </button>
+                        {% else %}
+                        <button class="btn btn-primary btn-lg w-full" onclick="connectServiceModal({{ service.id }}, '{{ service.name }}', {{ service.price }})">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            Подключить услугу
+                        </button>
+                        {% endif %}
+
+                        <button class="btn btn-outline w-full" onclick="shareService()">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path>
+                            </svg>
+                            Поделиться
+                        </button>
+                    </div>
+                    
+                    <!-- Информация о подключении -->
+                    <div class="divider"></div>
+                    
+                    <div class="space-y-3 text-sm">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span>Мгновенное подключение</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span>Без комиссий</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span>Возможность отключения</span>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+                
+                <!-- Рейтинг и отзывы -->
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body p-6">
+                    <h4 class="card-title text-lg mb-4">Рейтинг услуги</h4>
+                    
+                    <div class="text-center mb-4">
+                        <div class="text-3xl font-bold text-base-content mb-2">4.8</div>
+                        <div class="rating rating-lg">
+                            <input type="radio" class="mask mask-star-2 bg-warning" checked />
+                            <input type="radio" class="mask mask-star-2 bg-warning" checked />
+                            <input type="radio" class="mask mask-star-2 bg-warning" checked />
+                            <input type="radio" class="mask mask-star-2 bg-warning" checked />
+                            <input type="radio" class="mask mask-star-2 bg-warning" />
+                        </div>
+                        <div class="text-sm text-base-content/70 mt-2">на основе 127 отзывов</div>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm w-8">5★</span>
+                            <progress class="progress progress-warning w-full" value="85" max="100"></progress>
+                            <span class="text-sm text-base-content/70">85%</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm w-8">4★</span>
+                            <progress class="progress progress-warning w-full" value="12" max="100"></progress>
+                            <span class="text-sm text-base-content/70">12%</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm w-8">3★</span>
+                            <progress class="progress progress-warning w-full" value="2" max="100"></progress>
+                            <span class="text-sm text-base-content/70">2%</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm w-8">2★</span>
+                            <progress class="progress progress-warning w-full" value="1" max="100"></progress>
+                            <span class="text-sm text-base-content/70">1%</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm w-8">1★</span>
+                            <progress class="progress progress-warning w-full" value="0" max="100"></progress>
+                            <span class="text-sm text-base-content/70">0%</span>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Похожие услуги -->
+    {% if related_services %}
+    <div class="mt-16">
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-bold text-base-content mb-4">Похожие услуги</h2>
+            <p class="text-base-content/70">Возможно, вас заинтересуют эти услуги</p>
+        </div>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for s in related_services %}
+            <a href="{% url 'service_detail' s.id %}" class="group block">
+                <div class="card bg-base-100 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 h-full">
+                    <figure class="relative overflow-hidden">
+                        <div class="w-full h-24 bg-gradient-to-r from-primary/10 to-secondary/10 group-hover:from-primary/20 group-hover:to-secondary/20 transition-all duration-300"></div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-all duration-300">
+                                <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="absolute top-3 left-3">
+                            <div class="badge badge-outline">{{ s.category.name }}</div>
+                        </div>
+                        <div class="absolute top-3 right-3">
+                            {% if s.price == 0 %}
+                                <div class="badge badge-success">Бесплатно</div>
+                            {% else %}
+                                <div class="badge badge-outline">от {{ s.price }} ₽</div>
+                            {% endif %}
+                        </div>
+                    </figure>
+                    <div class="card-body p-4">
+                        <h3 class="card-title text-base group-hover:text-primary transition-colors duration-300">{{ s.name }}</h3>
+                        <p class="text-sm text-base-content/70 line-clamp-2">{{ s.description }}</p>
+                        <div class="card-actions justify-end mt-3">
+                            <button class="btn btn-sm btn-outline">Подробнее</button>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Модальное окно для подключения услуги -->
+<dialog id="connect-service-modal" class="modal">
+    <div class="modal-box max-w-md">
+        <form method="dialog">
+            <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+        </form>
+        
+        <div class="text-center mb-6">
+            <div class="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+            </div>
+            <h3 class="font-bold text-lg mb-2">Подключение услуги</h3>
+            <p class="text-base-content/70">Вы действительно хотите подключить услугу?</p>
+        </div>
+        
+        <div class="card bg-base-200 mb-6">
+            <div class="card-body p-4">
+                <h4 class="font-semibold text-base-content" id="modal-service-name">Название услуги</h4>
+                <div class="flex items-center justify-between mt-2">
+                    <span class="text-sm text-base-content/70">Стоимость:</span>
+                    <span class="font-semibold text-primary" id="modal-service-price">0 ₽</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="alert alert-info mb-6">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div>
+                <h4 class="font-bold">Важно!</h4>
+                <div class="text-xs">Услуга будет подключена мгновенно после подтверждения</div>
+            </div>
+        </div>
+        
+        <div class="modal-action">
+            <form method="dialog">
+                <button class="btn btn-outline">Отмена</button>
+            </form>
+            <button class="btn btn-primary" id="confirm-connect-btn">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                Подключить услугу
+            </button>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+
+<script>
+function connectServiceModal(serviceId, serviceName, servicePrice) {
+    document.getElementById('modal-service-name').textContent = serviceName;
+    document.getElementById('modal-service-price').textContent = servicePrice > 0 ? servicePrice + ' ₽' : 'Бесплатно';
+    
+    const modal = document.getElementById('connect-service-modal');
+    modal.showModal();
+    
+    document.getElementById('confirm-connect-btn').onclick = function() {
+        connectService(serviceId);
+        modal.close();
+    };
+}
+
+function connectService(serviceId) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{% url "connect_service" 0 %}'.replace('0', serviceId);
+    
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrfmiddlewaretoken';
+    csrfInput.value = csrfToken;
+    form.appendChild(csrfInput);
+    // передаём страницу возврата явно
+    const nextInput = document.createElement('input');
+    nextInput.type = 'hidden';
+    nextInput.name = 'next';
+    nextInput.value = window.location.href;
+    form.appendChild(nextInput);
+    
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function shareService() {
+    if (navigator.share) {
+        navigator.share({
+            title: '{{ service.name }}',
+            text: '{{ service.description|truncatewords:20 }}',
+            url: window.location.href
+        });
+    } else {
+        // Fallback для браузеров без поддержки Web Share API
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            showAlert('Ссылка скопирована в буфер обмена', 'success');
+        });
+    }
+}
+</script>
+<script>
+function disconnectService(serviceId) {
+    confirmAction(
+        'Отключить эту услугу?',
+        function() {
+            fetch(`/disconnect-service/${serviceId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('success', 'Услуга успешно отключена!');
+                    setTimeout(() => { location.reload(); }, 1200);
+                } else {
+                    showToast('error', data.error || 'Ошибка при отключении услуги');
+                }
+            })
+            .catch(() => {
+                showToast('error', 'Произошла ошибка при отключении услуги');
+            });
+        }
+    );
+}
+</script>
+{% endblock %}
+
+

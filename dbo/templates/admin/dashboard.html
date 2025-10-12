@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+
+{% block title %}Админ-дэшборд - ФинансПро{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Верхние баннеры -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {% for a in admin_alerts %}
+        <div role="alert" class="alert alert-{{ a.kind }}">
+            <div>{{ a.text }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    <!-- Метрики (DaisyUI cards) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="card card-border bg-white dark:bg-gray-800">
+            <div class="card-body">
+                <h3 class="card-title text-sm font-medium text-gray-500 dark:text-gray-400">Пользователи</h3>
+                <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_users }}</div>
+            </div>
+        </div>
+        <div class="card card-border bg-white dark:bg-gray-800">
+            <div class="card-body">
+                <h3 class="card-title text-sm font-medium text-gray-500 dark:text-gray-400">Клиенты</h3>
+                <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_clients }}</div>
+            </div>
+        </div>
+        <div class="card card-border bg-white dark:bg-gray-800">
+            <div class="card-body">
+                <h3 class="card-title text-sm font-medium text-gray-500 dark:text-gray-400">Услуги</h3>
+                <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_services }}</div>
+            </div>
+        </div>
+        <div class="card card-border bg-white dark:bg-gray-800">
+            <div class="card-body">
+                <h3 class="card-title text-sm font-medium text-gray-500 dark:text-gray-400">Транзакции</h3>
+                <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_transactions }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- "Графики" на DaisyUI: прогресс-бар и макеты -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div class="card bg-white dark:bg-gray-800 lg:col-span-2">
+            <div class="card-body">
+                <h2 class="card-title">Операции за неделю</h2>
+                <div class="space-y-3">
+                    {% for row in weekly_transactions %}
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-sm text-gray-600 dark:text-gray-400">{{ row.label }}</span>
+                            <span class="text-sm font-medium text-gray-900 dark:text-white">{{ row.count }}</span>
+                        </div>
+                        <progress class="progress progress-primary w-full" value="{{ row.count }}" max="{{ tx_max }}"></progress>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="card bg-white dark:bg-gray-800">
+            <div class="card-body">
+                <h2 class="card-title">Популярные категории</h2>
+                <div class="space-y-3">
+                    {% for row in categories_stats %}
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-sm text-gray-600 dark:text-gray-400">{{ row.label }}</span>
+                            <span class="text-sm font-medium text-gray-900 dark:text-white">{{ row.value }}</span>
+                        </div>
+                        <progress class="progress progress-accent w-full" value="{{ row.value }}" max="{{ cat_max }}"></progress>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Воронка подключений услуг -->
+    <div class="card bg-white dark:bg-gray-800 mb-8">
+        <div class="card-body">
+            <h2 class="card-title">Воронка подключений услуг</h2>
+            <div class="space-y-4">
+                {% for step in funnel %}
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">{{ step.step }}</span>
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">{{ step.value }}</span>
+                    </div>
+                    <progress class="progress progress-secondary w-full" value="{{ step.value }}" max="{{ funnel_max }}"></progress>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Аптайм ключевых сервисов -->
+    <div class="card bg-white dark:bg-gray-800 mb-8">
+        <div class="card-body">
+            <h2 class="card-title">Аптайм сервисов (24ч)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for s in service_uptimes %}
+                <div class="bg-base-100 rounded-xl p-4 border border-base-300">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">{{ s.name }}</span>
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">{{ s.uptime }}%</span>
+                    </div>
+                    <progress class="progress progress-success w-full" value="{{ s.uptime }}" max="100"></progress>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Тренды KPI -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {% for k in kpi_trends %}
+        <div class="card bg-white dark:bg-gray-800">
+            <div class="card-body">
+                <div class="text-sm text-gray-500 dark:text-gray-400">{{ k.title }}</div>
+                <div class="flex items-baseline justify-between">
+                    <div class="text-2xl font-semibold text-gray-900 dark:text-white">{{ k.value }}</div>
+                    <div class="badge {% if k.positive %}badge-success{% else %}badge-error{% endif %} badge-outline">{{ k.delta }}</div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Информационные баннеры (DaisyUI alerts) -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div role="alert" class="alert alert-info">
+            <div>Состояние системы: все сервисы работают штатно.</div>
+        </div>
+        <div role="alert" class="alert alert-warning">
+            <div>Внимание: обновление безопасности запланировано на 02:00.</div>
+        </div>
+        <div role="alert" class="alert alert-success">
+            <div>Инциденты: критических событий не выявлено.</div>
+        </div>
+    </div>
+
+    <!-- Последние события атак (DaisyUI mockup-browser + table) -->
+    <div class="mockup-browser border border-base-300 bg-base-100">
+        <div class="mockup-browser-toolbar">
+            <div class="input">https://bank.local/attack-logs</div>
+        </div>
+        <div class="p-4 md:p-6">
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 md:p-6">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Последние события</h2>
+                {% if recent_attacks %}
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Время</th>
+                                <th>Тип</th>
+                                <th>Цель</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for a in recent_attacks %}
+                            <tr>
+                                <td>{{ a.timestamp|date:"d.m.Y H:i" }}</td>
+                                <td><span class="badge badge-outline">{{ a.get_attack_type_display }}</span></td>
+                                <td>{{ a.target_user }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-sm text-gray-600 dark:text-gray-400">Событий пока нет</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Никаких JS-графиков: используем DaisyUI компоненты (cards, alerts, progress, mockup) -->
+{% endblock %}
+
+

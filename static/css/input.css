@@ -2,3 +2,21 @@
 @plugin "./daisyui.js";
 
 @source "../../dbo/templates";
+
+/* Медленная анимация для бегущей строки новостей */
+@keyframes marquee-slow {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-marquee-slow {
+  animation: marquee-slow 60s linear infinite;
+}
+
+.animate-marquee {
+  animation: marquee-slow 30s linear infinite;
+}

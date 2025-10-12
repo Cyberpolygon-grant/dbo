@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+
+{% block title %}Дашборд атак - Киберполигон{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Заголовок -->
+    <div class="mb-8">
+        <div class="flex items-center space-x-4">
+            <div class="w-16 h-16 bg-gradient-to-r from-red-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Дашборд атак - Киберполигон</h1>
+                <p class="text-gray-600 dark:text-gray-300">Мониторинг и анализ кибератак в системе ДБО (только для администраторов)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика атак -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl flex items-center justify-center mr-4">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ attack_logs|length }}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300">Всего атак</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center mr-4">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ phishing_attacks|length }}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300">Фишинговых атак</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center mr-4">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ xss_attacks|length }}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300">XSS атак</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center mr-4">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ sql_attacks|length }}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300">SQL-инъекций</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Лог атак -->
+    <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 mb-8">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Лог атак</h2>
+            <div class="flex items-center space-x-2">
+                <button onclick="refreshLogs()" class="btn btn-sm btn-outline">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Обновить
+                </button>
+                <button onclick="clearLogs()" class="btn btn-sm btn-outline btn-error">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    Очистить
+                </button>
+            </div>
+        </div>
+        
+        {% if attack_logs %}
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-gray-200 dark:border-gray-600">
+                            <th class="text-left py-4 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Время</th>
+                            <th class="text-left py-4 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Тип атаки</th>
+                            <th class="text-left py-4 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Цель</th>
+                            <th class="text-left py-4 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Описание</th>
+                            <th class="text-left py-4 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in attack_logs %}
+                            <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                <td class="py-4 px-4">
+                                    <div class="text-sm text-gray-900 dark:text-white">{{ log.timestamp|date:"d.m.Y H:i:s" }}</div>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <span class="px-3 py-1 text-xs rounded-full font-medium
+                                        {% if log.attack_type == 'phishing' %}bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200
+                                        {% elif log.attack_type == 'xss' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200
+                                        {% elif log.attack_type == 'sql_injection' %}bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-200
+                                        {% else %}bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-200{% endif %}">
+                                        {{ log.get_attack_type_display }}
+                                    </span>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <div class="text-sm text-gray-900 dark:text-white">{{ log.target_user }}</div>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <div class="text-sm text-gray-600 dark:text-gray-300 max-w-xs">{{ log.description }}</div>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <span class="px-3 py-1 text-xs rounded-full font-medium
+                                        {% if log.success %}bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200
+                                        {% else %}bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200{% endif %}">
+                                        {% if log.success %}Успешно{% else %}Неудачно{% endif %}
+                                    </span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-16 text-gray-500 dark:text-gray-400">
+                <svg class="w-20 h-20 mx-auto mb-6 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+                <p class="text-xl font-semibold mb-2">Нет записей об атаках</p>
+                <p class="text-sm">Атаки будут отображаться здесь по мере их выполнения</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Типы уязвимостей -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Фишинг -->
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl flex items-center justify-center mr-4">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white">Фишинг</h3>
+            </div>
+            <p class="text-gray-600 dark:text-gray-300 mb-4">
+                Социальная инженерия через поддельные письма с вредоносными вложениями.
+            </p>
+            <div class="text-sm text-gray-500 dark:text-gray-400">
+                <strong>Цель:</strong> Компрометация оператора ДБО #1<br>
+                <strong>Результат:</strong> Получение доступа к системе
+            </div>
+        </div>
+
+        <!-- XSS -->
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center mr-4">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white">XSS</h3>
+            </div>
+            <p class="text-gray-600 dark:text-gray-300 mb-4">
+                Выполнение произвольного JavaScript кода через поле описания заявок.
+            </p>
+            <div class="text-sm text-gray-500 dark:text-gray-400">
+                <strong>Цель:</strong> Автоматическое одобрение заявок<br>
+                <strong>Результат:</strong> Обход валидации
+            </div>
+        </div>
+
+        <!-- SQL-инъекция -->
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center mr-4">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white">SQL-инъекция</h3>
+            </div>
+            <p class="text-gray-600 dark:text-gray-300 mb-4">
+                Выполнение произвольных SQL-запросов через поле поиска услуг.
+            </p>
+            <div class="text-sm text-gray-500 dark:text-gray-400">
+                <strong>Цель:</strong> Доступ к скрытым услугам<br>
+                <strong>Результат:</strong> Получение привилегий
+            </div>
+        </div>
+    </div>
+
+    <!-- Действия -->
+    <div class="mt-8">
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Доступные действия</h2>
+            <div class="flex flex-wrap gap-4">
+                <a href="/" class="btn btn-outline">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                    Главная страница
+                </a>
+                
+                <a href="/login" class="btn btn-modern">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                    </svg>
+                    Войти в систему
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function refreshLogs() {
+        location.reload();
+    }
+
+    function clearLogs() {
+        if (confirm('Вы уверены, что хотите очистить лог атак?')) {
+            // В реальной системе здесь был бы запрос на сервер
+            alert('Лог атак очищен');
+            location.reload();
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,633 @@
+{% extends 'base.html' %}
+
+{% block title %}Маркетплейс банковских услуг - Интернет-банк "ФинансПро"{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="min-h-screen bg-gradient-to-br from-base-100 to-base-200">
+    <!-- Hero Section -->
+    <div class="hero bg-gradient-to-r from-primary to-secondary text-primary-content py-16">
+        <div class="hero-content text-center">
+            <div class="max-w-4xl">
+                <h1 class="text-5xl font-bold mb-6">Маркетплейс банковских услуг</h1>
+                <p class="text-xl mb-8 opacity-90">
+                    Откройте для себя полный спектр банковских услуг. 
+                    Выбирайте, сравнивайте и подключайте услуги онлайн.
+                </p>
+                
+                <div class="stats stats-horizontal bg-base-100 text-base-content shadow-lg">
+                    <div class="stat">
+                        <div class="stat-title">Доступно услуг</div>
+                        <div class="stat-value text-primary">{{ total_services }}</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-title">Категорий</div>
+                        <div class="stat-value text-secondary">{{ categories|length }}</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-title">Бесплатных</div>
+                        <div class="stat-value text-accent">{{ free_services }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-8">
+        <!-- Фильтры и поиск -->
+        <div class="card bg-base-100 shadow-xl mb-8">
+            <div class="card-body">
+                <div class="flex flex-col lg:flex-row gap-4 items-center">
+                    <!-- Поиск -->
+                    <div class="form-control flex-1">
+                        <div class="input-group">
+                            <input type="text" id="searchInput" placeholder="Поиск услуг..." class="input input-bordered flex-1">
+                            <button class="btn btn-square" onclick="searchServices()">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Фильтр по цене -->
+                    <div class="form-control">
+                        <select id="priceFilter" class="select select-bordered" onchange="filterByPrice()">
+                            <option value="all">Любая цена</option>
+                            <option value="free">Бесплатно</option>
+                            <option value="low">До 1000 ₽</option>
+                            <option value="medium">1000-5000 ₽</option>
+                            <option value="high">Свыше 5000 ₽</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Сортировка -->
+                    <div class="form-control">
+                        <select id="sortBy" class="select select-bordered" onchange="sortServices()">
+                            <option value="name">По названию</option>
+                            <option value="price-low">Цена: по возрастанию</option>
+                            <option value="price-high">Цена: по убыванию</option>
+                            <option value="popular">Популярные</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Навигация по категориям -->
+        <div id="categoryButtons" class="flex flex-wrap gap-2 mb-8 justify-center">
+            <button class="btn btn-ghost btn-sm active-category" onclick="showAllServices(this)">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                </svg>
+                Все услуги
+            </button>
+            {% for category in categories %}
+            <button class="btn btn-ghost btn-sm" onclick="showCategory('{{ category.name }}', this)">
+                {{ category.name }}
+            </button>
+            {% endfor %}
+        </div>
+
+        <!-- Услуги по категориям -->
+        {% for category_name, services in services_by_category.items %}
+        <div class="category-section mb-12" data-category="{{ category_name }}">
+            <div class="flex items-center mb-8">
+                <div class="divider divider-primary flex-1"></div>
+                <h2 class="text-3xl font-bold text-base-content mx-4">{{ category_name }}</h2>
+                <div class="divider divider-primary flex-1"></div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {% for service in services %}
+                <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 group">
+                    <!-- Иконка-эмодзи по названию/категории услуги -->
+                    <figure class="px-6 pt-6">
+                        <div class="w-full h-48 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                            {% with name=service.name|lower cat=service.category.name|lower %}
+                                <span class="text-6xl select-none">
+                                    {% if 'инвест' in name or 'инвест' in cat %}📈{% elif 'кредит' in name or 'ипотек' in name or 'кредит' in cat %}💳{% elif 'депозит' in name or 'вклад' in name or 'депозит' in cat %}💰{% elif 'карта' in name or 'карта' in cat %}💳{% elif 'перевод' in name or 'платеж' in name or 'платёж' in name or 'перевод' in cat or 'плат' in cat %}🔁{% elif 'страх' in name or 'страх' in cat %}🛡️{% elif 'счет' in name or 'счёт' in name or 'рко' in name or 'счет' in cat %}🏦{% elif 'интернет' in name or 'мобил' in name or 'онлайн' in name %}📱{% elif 'vip' in name or 'премиум' in name %}⭐{% elif 'поддерж' in name or 'консьерж' in name %}👩‍💼{% else %}🧩{% endif %}
+                                </span>
+                            {% endwith %}
+                        </div>
+                    </figure>
+                    
+                    <div class="card-body p-6">
+                        <!-- Заголовок и цена -->
+                        <div class="flex items-start justify-between mb-3">
+                            <h3 class="card-title text-lg leading-tight">{{ service.name }}</h3>
+                            {% if service.price > 0 %}
+                            <div class="badge badge-primary font-bold whitespace-nowrap text-sm px-3">{{ service.price|floatformat:0 }} ₽</div>
+                            {% else %}
+                            <div class="badge badge-success font-bold whitespace-nowrap text-sm px-3">Бесплатно</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Описание -->
+                        <p class="text-base-content/70 mb-4 line-clamp-3">{{ service.description|truncatewords:15 }}</p>
+                        
+                        <!-- Рейтинг и отзывы -->
+                        <div class="flex items-center mb-4">
+                            <div class="rating rating-sm">
+                                <input type="radio" class="mask mask-star-2 bg-orange-400" disabled checked>
+                                <input type="radio" class="mask mask-star-2 bg-orange-400" disabled checked>
+                                <input type="radio" class="mask mask-star-2 bg-orange-400" disabled checked>
+                                <input type="radio" class="mask mask-star-2 bg-orange-400" disabled checked>
+                                <input type="radio" class="mask mask-star-2 bg-orange-400" disabled>
+                            </div>
+                            <span class="text-sm text-base-content/60 ml-2">4.2 (127 отзывов)</span>
+                        </div>
+                        
+                        <!-- Статус подключения -->
+                        {% if service.id in connected_services %}
+                        <div class="alert alert-success mb-4">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span class="font-semibold">Услуга подключена</span>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Действия -->
+                        <div class="card-actions justify-between">
+                            <a href="{% url 'service_detail' service.id %}" class="btn btn-ghost btn-sm flex-1">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                Подробнее
+                            </a>
+                            {% if service.id in connected_services %}
+                            <button class="btn btn-error btn-sm flex-1" onclick="disconnectService({{ service.id }}, '{{ service.name }}')">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                                Отключить
+                            </button>
+                            {% else %}
+                            <button class="btn btn-primary btn-sm flex-1" onclick="connectService({{ service.id }}, '{{ service.name }}')">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                </svg>
+                                Подключить
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Если нет услуг -->
+        {% if not services_by_category %}
+        <div class="text-center py-12">
+            <div class="w-24 h-24 bg-base-300 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg class="w-12 h-12 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-base-content mb-2">Услуги временно недоступны</h3>
+            <p class="text-base-content/70">Пожалуйста, обратитесь в службу поддержки для получения информации о доступных услугах.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+
+<!-- Модальное окно для подачи заявки -->
+<div id="requestModal" class="modal">
+    <div class="modal-box max-w-lg">
+        <h3 class="font-bold text-xl mb-6">Подача заявки на услугу</h3>
+        <form id="serviceRequestForm">
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text font-semibold">Название услуги</span>
+                </label>
+                <input type="text" id="requestServiceName" class="input input-bordered" readonly>
+            </div>
+            
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text font-semibold">Описание потребности</span>
+                </label>
+                <textarea id="requestDescription" class="textarea textarea-bordered h-24" placeholder="Опишите ваши потребности и требования к услуге..."></textarea>
+            </div>
+            
+            <div class="form-control mb-6">
+                <label class="label">
+                    <span class="label-text font-semibold">Предлагаемая цена (₽)</span>
+                </label>
+                <input type="number" id="requestPrice" class="input input-bordered" placeholder="0" min="0" step="0.01">
+            </div>
+            
+            <div class="modal-action">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                    </svg>
+                    Отправить заявку
+                </button>
+                <button type="button" class="btn btn-ghost" onclick="closeRequestModal()">Отмена</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let currentServiceId = null;
+let allServices = [];
+
+// Инициализация
+document.addEventListener('DOMContentLoaded', function() {
+    // Собираем все услуги для фильтрации
+    document.querySelectorAll('.card').forEach(card => {
+        const serviceName = card.querySelector('.card-title').textContent;
+        const priceElement = card.querySelector('.badge');
+        const price = priceElement.textContent.includes('Бесплатно') ? 0 : parseFloat(priceElement.textContent.replace(/[^\d]/g, ''));
+        
+        allServices.push({
+            element: card,
+            name: serviceName,
+            price: price,
+            category: card.closest('.category-section').dataset.category
+        });
+    });
+});
+
+function showAllServices(buttonEl) {
+    document.querySelectorAll('.category-section').forEach(section => {
+        section.style.display = 'block';
+    });
+    
+    // Обновляем активную кнопку категории
+    document.querySelectorAll('#categoryButtons .btn').forEach(btn => {
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-ghost');
+    });
+    const activeBtn = buttonEl || document.querySelector('#categoryButtons .active-category');
+    if (activeBtn) {
+        activeBtn.classList.remove('btn-ghost');
+        activeBtn.classList.add('btn-primary');
+    }
+}
+
+function showCategory(categoryName, buttonEl) {
+    document.querySelectorAll('.category-section').forEach(section => {
+        if (section.dataset.category === categoryName) {
+            section.style.display = 'block';
+        } else {
+            section.style.display = 'none';
+        }
+    });
+    
+    // Обновляем активную кнопку категории
+    document.querySelectorAll('#categoryButtons .btn').forEach(btn => {
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-ghost');
+    });
+    if (buttonEl) {
+        buttonEl.classList.remove('btn-ghost');
+        buttonEl.classList.add('btn-primary');
+    }
+}
+
+function searchServices() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    
+    document.querySelectorAll('.card').forEach(card => {
+        const serviceName = card.querySelector('.card-title').textContent.toLowerCase();
+        const description = card.querySelector('p').textContent.toLowerCase();
+        
+        if (serviceName.includes(searchTerm) || description.includes(searchTerm)) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+function filterByPrice() {
+    const priceFilter = document.getElementById('priceFilter').value;
+    
+    document.querySelectorAll('.card').forEach(card => {
+        const priceElement = card.querySelector('.badge');
+        const price = priceElement.textContent.includes('Бесплатно') ? 0 : parseFloat(priceElement.textContent.replace(/[^\d]/g, ''));
+        
+        let show = true;
+        
+        switch(priceFilter) {
+            case 'free':
+                show = price === 0;
+                break;
+            case 'low':
+                show = price > 0 && price <= 1000;
+                break;
+            case 'medium':
+                show = price > 1000 && price <= 5000;
+                break;
+            case 'high':
+                show = price > 5000;
+                break;
+        }
+        
+        card.style.display = show ? 'block' : 'none';
+    });
+}
+
+function sortServices() {
+    const sortBy = document.getElementById('sortBy').value;
+    
+    document.querySelectorAll('.category-section').forEach(section => {
+        const cards = Array.from(section.querySelectorAll('.card'));
+        
+        cards.sort((a, b) => {
+            const nameA = a.querySelector('.card-title').textContent;
+            const nameB = b.querySelector('.card-title').textContent;
+            const priceA = a.querySelector('.badge').textContent.includes('Бесплатно') ? 0 : parseFloat(a.querySelector('.badge').textContent.replace(/[^\d]/g, ''));
+            const priceB = b.querySelector('.badge').textContent.includes('Бесплатно') ? 0 : parseFloat(b.querySelector('.badge').textContent.replace(/[^\d]/g, ''));
+            
+            switch(sortBy) {
+                case 'name':
+                    return nameA.localeCompare(nameB);
+                case 'price-low':
+                    return priceA - priceB;
+                case 'price-high':
+                    return priceB - priceA;
+                case 'popular':
+                    return Math.random() - 0.5; // Случайная сортировка для "популярности"
+                default:
+                    return 0;
+            }
+        });
+        
+        cards.forEach(card => card.remove());
+        cards.forEach(card => section.querySelector('.grid').appendChild(card));
+    });
+}
+
+// Удалено модальное окно деталей услуги; теперь используем отдельную страницу
+
+function requestService(serviceId) {
+    currentServiceId = serviceId;
+    const serviceCard = event.target.closest('.card');
+    const serviceName = serviceCard.querySelector('.card-title').textContent;
+    
+    document.getElementById('requestServiceName').value = serviceName;
+    document.getElementById('requestDescription').value = '';
+    document.getElementById('requestPrice').value = '';
+    
+    document.getElementById('requestModal').showModal();
+}
+
+function requestServiceFromModal() {
+    const serviceName = document.getElementById('modalServiceName').textContent;
+    document.getElementById('requestServiceName').value = serviceName;
+    document.getElementById('requestDescription').value = '';
+    document.getElementById('requestPrice').value = '';
+    
+    document.getElementById('serviceModal').close();
+    document.getElementById('requestModal').showModal();
+}
+
+function closeRequestModal() {
+    document.getElementById('requestModal').close();
+}
+
+// Функции для подключения и отключения услуг
+function connectService(serviceId, serviceName) {
+    confirmAction(
+        `Вы уверены, что хотите подключить услугу "${serviceName}"?`,
+        function() {
+            fetch(`/connect-service/${serviceId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('success', data.message);
+                    // Обновляем страницу для отображения изменений
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showToast('error', data.error || 'Ошибка при подключении услуги');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('error', 'Произошла ошибка при подключении услуги');
+            });
+        }
+    );
+}
+
+function disconnectService(serviceId, serviceName) {
+    confirmAction(
+        `Вы уверены, что хотите отключить услугу "${serviceName}"?`,
+        function() {
+            fetch(`/disconnect-service/${serviceId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('success', data.message);
+                    // Обновляем страницу для отображения изменений
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showToast('error', data.error || 'Ошибка при отключении услуги');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('error', 'Произошла ошибка при отключении услуги');
+            });
+        }
+    );
+}
+
+function showToast(type, message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-top toast-end';
+    
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-error';
+    const iconPath = type === 'success' 
+        ? 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
+        : 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z';
+    
+    toast.innerHTML = `
+        <div class="alert ${alertClass}">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}"></path>
+            </svg>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+// Обработка формы заявки
+document.getElementById('serviceRequestForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        service_id: currentServiceId,
+        service_name: document.getElementById('requestServiceName').value,
+        description: document.getElementById('requestDescription').value,
+        price: document.getElementById('requestPrice').value || 0
+    };
+    
+    fetch('/create_service_request/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Показываем уведомление об успехе
+            const toast = document.createElement('div');
+            toast.className = 'toast toast-top toast-end';
+            toast.innerHTML = `
+                <div class="alert alert-success">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>Заявка успешно отправлена!</span>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+            
+            closeRequestModal();
+        } else {
+            alert('Ошибка при отправке заявки: ' + (data.error || 'Неизвестная ошибка'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при отправке заявки');
+    });
+});
+
+// Поиск при вводе
+document.getElementById('searchInput').addEventListener('input', function() {
+    searchServices();
+});
+
+// Функции подключения и отключения услуг
+// Удалены функции модального просмотра деталей
+
+function connectService(serviceId) {
+    confirmAction(
+        'Подключить эту услугу?',
+        function() {
+            fetch(`/connect-service/${serviceId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('success', 'Услуга успешно подключена!');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showToast('error', 'Ошибка при подключении услуги: ' + (data.error || 'Неизвестная ошибка'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('error', 'Произошла ошибка при подключении услуги');
+            });
+        }
+    );
+}
+
+function disconnectService(serviceId) {
+    confirmAction(
+        'Отключить эту услугу?',
+        function() {
+            fetch(`/disconnect-service/${serviceId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('success', 'Услуга успешно отключена!');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showToast('error', 'Ошибка при отключении услуги: ' + (data.error || 'Неизвестная ошибка'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('error', 'Произошла ошибка при отключении услуги');
+            });
+        }
+    );
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-top toast-end';
+    toast.style.zIndex = '9999';
+    
+    const alertClass = type === 'success' ? 'alert-success' : type === 'error' ? 'alert-error' : 'alert-info';
+    const icon = type === 'success' ? 
+        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>' :
+        type === 'error' ?
+        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>' :
+        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+    
+    toast.innerHTML = `
+        <div class="alert ${alertClass}">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                ${icon}
+            </svg>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+</script>
+{% endblock %}

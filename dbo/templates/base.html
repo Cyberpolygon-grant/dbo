@@ -1,0 +1,591 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Система ДБО{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script>
+        tailwind.config = {
+            plugins: [daisyui],
+            daisyui: {
+                themes: ["dark"],
+                base: true,
+                styled: true,
+                utils: true,
+                prefix: "",
+                logs: false,
+                themeRoot: ":root",
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Кастомный фон для лучшего контраста */
+        body {
+            background: #111827 !important; /* dark:bg-gray-900 */
+        }
+        
+        .main-content {
+            background: hsl(var(--b2));
+            min-height: calc(100vh - 80px);
+        }
+        
+        /* Кастомные стили для daisyUI 5 */
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        [data-theme="dark"] .glass-effect {
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, hsl(var(--p)) 0%, hsl(var(--s)) 100%);
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        [data-theme="dark"] .card-hover:hover {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-modern {
+            background: linear-gradient(135deg, hsl(var(--p)) 0%, hsl(var(--s)) 100%);
+            border: none;
+            color: white;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px hsl(var(--p) / 0.4);
+        }
+        
+        /* Анимации */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        .animate-delay-1 {
+            animation-delay: 0.1s;
+        }
+        
+        .animate-delay-2 {
+            animation-delay: 0.2s;
+        }
+        
+        .animate-delay-3 {
+            animation-delay: 0.3s;
+        }
+        
+        /* Улучшенные стили для navbar */
+        .navbar {
+            backdrop-filter: blur(10px);
+            background: hsl(var(--b2) / 0.8);
+            border-bottom: 1px solid hsl(var(--b3));
+        }
+        
+        
+        /* Улучшенные стили для dropdown */
+        .dropdown .dropdown-content {
+            backdrop-filter: blur(10px);
+            background: #111827 !important; /* фон как у сайта */
+            border: 1px solid hsl(var(--b3));
+        }
+        
+        /* Стили для аватара */
+        .avatar {
+            transition: all 0.3s ease;
+        }
+        
+        .avatar:hover {
+            transform: scale(1.05);
+        }
+        
+        /* Анимация для кнопок */
+        .btn {
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+        
+        /* Стили для мобильного меню */
+        @media (max-width: 1024px) {
+            .navbar-center {
+                display: none;
+            }
+        }
+        
+        /* Улучшенные стили для меню */
+        .menu li > * {
+            transition: all 0.3s ease;
+        }
+        
+        .menu li > *:hover {
+            background: hsl(var(--b2)) !important; /* более плотный фон при наведении */
+            transform: translateX(2px);
+        }
+        
+        /* Стили для иконок */
+        svg {
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover svg {
+            transform: scale(1.1);
+        }
+        
+        /* Плавные переходы для всей страницы */
+        * {
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+        
+        /* Стили для активных состояний */
+        .menu li > *:active {
+            transform: scale(0.98);
+        }
+        
+        /* Улучшенные стили для футера */
+        footer {
+            backdrop-filter: blur(10px);
+            background: hsl(var(--b2) / 0.8);
+            border-top: 1px solid hsl(var(--b3));
+        }
+        
+        /* Анимация бегущей строки - убрано дублирование, используется из input.css */
+    </style>
+</head>
+<body class="text-base-content transition-colors duration-300 min-h-screen">
+    <!-- Улучшенный Header с большим контентом -->
+    <div class="navbar bg-base-200 shadow-lg sticky top-0 z-50">
+        <div class="navbar-start">
+            <!-- Мобильное меню -->
+            <div class="dropdown lg:hidden">
+                <div tabindex="0" role="button" class="btn btn-ghost btn-circle">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+                    </svg>
+                </div>
+                <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+                    <li><a href="{% url 'home' %}">🏠 Главная</a></li>
+                    <li><a href="{% url 'banking_services' %}">💼 Банковские услуги</a></li>
+                    {% if request.user.is_authenticated %}
+                    <li>
+                        <a href="{% if 'operator1' in user.username %}{% url 'operator1_dashboard' %}{% elif 'operator2' in user.username %}{% url 'operator2_dashboard' %}{% elif 'client' in user.username %}{% url 'client_dashboard' %}{% else %}/client/{% endif %}">👤 Личный кабинет</a>
+                    </li>
+                    <li><a href="{% url 'my_services' %}">📋 Мои услуги</a></li>
+                    {% if 'client' in user.username %}
+                    <li><a href="{% url 'create_service_request' %}">📝 Создать заявку на услугу</a></li>
+                    {% endif %}
+                    {% endif %}
+                    {% if request.user.is_authenticated and request.user.is_staff %}
+                    <li><a href="{% url 'admin_dashboard' %}">⚙️ Админ-панель</a></li>
+                    {% endif %}
+                    <li><a href="{% url 'deposits' %}">💰 Депозиты</a></li>
+                    <li><a href="{% url 'credits' %}">💳 Кредиты</a></li>
+                    <li><a href="{% url 'investments' %}">📈 Инвестиции</a></li>
+                    <li><a href="{% url 'cards' %}">💳 Карты</a></li>
+                    <li><a href="{% url 'services_management' %}">⚙️ Управление услугами</a></li>
+                    
+                </ul>
+            </div>
+            
+            <!-- Логотип и название -->
+            <div class="flex items-center space-x-3">
+                <div class="avatar">
+                    <div class="w-12 rounded-xl bg-gradient-to-r from-primary to-secondary shadow-lg">
+                        <div class="flex items-center justify-center h-full">
+                            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-base-content">Банк "ФинансПро"</h1>
+                    <p class="text-xs text-base-content/70">ДБО Система • Киберполигон</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Центральная навигация -->
+        <div class="navbar-center hidden lg:flex">
+            <ul class="menu menu-horizontal px-1">
+                <li><a href="{% url 'home' %}" class="btn btn-ghost">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                    Главная
+                </a></li>
+                <li><a href="{% url 'banking_services' %}" class="btn btn-ghost">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                    Банковские услуги
+                </a></li>
+                {% if request.user.is_authenticated %}
+                <li><a href="{% url 'my_services' %}" class="btn btn-ghost">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Мои услуги
+                </a></li>
+                {% endif %}
+            </ul>
+        </div>
+        
+        <!-- Правая часть header -->
+        <div class="navbar-end">
+            <div class="flex items-center space-x-4">
+                
+                <!-- Пользователь -->
+                {% if user.is_authenticated %}
+                    <div class="dropdown dropdown-end">
+                        <div tabindex="0" role="button" class="btn btn-ghost gap-2">
+                            <div class="avatar">
+                                <div class="w-10 rounded-full bg-gradient-to-r from-primary to-secondary">
+                                    <div class="flex items-center justify-center h-full">
+                                        <span class="text-white font-bold">{{ user_display_initial|default:user.username|first|upper }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="hidden md:inline">{{ user_display_name|default:user.username }}</span>
+                            <svg class="w-3 h-3 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </div>
+                        <ul tabindex="0" class="menu dropdown-content bg-base-100 rounded-2xl z-[1] mt-3 w-72 p-2 shadow-xl">
+                            <li class="menu-title"><span class="opacity-60">Профиль</span></li>
+                            <li>
+                                <a href="{% if 'operator1' in user.username %}{% url 'operator1_dashboard' %}{% elif 'operator2' in user.username %}{% url 'operator2_dashboard' %}{% elif 'client' in user.username %}{% url 'client_dashboard' %}{% else %}/client/{% endif %}">👤 Личный кабинет</a>
+                            </li>
+                            {% if 'client' in user.username %}
+                                <li><a href="{% url 'create_service_request' %}">📝 Создать заявку на услугу</a></li>
+                                <li><a href="{% url 'my_services' %}">📋 Мои услуги</a></li>
+                                <li><a href="{% url 'services_management' %}">⚙️ Управление услугами</a></li>
+                                <li class="menu-title"><span class="opacity-60">Банковские продукты</span></li>
+                                <li><a href="{% url 'deposits' %}">💰 Депозиты</a></li>
+                                <li><a href="{% url 'credits' %}">💳 Кредиты</a></li>
+                                <li><a href="{% url 'investments' %}">📈 Инвестиции</a></li>
+                                <li><a href="{% url 'cards' %}">💳 Карты</a></li>
+                            {% endif %}
+                            {% if request.user.is_staff %}
+                                <li class="menu-title"><span class="opacity-60">Администрирование</span></li>
+                                <li><a href="{% url 'admin_dashboard' %}">⚙️ Админ-панель</a></li>
+                            
+                            {% endif %}
+                            <li class="mt-2"><a href="/logout" class="text-error">Выйти</a></li>
+                        </ul>
+                    </div>
+                {% else %}
+                    <a href="/login" class="btn btn-primary">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                        </svg>
+                        Войти
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Основной контент -->
+    <main class="min-h-screen pb-16">
+        {% if messages %}
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                {% for message in messages %}
+                    (function(){
+                        var t = '{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}';
+                        var msg = "{{ message|escapejs }}";
+                        if (typeof showToast === 'function') {
+                            showToast(t, msg);
+                        }
+                    })();
+                {% endfor %}
+            });
+        </script>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Бегущая строка с новостями -->
+    {% if news_ticker %}
+    <div id="news-ticker" class="bg-primary text-primary-content py-2 overflow-hidden fixed bottom-0 left-0 right-0 z-50">
+        <div id="news-ticker-track" class="flex animate-marquee-slow">
+            {% for news in news_ticker %}
+            <div class="flex-shrink-0 mr-8 whitespace-nowrap">
+                <span class="font-semibold text-base">{{ news.title }}</span>
+                {% if news.category == 'rates' %}
+                    <span class="badge badge-sm badge-secondary ml-2">Курсы</span>
+                {% elif news.category == 'promotions' %}
+                    <span class="badge badge-sm badge-accent ml-2">Акция</span>
+                {% elif news.category == 'security' %}
+                    <span class="badge badge-sm badge-error ml-2">Безопасность</span>
+                {% elif news.category == 'services' %}
+                    <span class="badge badge-sm badge-info ml-2">Услуги</span>
+                {% elif news.category == 'general' %}
+                    <span class="badge badge-sm badge-neutral ml-2">Новости</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+
+    <!-- Футер -->
+    <footer class="bg-base-200 border-t border-base-300 mt-16">
+        <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-base-content">ДБО Система</h3>
+                    </div>
+                    <p class="text-sm text-base-content/70">
+                        Демонстрационная система дистанционного банковского обслуживания для изучения кибербезопасности.
+                    </p>
+                </div>
+                
+                <div>
+                    <h4 class="text-sm font-semibold text-base-content mb-4">Быстрые ссылки</h4>
+                    <ul class="space-y-2">
+                        <li><a href="/" class="text-sm text-base-content/70 hover:text-primary transition-colors">Главная</a></li>
+                        <li><a href="/login" class="text-sm text-base-content/70 hover:text-primary transition-colors">Вход в систему</a></li>
+                        
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="text-sm font-semibold text-base-content mb-4">Информация</h4>
+                    <p class="text-sm text-base-content/70">
+                        Система содержит уязвимости для образовательных целей. 
+                        Не используйте в продакшене!
+                    </p>
+                </div>
+            </div>
+            
+            <div class="border-t border-base-300 mt-8 pt-8 text-center">
+                <p class="text-sm text-base-content/50">
+                    © 2024 ДБО Система - Киберполигон. Все права защищены.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JS marquee with persistent offset across pages -->
+    <script>
+    (function () {
+        // Progressive image loader for service cards based on multiple sources
+        function loadServiceImages() {
+            const imgs = document.querySelectorAll('img.service-img[data-sources]');
+            imgs.forEach(img => {
+                try {
+                    const sources = JSON.parse(img.getAttribute('data-sources'));
+                    if (!Array.isArray(sources) || sources.length === 0) return;
+                    let idx = 0;
+                    const tryNext = () => {
+                        if (idx >= sources.length) return;
+                        const test = new Image();
+                        test.onload = () => { img.src = sources[idx]; };
+                        test.onerror = () => { idx += 1; tryNext(); };
+                        test.referrerPolicy = 'no-referrer';
+                        test.src = sources[idx];
+                    };
+                    tryNext();
+                } catch {}
+            });
+        }
+
+        const WRAP_ID = 'news-ticker';
+        const TRACK_ID = 'news-ticker-track';
+        const STORAGE_KEY = 'news_ticker_scroll';
+        const SPEED_PX_PER_SEC = 60; // tune speed
+
+        function initTicker() {
+            const wrap = document.getElementById(WRAP_ID);
+            const track = document.getElementById(TRACK_ID);
+            if (!wrap || !track) return;
+
+            // Disable CSS animation if present
+            track.style.animation = 'none';
+
+            // Duplicate content to ensure seamless loop
+            if (!track._duplicated) {
+                track.innerHTML = track.innerHTML + track.innerHTML;
+                track._duplicated = true;
+            }
+
+            let offset = 0;
+            let lastTs = performance.now();
+
+            try {
+                const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+                if (typeof saved.offset === 'number') offset = saved.offset;
+            } catch {}
+
+            function save(offsetVal) {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify({ offset: offsetVal }));
+                } catch {}
+            }
+
+            function contentWidth() {
+                // Half because we duplicated once (two copies)
+                return track.scrollWidth / 2;
+            }
+
+            function step(ts) {
+                const dt = (ts - lastTs) / 1000;
+                lastTs = ts;
+
+                const width = contentWidth();
+                if (width > 0) {
+                    offset = (offset + SPEED_PX_PER_SEC * dt) % width;
+                    track.style.transform = `translateX(${-offset}px)`;
+                }
+
+                requestAnimationFrame(step);
+            }
+
+            // Persist regularly and also on unload
+            setInterval(() => save(offset), 2000);
+            window.addEventListener('beforeunload', () => save(offset));
+
+            requestAnimationFrame((ts) => {
+                lastTs = ts;
+                requestAnimationFrame(step);
+            });
+        }
+
+        function initAll() { initTicker(); loadServiceImages(); }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initAll);
+        } else {
+            initAll();
+        }
+    })();
+    </script>
+
+    <!-- Универсальные функции для красивых уведомлений -->
+    <script>
+        // Красивые toast-уведомления
+        function showToast(type, message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast toast-top toast-end';
+            toast.style.zIndex = '9999';
+            
+            const alertClass = type === 'success' ? 'alert-success' : 
+                              type === 'error' ? 'alert-error' : 
+                              type === 'warning' ? 'alert-warning' : 'alert-info';
+            
+            const iconPath = type === 'success' 
+                ? 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
+                : type === 'error'
+                ? 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z'
+                : type === 'warning'
+                ? 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z'
+                : 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
+            
+            toast.innerHTML = `
+                <div class="alert ${alertClass} shadow-lg">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}"></path>
+                    </svg>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 4000);
+        }
+
+        // Красивое модальное окно подтверждения
+        function showConfirmModal(title, message, onConfirm, onCancel = null) {
+            // Создаем модальное окно
+            const modal = document.createElement('div');
+            modal.className = 'modal modal-open';
+            modal.style.zIndex = '10000';
+            
+            modal.innerHTML = `
+                <div class="modal-box">
+                    <h3 class="font-bold text-lg mb-4">${title}</h3>
+                    <p class="py-4">${message}</p>
+                    <div class="modal-action">
+                        <button class="btn btn-primary" id="confirm-btn">Подтвердить</button>
+                        <button class="btn btn-ghost" id="cancel-btn">Отмена</button>
+                    </div>
+                </div>
+                <div class="modal-backdrop" id="modal-backdrop"></div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Обработчики событий
+            document.getElementById('confirm-btn').onclick = function() {
+                modal.remove();
+                if (onConfirm) onConfirm();
+            };
+            
+            document.getElementById('cancel-btn').onclick = function() {
+                modal.remove();
+                if (onCancel) onCancel();
+            };
+            
+            document.getElementById('modal-backdrop').onclick = function() {
+                modal.remove();
+                if (onCancel) onCancel();
+            };
+        }
+
+        // Замена стандартного confirm на красивый модальный диалог
+        function confirmAction(message, onConfirm, onCancel = null) {
+            showConfirmModal('Подтверждение действия', message, onConfirm, onCancel);
+        }
+
+        // Замена стандартного alert на красивое уведомление
+        function showAlert(message, type = 'info') {
+            showToast(type, message);
+        }
+    </script>
+

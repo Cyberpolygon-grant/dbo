@@ -1,0 +1,399 @@
+{% extends "base.html" %}
+
+{% block title %}Банковские карты{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Заголовок страницы -->
+    <div class="hero bg-gradient-to-r from-secondary to-accent text-primary-content rounded-lg mb-8">
+        <div class="hero-content text-center">
+            <div class="max-w-md">
+                <h1 class="text-4xl font-bold mb-4">Банковские карты</h1>
+                <p class="text-lg opacity-90">Дебетовые и кредитные карты с кэшбэком и бонусными программами</p>
+                <div class="badge badge-lg badge-accent mt-4">До 5% кэшбэк</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Типы карт -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Дебетовая карта -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-primary">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                    </svg>
+                    Дебетовая карта
+                </h2>
+                <p class="text-base-content/70">Оплачивайте покупки собственными средствами</p>
+                <div class="stats stats-vertical shadow">
+                    <div class="stat">
+                        <div class="stat-title">Кэшбэк до</div>
+                        <div class="stat-value text-primary">5%</div>
+                        <div class="stat-desc">на все покупки</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-title">Обслуживание</div>
+                        <div class="stat-value text-secondary">0 ₽</div>
+                        <div class="stat-desc">в год</div>
+                    </div>
+                </div>
+                <div class="card-actions justify-end">
+                    <button class="btn btn-primary" onclick="openCardModal('debit')">Оформить карту</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Кредитная карта -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-secondary">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Кредитная карта
+                </h2>
+                <p class="text-base-content/70">Покупайте сейчас, платите потом</p>
+                <div class="stats stats-vertical shadow">
+                    <div class="stat">
+                        <div class="stat-title">Лимит до</div>
+                        <div class="stat-value text-primary">500 000 ₽</div>
+                        <div class="stat-desc">на карте</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-title">Льготный период</div>
+                        <div class="stat-value text-secondary">55</div>
+                        <div class="stat-desc">дней</div>
+                    </div>
+                </div>
+                <div class="card-actions justify-end">
+                    <button class="btn btn-secondary" onclick="openCardModal('credit')">Оформить карту</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Премиум карта -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-accent">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                    </svg>
+                    Премиум карта
+                </h2>
+                <p class="text-base-content/70">Эксклюзивные привилегии и сервисы</p>
+                <div class="stats stats-vertical shadow">
+                    <div class="stat">
+                        <div class="stat-title">Кэшбэк до</div>
+                        <div class="stat-value text-primary">7%</div>
+                        <div class="stat-desc">на все покупки</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-title">Привилегии</div>
+                        <div class="stat-value text-secondary">VIP</div>
+                        <div class="stat-desc">сервис</div>
+                    </div>
+                </div>
+                <div class="card-actions justify-end">
+                    <button class="btn btn-accent" onclick="openCardModal('premium')">Оформить карту</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Мои карты -->
+    <div class="card bg-base-100 shadow-xl mb-8">
+        <div class="card-body">
+            <h2 class="card-title text-2xl mb-4">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                </svg>
+                Мои карты
+            </h2>
+            
+            {% if cards %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for card in cards %}
+                <div class="card bg-gradient-to-br from-primary to-secondary text-primary-content shadow-xl">
+                    <div class="card-body">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="card-title text-lg">
+                                    {% if card.card_type == 'debit' %}Дебетовая карта
+                                    {% elif card.card_type == 'credit' %}Кредитная карта
+                                    {% endif %}
+                                </h3>
+                                <p class="text-sm opacity-90">{{ card.account.client.full_name }}</p>
+                            </div>
+                            <div class="badge badge-outline">{{ card.account.account_number|slice:"-4:" }}****</div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <p class="text-2xl font-mono tracking-wider">{{ card.card_number }}</p>
+                            <p class="text-sm opacity-90">Срок действия: {{ card.expiry_date|date:"m/Y" }}</p>
+                        </div>
+                        
+                        <div class="flex justify-between items-center">
+                            <div>
+                                {% if card.is_active %}
+                                    <span class="badge badge-success">Активна</span>
+                                {% else %}
+                                    <span class="badge badge-error">Заблокирована</span>
+                                {% endif %}
+                            </div>
+                            <div class="card-actions">
+                                <button class="btn btn-sm btn-primary" onclick="viewCardDetails({{ card.id }})">Управление</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <svg class="w-16 h-16 mx-auto text-base-content/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                </svg>
+                <h3 class="text-xl font-semibold mb-2">У вас пока нет карт</h3>
+                <p class="text-base-content/70 mb-4">Оформите банковскую карту для удобных платежей</p>
+                <button class="btn btn-primary" onclick="openCardModal('debit')">Оформить карту</button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Управление картами -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Блокировка/разблокировка -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-xl mb-4">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                    Блокировка карты
+                </h2>
+                <p class="text-base-content/70 mb-4">Заблокируйте карту при утере или краже</p>
+                <div class="card-actions">
+                    <button class="btn btn-error" onclick="blockCard()">Заблокировать карту</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Смена PIN -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-xl mb-4">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                    </svg>
+                    Смена PIN-кода
+                </h2>
+                <p class="text-base-content/70 mb-4">Измените PIN-код для безопасности</p>
+                <div class="card-actions">
+                    <button class="btn btn-warning" onclick="changePin()">Сменить PIN</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Бонусы и кэшбэк -->
+    <div class="card bg-base-100 shadow-xl mb-8">
+        <div class="card-body">
+            <h2 class="card-title text-2xl mb-4">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                </svg>
+                Бонусы и кэшбэк
+            </h2>
+            <div class="stats stats-vertical shadow">
+                <div class="stat">
+                    <div class="stat-title">Накоплено кэшбэка</div>
+                    <div class="stat-value text-primary">1 250 ₽</div>
+                    <div class="stat-desc">за текущий месяц</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-title">Бонусных баллов</div>
+                    <div class="stat-value text-secondary">15 600</div>
+                    <div class="stat-desc">доступно к списанию</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-title">Следующий кэшбэк</div>
+                    <div class="stat-value text-accent">5%</div>
+                    <div class="stat-desc">на покупки в супермаркетах</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Преимущества -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title text-2xl mb-6">Преимущества наших карт</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="text-center">
+                    <div class="text-3xl mb-2">💰</div>
+                    <h3 class="font-semibold mb-1">Кэшбэк</h3>
+                    <p class="text-sm text-base-content/70">До 5% на все покупки</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl mb-2">🔒</div>
+                    <h3 class="font-semibold mb-1">Безопасность</h3>
+                    <p class="text-sm text-base-content/70">3D Secure, SMS-уведомления</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl mb-2">📱</div>
+                    <h3 class="font-semibold mb-1">Мобильный банк</h3>
+                    <p class="text-sm text-base-content/70">Управление в приложении</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl mb-2">🌍</div>
+                    <h3 class="font-semibold mb-1">Принимается везде</h3>
+                    <p class="text-sm text-base-content/70">Visa, Mastercard</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для оформления карты -->
+<div id="cardModal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4" id="cardModalTitle">Оформление карты</h3>
+        <form id="cardForm">
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Тип карты</span>
+                </label>
+                <select class="select select-bordered" name="card_type" required>
+                    <option value="">Выберите тип карты</option>
+                    <option value="debit">Дебетовая карта</option>
+                    <option value="credit">Кредитная карта</option>
+                </select>
+            </div>
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Счет для привязки</span>
+                </label>
+                <select class="select select-bordered" name="account" required>
+                    <option value="">Выберите счет</option>
+                    {% for account in accounts %}
+                        <option value="{{ account.id }}">{{ account.account_number }} ({{ account.balance|floatformat:0 }} ₽)</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Доставка карты</span>
+                </label>
+                <select class="select select-bordered" name="delivery" required>
+                    <option value="">Выберите способ доставки</option>
+                    <option value="office">В офис банка</option>
+                    <option value="courier">Курьером</option>
+                    <option value="post">Почтой</option>
+                </select>
+            </div>
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Адрес доставки</span>
+                </label>
+                <textarea class="textarea textarea-bordered" name="address" placeholder="Укажите адрес доставки" required></textarea>
+            </div>
+            <div class="modal-action">
+                <button type="button" class="btn btn-ghost" onclick="closeCardModal()">Отмена</button>
+                <button type="submit" class="btn btn-primary">Оформить карту</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openCardModal(type) {
+    const modal = document.getElementById('cardModal');
+    const title = document.getElementById('cardModalTitle');
+    
+    switch(type) {
+        case 'debit':
+            title.textContent = 'Оформление дебетовой карты';
+            break;
+        case 'credit':
+            title.textContent = 'Оформление кредитной карты';
+            break;
+        case 'premium':
+            title.textContent = 'Оформление премиум карты';
+            break;
+    }
+    
+    modal.classList.add('modal-open');
+}
+
+function closeCardModal() {
+    document.getElementById('cardModal').classList.remove('modal-open');
+}
+
+function viewCardDetails(cardId) {
+    showAlert('Управление картой #' + cardId, 'info');
+}
+
+function blockCard() {
+    confirmAction(
+        'Вы уверены, что хотите заблокировать карту?',
+        function() {
+            showAlert('Карта заблокирована. Для разблокировки обратитесь в банк.', 'warning');
+        }
+    );
+}
+
+function changePin() {
+    // Создаем модальное окно для ввода PIN-кода
+    const modal = document.createElement('div');
+    modal.className = 'modal modal-open';
+    modal.style.zIndex = '10000';
+    
+    modal.innerHTML = `
+        <div class="modal-box">
+            <h3 class="font-bold text-lg mb-4">Изменение PIN-кода</h3>
+            <p class="py-4">Введите новый PIN-код (4 цифры):</p>
+            <input type="password" id="pin-input" class="input input-bordered w-full max-w-xs" maxlength="4" pattern="[0-9]{4}" placeholder="0000">
+            <div class="modal-action">
+                <button class="btn btn-primary" id="confirm-pin-btn">Подтвердить</button>
+                <button class="btn btn-ghost" id="cancel-pin-btn">Отмена</button>
+            </div>
+        </div>
+        <div class="modal-backdrop" id="pin-modal-backdrop"></div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Обработчики событий
+    document.getElementById('confirm-pin-btn').onclick = function() {
+        const newPin = document.getElementById('pin-input').value;
+        if (newPin && newPin.length === 4 && /^\d+$/.test(newPin)) {
+            showAlert('PIN-код успешно изменен!', 'success');
+            modal.remove();
+        } else {
+            showAlert('PIN-код должен содержать 4 цифры', 'warning');
+        }
+    };
+    
+    document.getElementById('cancel-pin-btn').onclick = function() {
+        modal.remove();
+    };
+    
+    document.getElementById('pin-modal-backdrop').onclick = function() {
+        modal.remove();
+    };
+}
+
+// Обработка формы оформления карты
+document.getElementById('cardForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    
+    showAlert('Заявка на оформление карты отправлена! Карта будет изготовлена в течение 5-7 рабочих дней.', 'success');
+    closeCardModal();
+    this.reset();
+});
+</script>
+{% endblock %}
