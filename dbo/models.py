@@ -22,9 +22,9 @@ class Client(models.Model):
     client_id = models.CharField(max_length=20, unique=True)
     full_name = models.CharField(max_length=200)
     email = models.EmailField()
-    phone = models.CharField(max_length=20)
+    phone = models.CharField(max_length=20, unique=True)
     is_active = models.BooleanField(default=True)
-    is_verified = models.BooleanField(default=False)
+    primary_card = models.ForeignKey('BankCard', on_delete=models.SET_NULL, null=True, blank=True, related_name='primary_for_client')
     created_by = models.ForeignKey(Operator, on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -135,45 +135,29 @@ class AttackLog(models.Model):
     def __str__(self):
         return f"{self.get_attack_type_display()} - {self.target_user} ({self.timestamp})"
 
-class BankAccount(models.Model):
-    """Банковский счет клиента"""
-    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='accounts')
-    account_number = models.CharField(max_length=20, unique=True)
-    account_type = models.CharField(max_length=20, choices=[
-        ('checking', 'Текущий'),
-        ('savings', 'Сберегательный'),
-        ('deposit', 'Депозитный'),
-        ('credit', 'Кредитный'),
-    ])
-    balance = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-    currency = models.CharField(max_length=3, default='RUB')
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    def __str__(self):
-        return f"{self.account_number} - {self.client.full_name}"
-
 class BankCard(models.Model):
     """Банковская карта"""
-    account = models.ForeignKey(BankAccount, on_delete=models.CASCADE, related_name='cards')
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='cards')
     card_number = models.CharField(max_length=19)  # Маскированный номер
     card_type = models.CharField(max_length=20, choices=[
         ('debit', 'Дебетовая'),
         ('credit', 'Кредитная'),
         ('prepaid', 'Предоплаченная'),
     ])
+    balance = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    currency = models.CharField(max_length=3, default='RUB')
     expiry_date = models.DateField()
     is_active = models.BooleanField(default=True)
     daily_limit = models.DecimalField(max_digits=10, decimal_places=2, default=100000)
     created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
-        return f"{self.card_number} - {self.account.client.full_name}"
+        return f"{self.card_number} - {self.client.full_name}"
 
 class Transaction(models.Model):
     """Банковская транзакция"""
-    from_account = models.ForeignKey(BankAccount, on_delete=models.CASCADE, related_name='outgoing_transactions', null=True, blank=True)
-    to_account = models.ForeignKey(BankAccount, on_delete=models.CASCADE, related_name='incoming_transactions', null=True, blank=True)
+    from_card = models.ForeignKey(BankCard, on_delete=models.CASCADE, related_name='outgoing_transactions', null=True, blank=True)
+    to_card = models.ForeignKey(BankCard, on_delete=models.CASCADE, related_name='incoming_transactions', null=True, blank=True)
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     currency = models.CharField(max_length=3, default='RUB')
     transaction_type = models.CharField(max_length=20, choices=[
@@ -202,7 +186,7 @@ class Transaction(models.Model):
 class Deposit(models.Model):
     """Депозит"""
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='deposits')
-    account = models.ForeignKey(BankAccount, on_delete=models.CASCADE, related_name='deposits')
+    card = models.ForeignKey(BankCard, on_delete=models.CASCADE, related_name='deposits')
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     interest_rate = models.DecimalField(max_digits=5, decimal_places=2)
     term_months = models.IntegerField()

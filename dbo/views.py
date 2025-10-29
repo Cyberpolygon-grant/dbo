@@ -13,7 +13,7 @@ from decimal import Decimal
 import json
 import logging
 
-from .models import Operator, Client, Service, ClientService, ServiceCategory, PhishingEmail, BankAccount, BankCard, Transaction, Deposit, Credit, InvestmentProduct, ClientInvestment, ServiceRequest, News
+from .models import Operator, Client, Service, ClientService, ServiceCategory, PhishingEmail, BankCard, Transaction, Deposit, Credit, InvestmentProduct, ClientInvestment, ServiceRequest, News, AttackLog
 from django.contrib.auth.models import User
 
 logger = logging.getLogger(__name__)
@@ -30,84 +30,222 @@ def attack_dashboard(request):
 def home(request):
     """Главная страница системы ДБО"""
     return render(request, 'index.html')
-
 def banking_services(request):
-    """Каталог банковских услуг"""
-    # Получаем все категории услуг
-    categories = ServiceCategory.objects.filter(is_public=True).prefetch_related('service_set')
+    """Каталог банковских услуг с уязвимостью SQL-инъекции"""
+    # Параметры фильтрации/сортировки (GET)
+    q = (request.GET.get('q') or '').strip()
+    price_filter = (request.GET.get('price') or 'all').strip()  # all|free|low|medium|high
+    sort_by = (request.GET.get('sort') or 'name').strip()       # name|price-low|price-high|popular
+    category_name = (request.GET.get('category') or '').strip()
+
+    # Дебаг в консоль
+    print(f"\n" + "="*80)
+    print("🔍 DEBUG: banking_services - начало")
+    print(f"📝 Параметры: q='{q}', price='{price_filter}', sort='{sort_by}', category='{category_name}'")
+    print("="*80)
+
+    # Категории для навигации и базовая видимость
+    if is_admin(request.user):
+        # Админам/персоналу показываем все категории и внутренние услуги
+        categories = ServiceCategory.objects.all().prefetch_related('service_set')
+        where_clauses = ["(s.is_active = 1)", "(s.is_public = 1 OR s.is_privileged = 1)"]
+    else:
+        categories = ServiceCategory.objects.filter(is_public=True).prefetch_related('service_set')
+        # Только публичные активные услуги для обычных пользователей
+        where_clauses = ["(s.is_active = 1)", "(s.is_public = 1)"]
     
-    # Получаем все публичные услуги
-    services = Service.objects.filter(is_public=True, is_active=True).select_related('category')
-    
+    # Уязвимое место: прямой конкатенация в LIKE
+    if q:
+        # ОПАСНО: Прямая подстановка без параметризации
+        where_clauses.append(f"(s.name LIKE '%{q}%' OR s.description LIKE '%{q}%')")
+        print(f"🚨 УЯЗВИМЫЙ SQL: Прямая конкатенация в LIKE с: '{q}'")
+
+    # Уязвимое место: прямой конкатенация в ORDER BY
+    # Исправление неоднозначности: всегда квалифицируем колонку name как s.name
+    order_by = "s.name"
+    if sort_by == 'name':
+        order_by = "s.name"
+    elif sort_by == 'price-low':
+        order_by = "s.price ASC, s.name ASC"
+    elif sort_by == 'price-high':
+        order_by = "s.price DESC, s.name ASC"
+    elif sort_by == 'popular':
+        order_by = "s.rating_count DESC, s.rating DESC, s.name ASC"
+    else:
+        # Фолбэк на безопасное поле при неизвестном значении
+        order_by = "s.name"
+
+    # Уязвимое место: прямой конкатенация в WHERE для категории
+    if category_name:
+        # ОПАСНО: Прямая подстановка без параметризации
+        where_clauses.append(f"c.name = '{category_name}'")
+       # print(f"🚨 УЯЗВИМЫЙ SQL: Прямая конкатенация категории с: '{category_name}'")
+
+    # Собираем финальный SQL с прямой конкатенацией
+    sql = f"""
+        SELECT s.id, s.name, s.description, s.price, s.is_public, s.is_active, s.is_privileged,
+               s.rating, s.rating_count, c.name as category_name
+        FROM dbo_service s
+        JOIN dbo_servicecategory c ON s.category_id = c.id
+        WHERE {' AND '.join(where_clauses)}
+        ORDER BY {order_by}
+    """
+
+    #print(f"🔍 Сгенерированный SQL:")
+    print(sql)
+    #print("🚨 ВНИМАНИЕ: Код уязвим к SQL-инъекциям!")
+
+    # Проверяем на SQL-инъекции
+    suspicious_keywords = ['UNION', 'SELECT', 'DROP', 'INSERT', 'UPDATE', 'DELETE', 'OR', 'AND', '--', ';', '/*', '*/', 'EXEC', 'XP_']
+    for param_name, param_value in [('q', q), ('sort', sort_by), ('category', category_name)]:
+        if param_value and any(kw in param_value.upper() for kw in suspicious_keywords):
+            found_keywords = [kw for kw in suspicious_keywords if kw in param_value.upper()]
+          #  print(f"🚨 ОБНАРУЖЕНЫ SQL-ключевые слова в {param_name}: {', '.join(found_keywords)}")
+
+    services_rows = []
+    try:
+        with connection.cursor() as cursor:
+            # ОПАСНО: Выполняем SQL без параметров
+            cursor.execute(sql)
+            columns = [col[0] for col in cursor.description]
+            services_rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+         #   print(f"✅ Запрос выполнен успешно! Найдено услуг: {len(services_rows)}")
+    except Exception as e:
+       # print(f"💥 Ошибка выполнения SQL: {str(e)}")
+        # В случае ошибки используем безопасный запрос как fallback
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT s.id, s.name, s.description, s.price, s.is_public, s.is_active, s.is_privileged,
+                       s.rating, s.rating_count, c.name as category_name
+                FROM dbo_service s
+                JOIN dbo_servicecategory c ON s.category_id = c.id
+                WHERE s.is_public = 1 AND s.is_active = 1
+                ORDER BY s.name
+            """)
+            columns = [col[0] for col in cursor.description]
+            services_rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+   # print(f"🎯 Итог: возвращено {len(services_rows)} услуг")
+   # print("="*80)
+
     # Получаем подключенные услуги клиента (если он авторизован)
     connected_services = set()
     if request.user.is_authenticated:
         try:
             client = Client.objects.get(user=request.user)
             connected_services = set(ClientService.objects.filter(
-                client=client, 
+                client=client,
                 status='active'
             ).values_list('service_id', flat=True))
         except Client.DoesNotExist:
             pass
-    
+
     # Группируем услуги по категориям
     services_by_category = {}
-    for service in services:
-        category_name = service.category.name
-        if category_name not in services_by_category:
-            services_by_category[category_name] = []
-        services_by_category[category_name].append(service)
-    
-    # Статистика
-    total_services = services.count()
-    free_services = services.filter(price=0).count()
-    
+    for service in services_rows:
+        cat = service.get('category_name') or 'Без категории'
+        services_by_category.setdefault(cat, []).append(service)
+
+    # Статистика по текущей выборке
+    total_services = len(services_rows)
+    free_services = sum(1 for s in services_rows if (s.get('price') == 0 or float(s.get('price', 0)) == 0.0))
+
     context = {
         'categories': categories,
         'services_by_category': services_by_category,
         'connected_services': connected_services,
         'total_services': total_services,
         'free_services': free_services,
+        # Текущие параметры фильтрации/сортировки для UI
+        'q': q,
+        'price': price_filter,
+        'sort': sort_by,
+        'category_active': category_name,
     }
-    
+
     return render(request, 'banking_services.html', context)
 
+
+
+# Временно замените функцию на это:
 @login_required
 def search_services(request):
-    """Поиск услуг с SQL-инъекцией уязвимостью"""
+    """Поиск услуг с SQL-инъекцией уязвимостью и дебагом в консоль"""
     query = request.GET.get('query', '')
     services = []
     
-    if query:
-        # УЯЗВИМОСТЬ: SQL-инъекция - прямое использование пользовательского ввода
-        with connection.cursor() as cursor:
-            cursor.execute(f"""
-                SELECT s.id, s.name, s.description, s.price, c.name as category_name, s.is_public, s.is_privileged
-                FROM dbo_service s
-                JOIN dbo_servicecategory c ON s.category_id = c.id
-                WHERE s.name LIKE '%{query}%' OR s.description LIKE '%{query}%'
-                ORDER BY s.name
-            """)
-            columns = [col[0] for col in cursor.description]
-            services = [dict(zip(columns, row)) for row in cursor.fetchall()]
+    print(f"\n" + "="*80)
+    print("🔍 DEBUG: Начало поиска услуг")
+    print("="*80)
     
-    # Логируем атаку
-    if query and any(keyword in query.lower() for keyword in ['union', 'select', 'drop', 'insert', 'update', 'delete', 'or', 'and']):
-        AttackLog.objects.create(
-            attack_type='sqli',
-            target_user=request.user.username,
-            details=f"SQL injection attempt in search_services: {query}",
-            ip_address=request.META.get('REMOTE_ADDR', ''),
-            user_agent=request.META.get('HTTP_USER_AGENT', '')
-        )
+    if query:
+        # ОПАСНО: Прямая конкатенация строк - уязвимость SQL-инъекции
+        with connection.cursor() as cursor:
+            # Создаем SQL запрос прямой конкатенацией
+            sql = "SELECT s.id, s.name, s.description, s.price, c.name as category_name, s.is_public, s.is_privileged " + \
+                  "FROM dbo_service s " + \
+                  "JOIN dbo_servicecategory c ON s.category_id = c.id " + \
+                  "WHERE s.name LIKE '%" + query + "%' OR s.description LIKE '%" + query + "%' " + \
+                  "ORDER BY s.name"
+            
+            # Вывод дебага в консоль
+            print(f"📝 Исходный query параметр: '{query}'")
+            print(f"🔍 Сгенерированный SQL запрос:")
+            print(f"   {sql}")
+            print("🚨 ВНИМАНИЕ: Код уязвим к SQL-инъекциям!")
+            
+            # Анализ на SQL-инъекции
+            suspicious_keywords = ['UNION', 'SELECT', 'DROP', 'INSERT', 'UPDATE', 'DELETE', 'OR', 'AND', '--', ';', '/*', '*/', 'EXEC', 'XP_']
+            found_keywords = [kw for kw in suspicious_keywords if kw in query.upper()]
+            
+            if found_keywords:
+                print(f"🚨 ОБНАРУЖЕНЫ SQL-ключевые слова: {', '.join(found_keywords)}")
+                
+                # Логируем атаку
+                AttackLog.objects.create(
+                    attack_type='sqli',
+                    target_user=request.user.username,
+                    details=f"SQL injection attempt: {query}",
+                    ip_address=request.META.get('REMOTE_ADDR', ''),
+                    user_agent=request.META.get('HTTP_USER_AGENT', '')
+                )
+            
+            try:
+                print("⏳ Выполнение SQL запроса...")
+                cursor.execute(sql)
+                columns = [col[0] for col in cursor.description]
+                services = [dict(zip(columns, row)) for row in cursor.fetchall()]
+                
+                print(f"✅ Запрос выполнен успешно!")
+                print(f"📊 Найдено услуг: {len(services)}")
+                
+                # Показываем структуру результатов
+                if services:
+                    print(f"📋 Структура результатов: {list(services[0].keys())}")
+                    print("🔎 Первые 3 результата:")
+                    for i, service in enumerate(services[:3]):
+                        print(f"   {i+1}. ID: {service.get('id')}, Name: '{service.get('name')}', Price: ${service.get('price')}")
+                else:
+                    print("❌ Результаты не найдены")
+                    
+            except Exception as e:
+                print(f"💥 Ошибка выполнения SQL: {str(e)}")
+                print(f"📌 Тип ошибки: {type(e).__name__}")
+    
+    else:
+        print("ℹ️  Query параметр пустой, поиск не выполняется")
+    
+    print(f"🎯 Итог: возвращено {len(services)} услуг")
+    print("="*80)
     
     context = {
         'query': query,
         'services': services,
+        'total_services': len(services),
     }
     
     return render(request, 'search_services.html', context)
+
 
 @login_required
 def service_detail(request, service_id):
@@ -378,6 +516,52 @@ def connect_service(request, service_id):
             )
             message = f'Услуга "{service.name}" успешно подключена'
         
+        # Сразу списываем стоимость услуги (первый платеж), если услуга платная
+        if service.price and service.price > 0:
+            # Ищем карту списания: основная или первая активная
+            from_card = None
+            if hasattr(client, 'primary_card') and client.primary_card and client.primary_card.is_active:
+                from_card = client.primary_card
+            if not from_card:
+                from_card = BankCard.objects.filter(client=client, is_active=True).first()
+
+            if not from_card:
+                # Нет активных карт — откатывать не будем, просто уведомим пользователя
+                warn_msg = 'У клиента нет активных карт для списания оплаты услуги'
+                logger.warning(warn_msg)
+                messages.warning(request, warn_msg)
+            else:
+                # Проверяем баланс
+                price_amount = Decimal(service.price)
+                if from_card.balance < price_amount:
+                    # Недостаточно средств — отключаем обратно и сообщаем
+                    client_service.status = 'cancelled'
+                    client_service.is_active = False
+                    client_service.cancelled_at = timezone.now()
+                    client_service.save(update_fields=['status','is_active','cancelled_at'])
+                    err_msg = f'Недостаточно средств для оплаты услуги "{service.name}"'
+                    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
+                        return JsonResponse({'success': False, 'error': err_msg}, status=400)
+                    messages.error(request, err_msg)
+                    next_url = request.POST.get('next') or request.META.get('HTTP_REFERER')
+                    if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+                        return redirect(next_url)
+                    return redirect('banking_services')
+
+                # Списываем и создаем транзакцию
+                from_card.balance -= price_amount
+                from_card.save(update_fields=['balance'])
+
+                Transaction.objects.create(
+                    from_card=from_card,
+                    to_card=None,
+                    amount=price_amount,
+                    currency='RUB',
+                    transaction_type='payment',
+                    description=f'Оплата подключения услуги "{service.name}"',
+                    status='completed',
+                )
+
         # Ответ в зависимости от типа запроса
         if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
             return JsonResponse({'success': True, 'message': message, 'service_id': service_id})
@@ -462,6 +646,25 @@ def my_services(request):
     return render(request, 'my_services.html', context)
 
 @login_required
+def my_requests(request):
+    """Список заявок клиента на создание услуг с их статусами"""
+    try:
+        client = Client.objects.get(user=request.user)
+    except Client.DoesNotExist:
+        messages.error(request, 'Клиент не найден')
+        return redirect('login')
+
+    requests_qs = ServiceRequest.objects.filter(client=client).order_by('-created_at')
+
+    context = {
+        'client': client,
+        'service_requests': requests_qs,
+        'total_requests': requests_qs.count(),
+        'pending_requests': requests_qs.filter(status='pending').count() if hasattr(ServiceRequest, 'status') else 0,
+    }
+    return render(request, 'my_requests.html', context)
+
+@login_required
 def deposits_view(request):
     """Страница депозитных программ"""
     try:
@@ -499,11 +702,11 @@ def create_deposit(request):
             return JsonResponse({'success': False, 'error': 'Клиент не найден'})
         
         # Получаем или создаем депозитный счет
-        deposit_account, created = BankAccount.objects.get_or_create(
+        deposit_card, created = BankCard.objects.get_or_create(
             client=client,
-            account_type='deposit',
+            card_type='debit',
             defaults={
-                'account_number': f'DEP{client.client_id}{timezone.now().strftime("%Y%m%d%H%M%S")}',
+                'card_number': f'DEP{client.client_id}{timezone.now().strftime("%Y%m%d%H%M%S")}',
                 'balance': 0,
                 'currency': 'RUB'
             }
@@ -520,7 +723,7 @@ def create_deposit(request):
         
         deposit = Deposit.objects.create(
             client=client,
-            account=deposit_account,
+            card=deposit_card,
             amount=amount,
             interest_rate=interest_rate,
             term_months=term_months,
@@ -529,12 +732,12 @@ def create_deposit(request):
         )
         
         # Пополняем счет
-        deposit_account.balance += amount
-        deposit_account.save()
+        deposit_card.balance += amount
+        deposit_card.save()
         
         # Создаем транзакцию
         Transaction.objects.create(
-            to_account=deposit_account,
+            to_card=deposit_card,
             amount=amount,
             transaction_type='deposit',
             description=f'Открытие депозита "{data.get("program_name", "")}"',
@@ -674,7 +877,9 @@ def cards_view(request):
         return redirect('home')
     
     # Получаем карты клиента
-    cards = BankCard.objects.filter(account__client=client).select_related('account').order_by('-created_at')
+    cards = BankCard.objects.filter(client=client).order_by('-created_at')
+    # Счета для модалки оформления карты
+    cards = BankCard.objects.filter(client=client, is_active=True)
     
     # Получаем доступные типы карт из базы данных
     # Эти данные создаются при первом запуске через init_data.py
@@ -683,7 +888,8 @@ def cards_view(request):
     context = {
         'cards': cards,
         'card_programs': card_programs,
-        'client': client
+        'client': client,
+        'cards': cards,
     }
     
     return render(request, 'cards.html', context)
@@ -720,6 +926,245 @@ def create_card_request(request):
     except Exception as e:
         logger.error(f"Error creating card request: {e}")
         return JsonResponse({'success': False, 'error': str(e)})
+
+@login_required
+@require_http_methods(["POST"])
+def create_card(request):
+    """Создание реальной банковской карты, привязанной к счету клиента."""
+    try:
+        # Поддержка form-urlencoded и JSON
+        if request.content_type == 'application/json':
+            data = json.loads(request.body or '{}')
+            card_type = (data.get('card_type') or '').strip()
+            initial_amount_raw = data.get('initial_amount')
+            credit_initial_raw = data.get('credit_initial')
+        else:
+            card_type = (request.POST.get('card_type') or '').strip()
+            initial_amount_raw = request.POST.get('initial_amount')
+            credit_initial_raw = request.POST.get('credit_initial')
+
+        # Валидация клиента
+        try:
+            client = Client.objects.get(user=request.user)
+        except Client.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Клиент не найден'}, status=400)
+
+        # Валидация типа карты
+        if card_type not in {'debit', 'credit'}:
+            return JsonResponse({'success': False, 'error': 'Неверный тип карты'}, status=400)
+
+        # Определяем счет для карты
+        if card_type == 'credit':
+            # Начальный баланс кредитного счета (неотрицательный)
+            try:
+                initial_balance = Decimal(str(credit_initial_raw or '0'))
+                if initial_balance < 0:
+                    raise ValueError
+            except Exception:
+                return JsonResponse({'success': False, 'error': 'Неверная начальная сумма для кредитного счета'}, status=400)
+
+            # Для кредитной карты открываем отдельный кредитный счет с "нормальным" (цифровым) номером
+            # Формируем 20-значный номер: префикс + MMddHHmmss + client_id (2 знака) + добивка нулями
+            base = f"42307{timezone.now().strftime('%m%d%H%M%S')}{client.id:02d}"
+            card_number = base[:20] if len(base) > 20 else base.ljust(20, '0')
+            suffix = 0
+            while BankCard.objects.filter(card_number=card_number).exists():
+                suffix += 1
+                tail = f"{suffix:02d}"
+                card_number = (base + tail)[:20]
+
+            from datetime import date, timedelta
+            expiry_date = date.today() + timedelta(days=365*5)  # Карта действует 5 лет
+
+            card = BankCard.objects.create(
+                client=client,
+                card_number=card_number,
+                card_type='credit',
+                balance=initial_balance,
+                currency='RUB',
+                expiry_date=expiry_date,
+                is_active=True,
+            )
+        else:
+            # Для дебетовой карты: создаем новую карту с начальной суммой
+            try:
+                initial_balance = Decimal(str(initial_amount_raw or '0'))
+                if initial_balance < 0:
+                    raise ValueError
+            except Exception:
+                return JsonResponse({'success': False, 'error': 'Неверная начальная сумма для дебетовой карты'}, status=400)
+
+            base = f"40817{timezone.now().strftime('%m%d%H%M%S')}{client.id:02d}"
+            card_number = base[:20] if len(base) > 20 else base.ljust(20, '0')
+            suffix = 0
+            while BankCard.objects.filter(card_number=card_number).exists():
+                suffix += 1
+                tail = f"{suffix:02d}"
+                card_number = (base + tail)[:20]
+
+            from datetime import date, timedelta
+            expiry_date = date.today() + timedelta(days=365*5)  # Карта действует 5 лет
+
+            card = BankCard.objects.create(
+                client=client,
+                card_number=card_number,
+                card_type='debit',
+                balance=initial_balance,
+                currency='RUB',
+                expiry_date=expiry_date,
+                is_active=True,
+            )
+
+        # Генерация номера карты (маскированного вида #### #### #### ####)
+        # Используем псевдогенерацию: BIN по типу + timestamp + client id; храним как маску
+        ts = timezone.now().strftime('%m%d%H%M%S')
+        bin_prefix = '5100' if card_type == 'debit' else '5300'
+        raw = f"{bin_prefix}{client.id:02d}{ts}"
+        # Берем последние 16 символов и форматируем 4-4-4-4
+        digits = (raw[-16:]).ljust(16, '0')
+        masked_number = f"{digits[0:4]} {digits[4:8]} {digits[8:12]} {digits[12:16]}"
+
+        # Срок действия: 3 года от текущей даты, день = 1 для упрощения
+        from datetime import date
+        expiry_year = date.today().year + 3
+        expiry_month = date.today().month
+        expiry_date = date(expiry_year, expiry_month, 1)
+
+        # Дневной лимит по умолчанию (можно кастомизировать в будущем)
+        daily_limit = Decimal('100000.00')
+
+        # Обновляем созданную карту с маскированным номером
+        card.card_number = masked_number
+        card.expiry_date = expiry_date
+        card.daily_limit = daily_limit
+        card.save()
+
+        # Если это первая карта клиента, автоматически делаем её основной
+        if not client.primary_card:
+            client.primary_card = card
+            client.save(update_fields=['primary_card'])
+
+        return JsonResponse({
+            'success': True,
+            'card_id': card.id,
+            'card_number': card.card_number,
+            'expiry': f"{expiry_month:02d}/{expiry_year}",
+        })
+
+    except Exception as e:
+        logger.error(f"Error creating card: {e}")
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@login_required
+@require_http_methods(["POST"])
+def block_card(request, card_id):
+    """Блокирует карту клиента (is_active=False)."""
+    try:
+        client = Client.objects.get(user=request.user)
+    except Client.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Клиент не найден'}, status=400)
+
+    try:
+        card = BankCard.objects.get(id=card_id, client=client)
+    except BankCard.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Карта не найдена'}, status=404)
+
+    if not card.is_active:
+        return JsonResponse({'success': True, 'message': 'Карта уже заблокирована'})
+
+    card.is_active = False
+    card.save(update_fields=['is_active'])
+    return JsonResponse({'success': True})
+
+@login_required
+@require_http_methods(["POST"])
+def unblock_card(request, card_id):
+    """Разблокирует карту клиента (is_active=True)."""
+    try:
+        client = Client.objects.get(user=request.user)
+    except Client.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Клиент не найден'}, status=400)
+
+    try:
+        card = BankCard.objects.get(id=card_id, client=client)
+    except BankCard.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Карта не найдена'}, status=404)
+
+    if card.is_active:
+        return JsonResponse({'success': True, 'message': 'Карта уже активна'})
+
+    card.is_active = True
+    card.save(update_fields=['is_active'])
+    return JsonResponse({'success': True})
+
+@login_required
+@require_http_methods(["POST"])
+def change_card_pin(request, card_id):
+    """Смена PIN-кода (в учебных целях — без хранения)."""
+    try:
+        client = Client.objects.get(user=request.user)
+    except Client.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Клиент не найден'}, status=400)
+
+    try:
+        card = BankCard.objects.get(id=card_id, client=client)
+    except BankCard.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Карта не найдена'}, status=404)
+
+    try:
+        data = json.loads(request.body or '{}')
+    except Exception:
+        data = {}
+
+    new_pin = (data.get('new_pin') or '').strip()
+    if not (len(new_pin) == 4 and new_pin.isdigit()):
+        return JsonResponse({'success': False, 'error': 'PIN должен состоять из 4 цифр'}, status=400)
+
+    # В учебных целях не сохраняем PIN, просто подтверждаем операцию
+    return JsonResponse({'success': True})
+
+@login_required
+@require_http_methods(["POST"])
+def block_card(request, card_id):
+    """Блокирует банковский счет клиента (is_active=False)."""
+    try:
+        client = Client.objects.get(user=request.user)
+    except Client.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Клиент не найден'}, status=400)
+
+    try:
+        card = BankCard.objects.get(id=card_id, client=client)
+    except BankCard.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Счет не найден'}, status=404)
+
+    if not card.is_active:
+        return JsonResponse({'success': True, 'message': 'Счет уже заблокирован'})
+
+    card.is_active = False
+    card.save(update_fields=['is_active'])
+    return JsonResponse({'success': True, 'message': 'Карта заблокирована'})
+
+@login_required
+@require_http_methods(["POST"])
+def unblock_card(request, card_id):
+    """Разблокирует банковский счет клиента (is_active=True)."""
+    try:
+        client = Client.objects.get(user=request.user)
+    except Client.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Клиент не найден'}, status=400)
+
+    try:
+        card = BankCard.objects.get(id=card_id, client=client)
+    except BankCard.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Счет не найден'}, status=404)
+
+    if card.is_active:
+        return JsonResponse({'success': True, 'message': 'Счет уже активен'})
+
+    card.is_active = True
+    card.save(update_fields=['is_active'])
+    # Разблокировка карт автоматически НЕ производится (требует явного управления картой)
+    return JsonResponse({'success': True})
 
 @login_required
 def services_management(request):
@@ -829,10 +1274,10 @@ def client_dashboard(request):
         return redirect('home')
     
     # Получаем счета клиента
-    accounts = BankAccount.objects.filter(client=client)
+    cards = BankCard.objects.filter(client=client)
     
     # Получаем карты клиента
-    cards = BankCard.objects.filter(account__client=client).select_related('account')
+    cards = BankCard.objects.filter(client=client)
     
     # Получаем подключенные услуги
     connected_services = ClientService.objects.filter(client=client, status='active', is_active=True).select_related('service', 'service__category')
@@ -842,7 +1287,7 @@ def client_dashboard(request):
     
     # Получаем последние транзакции
     transactions = Transaction.objects.filter(
-        models.Q(from_account__client=client) | models.Q(to_account__client=client)
+        models.Q(from_card__client=client) | models.Q(to_card__client=client)
     ).order_by('-created_at')[:10]
     
     # Получаем депозиты клиента
@@ -852,11 +1297,10 @@ def client_dashboard(request):
     credits = Credit.objects.filter(client=client, status='active')
     
     # Общий баланс
-    total_balance = accounts.aggregate(total=models.Sum('balance'))['total'] or 0
+    total_balance = cards.aggregate(total=models.Sum('balance'))['total'] or 0
     
     context = {
         'client': client,
-        'accounts': accounts,
         'cards': cards,
         'connected_services': connected_services,
         'service_requests': service_requests,
@@ -919,10 +1363,10 @@ def client_dashboard(request):
         return redirect('home')
     
     # Получаем счета клиента
-    accounts = BankAccount.objects.filter(client=client)
+    cards = BankCard.objects.filter(client=client)
     
     # Получаем карты клиента
-    cards = BankCard.objects.filter(account__client=client).select_related('account')
+    cards = BankCard.objects.filter(client=client)
     
     # Получаем подключенные услуги
     connected_services = ClientService.objects.filter(client=client, status='active', is_active=True).select_related('service', 'service__category')
@@ -932,7 +1376,7 @@ def client_dashboard(request):
     
     # Получаем последние транзакции
     transactions = Transaction.objects.filter(
-        models.Q(from_account__client=client) | models.Q(to_account__client=client)
+        models.Q(from_card__client=client) | models.Q(to_card__client=client)
     ).order_by('-created_at')[:10]
     
     # Получаем депозиты клиента
@@ -942,11 +1386,10 @@ def client_dashboard(request):
     credits = Credit.objects.filter(client=client, status='active')
     
     # Общий баланс
-    total_balance = accounts.aggregate(total=models.Sum('balance'))['total'] or 0
+    total_balance = cards.aggregate(total=models.Sum('balance'))['total'] or 0
     
     context = {
         'client': client,
-        'accounts': accounts,
         'cards': cards,
         'connected_services': connected_services,
         'service_requests': service_requests,
@@ -1075,18 +1518,25 @@ def create_client(request):
                 email=email,
                 phone=phone,
                 is_active=True,
-                is_verified=False,
                 created_by=operator
             )
 
-            # Создаем основной банковский счет
-            BankAccount.objects.create(
+            # Создаем основную банковскую карту
+            from datetime import date, timedelta
+            expiry_date = date.today() + timedelta(days=365*5)  # Карта действует 5 лет
+            
+            card = BankCard.objects.create(
                 client=client,
-                account_number=f"ACC{client.client_id}{timezone.now().strftime('%Y%m%d%H%M%S')}",
-                account_type='current',
+                card_number=f"ACC{client.client_id}{timezone.now().strftime('%Y%m%d%H%M%S')}",
+                card_type='debit',
                 balance=0,
-                currency='RUB'
+                currency='RUB',
+                expiry_date=expiry_date
             )
+            
+            # Автоматически делаем первую карту основной
+            client.primary_card = card
+            client.save(update_fields=['primary_card'])
 
             messages.success(request, f"Клиент {full_name} создан. Логин для входа: {email}. Пароль будет установлен при первом входе.")
             
@@ -1195,7 +1645,31 @@ def approve_service_request(request, request_id):
     return redirect('operator2_dashboard')
 
 @login_required
-def accounts_view(request):
+@require_http_methods(["POST"])
+def reject_service_request(request, request_id):
+    """Отклонение заявки на услугу (функционал оператора ДБО #2)"""
+    try:
+        operator = Operator.objects.get(user=request.user, operator_type='security')
+    except Operator.DoesNotExist:
+        messages.error(request, 'Доступ запрещен')
+        return redirect('operator2_dashboard')
+
+    try:
+        service_request = ServiceRequest.objects.get(id=request_id)
+    except ServiceRequest.DoesNotExist:
+        messages.error(request, 'Заявка не найдена')
+        return redirect('operator2_dashboard')
+
+    service_request.status = 'rejected'
+    service_request.reviewed_by = operator
+    service_request.reviewed_at = timezone.now()
+    service_request.save()
+
+    messages.success(request, 'Заявка отклонена')
+    return redirect('operator2_dashboard')
+
+@login_required
+def cards_view(request):
     """Страница счетов клиента"""
     try:
         client = Client.objects.get(user=request.user)
@@ -1204,43 +1678,40 @@ def accounts_view(request):
         return redirect('home')
     
     # Получаем счета клиента
-    accounts = BankAccount.objects.filter(client=client).order_by('-created_at')
+    cards = BankCard.objects.filter(client=client).order_by('-created_at')
     
     # Статистика
-    total_balance = accounts.aggregate(total=models.Sum('balance'))['total'] or 0
-    active_accounts = accounts.filter(is_active=True).count()
+    total_balance = cards.aggregate(total=models.Sum('balance'))['total'] or 0
+    active_cards = cards.filter(is_active=True).count()
     
     context = {
         'client': client,
-        'accounts': accounts,
+        'cards': cards,
         'total_balance': total_balance,
-        'active_accounts': active_accounts,
+        'active_cards': active_cards,
     }
     
-    return render(request, 'accounts.html', context)
+    return render(request, 'cards.html', context)
 
 @login_required
 @require_http_methods(["POST"]) 
-def create_bank_account(request):
+def create_bank_card(request):
     """Создает банковский счет для текущего клиента и возвращает назад с уведомлением."""
     # Получаем клиента
     try:
         client = Client.objects.get(user=request.user)
     except Client.DoesNotExist:
         messages.error(request, 'Клиент не найден')
-        return redirect('accounts')
+        return redirect('cards')
 
-    account_type = (request.POST.get('account_type') or '').strip()
+    card_type = (request.POST.get('card_type') or '').strip()
     initial_deposit_raw = request.POST.get('initial_deposit') or '0'
     next_url = request.POST.get('next') or request.META.get('HTTP_REFERER')
 
-    # Валидируем тип счета (разрешаем только безопасные значения)
-    allowed_types = {'checking', 'savings'}
-    if account_type not in allowed_types:
-        messages.error(request, 'Неверный тип счета')
-        if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
-            return redirect(next_url)
-        return redirect('accounts')
+    # Валидируем тип счета: теперь разрешен только один тип (текущий)
+    allowed_types = {'checking'}
+    if card_type not in allowed_types:
+        card_type = 'checking'
 
     # Парсим сумму
     try:
@@ -1251,32 +1722,32 @@ def create_bank_account(request):
         messages.error(request, 'Неверная сумма начального взноса')
         if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
             return redirect(next_url)
-        return redirect('accounts')
+        return redirect('cards')
 
     # Генерируем уникальный номер счета
     base = f"40817{timezone.now().strftime('%m%d%H%M%S')}{client.id:02d}"
-    account_number = base[:20] if len(base) > 20 else base.ljust(20, '0')
+    card_number = base[:20] if len(base) > 20 else base.ljust(20, '0')
     # Разрешаем потенциальные коллизии
     suffix = 0
-    while BankAccount.objects.filter(account_number=account_number).exists():
+    while BankCard.objects.filter(card_number=card_number).exists():
         suffix += 1
         tail = f"{suffix:02d}"
-        account_number = (base + tail)[:20]
+        card_number = (base + tail)[:20]
 
     # Создаем счет
-    BankAccount.objects.create(
+    BankCard.objects.create(
         client=client,
-        account_number=account_number,
-        account_type=account_type,
+        card_number=card_number,
+        card_type=card_type,
         balance=initial_deposit,
         currency='RUB',
         is_active=True,
     )
 
-    messages.success(request, f'Счет успешно открыт. Номер: {account_number}')
+    messages.success(request, f'Счет успешно открыт. Номер: {card_number}')
     if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
         return redirect(next_url)
-    return redirect('accounts')
+    return redirect('cards')
 
 @login_required
 def transfers_view(request):
@@ -1288,16 +1759,16 @@ def transfers_view(request):
         return redirect('home')
     
     # Получаем счета клиента для переводов
-    accounts = BankAccount.objects.filter(client=client, is_active=True)
+    cards = BankCard.objects.filter(client=client, is_active=True)
     
     # Получаем последние переводы
     recent_transfers = Transaction.objects.filter(
-        models.Q(from_account__client=client) | models.Q(to_account__client=client)
+        models.Q(from_card__client=client) | models.Q(to_card__client=client)
     ).order_by('-created_at')[:10]
     
     context = {
         'client': client,
-        'accounts': accounts,
+        'cards': cards,
         'recent_transfers': recent_transfers,
     }
     
@@ -1314,7 +1785,7 @@ def history_view(request):
     
     # Получаем все транзакции клиента
     transactions = Transaction.objects.filter(
-        models.Q(from_account__client=client) | models.Q(to_account__client=client)
+        models.Q(from_card__client=client) | models.Q(to_card__client=client)
     ).order_by('-created_at')
     
     # Пагинация
@@ -1339,6 +1810,61 @@ def history_view(request):
     
     return render(request, 'history.html', context)
 
+@login_required
+@require_http_methods(["GET"])
+def get_card_details(request, card_id):
+    """Возвращает детали счета клиента (JSON)."""
+    try:
+        client = Client.objects.get(user=request.user)
+    except Client.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Клиент не найден'}, status=400)
+
+    try:
+        card = BankCard.objects.get(id=card_id, client=client)
+    except BankCard.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Счет не найден'}, status=404)
+
+    data = {
+        'id': card.id,
+        'card_number': card.card_number,
+        'card_type': card.card_type,
+        'balance': float(card.balance),
+        'currency': card.currency,
+        'is_active': card.is_active,
+        'created_at': card.created_at.strftime('%d.%m.%Y %H:%M') if hasattr(card, 'created_at') else '',
+    }
+    return JsonResponse({'success': True, 'card': data})
+
+@login_required
+@require_http_methods(["GET"])
+def get_card_statements(request, card_id):
+    """Возвращает последние операции по счету клиента (JSON)."""
+    try:
+        client = Client.objects.get(user=request.user)
+    except Client.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Клиент не найден'}, status=400)
+
+    try:
+        card = BankCard.objects.get(id=card_id, client=client)
+    except BankCard.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Счет не найден'}, status=404)
+
+    txs = Transaction.objects.filter(
+        models.Q(from_card=card) | models.Q(to_card=card)
+    ).order_by('-created_at')[:20]
+
+    items = []
+    for tx in txs:
+        items.append({
+            'id': tx.id,
+            'type': tx.transaction_type,
+            'amount': float(tx.amount),
+            'currency': tx.currency,
+            'status': tx.status,
+            'description': tx.description,
+            'created_at': tx.created_at.strftime('%d.%m.%Y %H:%M'),
+        })
+    return JsonResponse({'success': True, 'statements': items})
 @login_required
 def settings_view(request):
     """Страница настроек клиента"""
@@ -1371,9 +1897,9 @@ def settings_view(request):
 
 # Старые маршруты для совместимости
 @login_required
-def accounts(request):
+def cards(request):
     """Старый маршрут для счетов"""
-    return accounts_view(request)
+    return cards_view(request)
 
 @login_required
 def transfers(request):
@@ -1397,21 +1923,21 @@ def dashboard(request):
 
 # Новые банковские сервисы
 @login_required
-def accounts_service(request):
+def cards_service(request):
     """Страница расчетно-кассового обслуживания"""
     try:
         client = Client.objects.get(user=request.user)
-        accounts = BankAccount.objects.filter(client=client, is_active=True)
+        cards = BankCard.objects.filter(client=client, is_active=True)
     except Client.DoesNotExist:
         messages.error(request, 'Клиент не найден')
         return redirect('home')
     
     context = {
         'client': client,
-        'accounts': accounts,
+        'cards': cards,
     }
     
-    return render(request, 'accounts.html', context)
+    return render(request, 'cards.html', context)
 
 @login_required
 def credits_service(request):
@@ -1435,7 +1961,7 @@ def deposits_service(request):
     """Страница депозитных программ"""
     try:
         client = Client.objects.get(user=request.user)
-        accounts = BankAccount.objects.filter(client=client, is_active=True)
+        cards = BankCard.objects.filter(client=client, is_active=True)
         deposits = Deposit.objects.filter(client=client)
     except Client.DoesNotExist:
         messages.error(request, 'Клиент не найден')
@@ -1443,7 +1969,7 @@ def deposits_service(request):
     
     context = {
         'client': client,
-        'accounts': accounts,
+        'cards': cards,
         'deposits': deposits,
     }
     
@@ -1454,9 +1980,9 @@ def transfers_service(request):
     """Страница переводов и платежей"""
     try:
         client = Client.objects.get(user=request.user)
-        accounts = BankAccount.objects.filter(client=client, is_active=True)
+        cards = BankCard.objects.filter(client=client, is_active=True)
         transactions = Transaction.objects.filter(
-            models.Q(from_account__client=client) | models.Q(to_account__client=client)
+            models.Q(from_card__client=client) | models.Q(to_card__client=client)
         ).order_by('-created_at')[:20]
     except Client.DoesNotExist:
         messages.error(request, 'Клиент не найден')
@@ -1464,7 +1990,7 @@ def transfers_service(request):
     
     context = {
         'client': client,
-        'accounts': accounts,
+        'cards': cards,
         'transactions': transactions,
     }
     
@@ -1475,15 +2001,14 @@ def cards_service(request):
     """Страница банковских карт"""
     try:
         client = Client.objects.get(user=request.user)
-        accounts = BankAccount.objects.filter(client=client, is_active=True)
-        cards = BankCard.objects.filter(account__client=client, is_active=True)
+        cards = BankCard.objects.filter(client=client, is_active=True)
+        cards = BankCard.objects.filter(client=client, is_active=True)
     except Client.DoesNotExist:
         messages.error(request, 'Клиент не найден')
         return redirect('home')
     
     context = {
         'client': client,
-        'accounts': accounts,
         'cards': cards,
     }
     
@@ -1494,7 +2019,7 @@ def investments_service(request):
     """Страница инвестиционных продуктов"""
     try:
         client = Client.objects.get(user=request.user)
-        accounts = BankAccount.objects.filter(client=client, is_active=True)
+        cards = BankCard.objects.filter(client=client, is_active=True)
         investments = ClientInvestment.objects.filter(client=client)
     except Client.DoesNotExist:
         messages.error(request, 'Клиент не найден')
@@ -1502,7 +2027,7 @@ def investments_service(request):
     
     context = {
         'client': client,
-        'accounts': accounts,
+        'cards': cards,
         'investments': investments,
     }
     
@@ -1518,13 +2043,13 @@ def client_dashboard(request):
         return redirect('home')
     
     # Получаем все банковские данные клиента
-    accounts = BankAccount.objects.filter(client=client, is_active=True)
-    cards = BankCard.objects.filter(account__client=client, is_active=True)
+    cards = BankCard.objects.filter(client=client, is_active=True)
+    cards = BankCard.objects.filter(client=client, is_active=True)
     credits = Credit.objects.filter(client=client)
     deposits = Deposit.objects.filter(client=client)
     investments = ClientInvestment.objects.filter(client=client)
     transactions = Transaction.objects.filter(
-        models.Q(from_account__client=client) | models.Q(to_account__client=client)
+        models.Q(from_card__client=client) | models.Q(to_card__client=client)
     ).order_by('-created_at')[:5]
     
     # Подключенные услуги
@@ -1534,14 +2059,13 @@ def client_dashboard(request):
     total_cost = sum(service.monthly_fee for service in connected_services)
     
     # Статистика
-    total_balance = sum(account.balance for account in accounts)
+    total_balance = sum(card.balance for card in cards)
     total_credit_debt = sum(credit.remaining_amount for credit in credits if credit.status == 'active')
     total_deposit_amount = sum(deposit.amount for deposit in deposits)
     total_investment_value = sum(investment.current_value for investment in investments if investment.status == 'active')
     
     context = {
         'client': client,
-        'accounts': accounts,
         'cards': cards,
         'credits': credits,
         'deposits': deposits,
@@ -1558,3 +2082,244 @@ def client_dashboard(request):
     return render(request, 'client_dashboard.html', context)
 
 
+@login_required
+def transfers_service(request):
+    """Страница переводов и платежей"""
+    try:
+        client = Client.objects.get(user=request.user)
+    except Client.DoesNotExist:
+        messages.error(request, 'Клиент не найден')
+        return redirect('home')
+    
+    # Обработка AJAX запросов для проверки существования пользователей
+    if request.method == 'POST':
+        # Проверка существования пользователя по номеру телефона
+        if 'check_phone' in request.POST:
+            phone = request.POST.get('check_phone')
+            print(f"DEBUG AJAX: Получен номер: '{phone}'")
+            
+            # Нормализуем номер телефона (оставляем только цифры)
+            normalized_phone = ''.join(filter(str.isdigit, phone))
+            print(f"DEBUG AJAX: Нормализованный номер: '{normalized_phone}'")
+            
+            # Ищем клиента по точному совпадению нормализованного номера телефона
+            exists = Client.objects.filter(phone=normalized_phone).exists()
+            print(f"DEBUG AJAX: Найден клиент: {exists}")
+            
+            return JsonResponse({'exists': exists})
+    
+    # Получаем счета клиента
+    cards = BankCard.objects.filter(client=client, is_active=True)
+    print(f"DEBUG: Найдено карт для клиента {client.full_name}: {cards.count()}")
+    for card in cards:
+        print(f"DEBUG: Карта {card.id}: {card.card_number}, баланс: {card.balance}, активна: {card.is_active}")
+    
+    # Получаем основной счет (первый активный счет или создаем его)
+    main_card = cards.first()
+    if not main_card:
+        print(f"DEBUG: У клиента {client.full_name} нет активных карт, создаем основную карту")
+        # Создаем основной счет если его нет
+        from datetime import date, timedelta
+        expiry_date = date.today() + timedelta(days=365*5)  # Карта действует 5 лет
+        
+        main_card = BankCard.objects.create(
+            client=client,
+            card_number=f"40817810{str(client.client_id).zfill(11)}0004312",
+            card_type='debit',
+            balance=Decimal('100000.00'),  # Начальный баланс
+            currency='RUB',
+            expiry_date=expiry_date,
+            is_active=True
+        )
+        print(f"DEBUG: Создана основная карта: {main_card.card_number}")
+        
+        # Автоматически делаем первую карту основной
+        if not client.primary_card:
+            client.primary_card = main_card
+            client.save(update_fields=['primary_card'])
+            print(f"DEBUG: Установлена основная карта для клиента {client.full_name}")
+        
+        cards = BankCard.objects.filter(client=client, is_active=True)
+    else:
+        print(f"DEBUG: Найдена основная карта: {main_card.card_number}")
+    
+    # Обработка POST-запроса (выполнение перевода)
+    if request.method == 'POST':
+        from_card_id = request.POST.get('from_account')
+        print(f"DEBUG: Получен ID карты отправителя: {from_card_id}")
+        recipient_phone = request.POST.get('recipient_phone')
+        amount = request.POST.get('amount')
+        description = request.POST.get('description', 'Перевод')
+
+        # Проверяем, что все обязательные поля заполнены
+        if not from_card_id:
+            messages.error(request, 'Выберите карточку для списания')
+            return redirect('transfers_service')
+        
+        if not recipient_phone:
+            messages.error(request, 'Введите номер телефона получателя')
+            return redirect('transfers_service')
+        
+        if not amount:
+            messages.error(request, 'Введите сумму перевода')
+            return redirect('transfers_service')
+
+        try:
+            amount = Decimal(amount)
+            if amount <= 0:
+                messages.error(request, 'Сумма перевода должна быть положительной')
+                return redirect('transfers_service')
+
+            try:
+                from_card = BankCard.objects.get(id=from_card_id, client=client, is_active=True)
+                print(f"DEBUG: Найдена карта отправителя: {from_card.card_number}, баланс: {from_card.balance}")
+            except BankCard.DoesNotExist:
+                print(f"DEBUG: Карта отправителя не найдена. ID: {from_card_id}, клиент: {client.full_name}")
+                messages.error(request, 'Карта списания не найдена или неактивна')
+                return redirect('transfers_service')
+
+            if from_card.balance < amount:
+                messages.error(request, 'Недостаточно средств на счете')
+                return redirect('transfers_service')
+
+            # Нормализуем номер телефона получателя (оставляем только цифры)
+            normalized_recipient_phone = ''.join(filter(str.isdigit, recipient_phone))
+            print(f"DEBUG: Поиск получателя по номеру: {recipient_phone} -> {normalized_recipient_phone}")
+
+            # Ищем получателя по точному совпадению нормализованного номера телефона
+            try:
+                recipient_client = Client.objects.get(phone=normalized_recipient_phone)
+                print(f"DEBUG: Найден получатель: {recipient_client.full_name}")
+
+                # Используем основную карту получателя, если она установлена и активна
+                if recipient_client.primary_card and recipient_client.primary_card.is_active:
+                    recipient_card = recipient_client.primary_card
+                    print(f"DEBUG: Используем основную карту получателя: {recipient_card.card_number}")
+                else:
+                    # В противном случае используем первый активный счет
+                    recipient_card = BankCard.objects.filter(client=recipient_client, is_active=True).first()
+                    print(f"DEBUG: Используем первую активную карту получателя: {recipient_card.card_number if recipient_card else 'НЕТ КАРТ'}")
+
+                if not recipient_card:
+                    print(f"DEBUG: У получателя {recipient_client.full_name} нет активных карт")
+                    messages.error(request, f'У получателя с номером {recipient_phone} нет активных карт')
+                    return redirect('transfers_service')
+
+                # Выполняем перевод
+                from_card.balance -= amount
+                from_card.save()
+
+                recipient_card.balance += amount
+                recipient_card.save()
+
+                # Создаем транзакцию
+                Transaction.objects.create(
+                    from_card=from_card,
+                    to_card=recipient_card,
+                    amount=amount,
+                    transaction_type='transfer',
+                    status='completed',
+                    description=f"Перевод по номеру телефона {recipient_phone}: {description}"
+                )
+
+                messages.success(request, f'Перевод на сумму {amount} ₽ успешно выполнен на номер {recipient_phone}')
+
+            except Client.DoesNotExist:
+                messages.error(request, f'Пользователь с номером телефона {recipient_phone} не найден')
+                return redirect('transfers_service')
+
+            return redirect('transfers_service')
+
+        except ValueError:
+            messages.error(request, 'Неверная сумма перевода')
+        except Exception as e:
+            messages.error(request, f'Ошибка при выполнении перевода: {str(e)}')
+
+        return redirect('transfers_service')
+    
+    # Получаем последние транзакции
+    transactions = Transaction.objects.filter(
+        models.Q(from_card__client=client) | models.Q(to_card__client=client)
+    ).order_by('-created_at')[:10]
+    
+    print(f"DEBUG: Передаем в шаблон - клиент: {client.full_name}, карт: {cards.count()}, основная карта: {main_card.card_number if main_card else 'НЕТ'}")
+    
+    context = {
+        'client': client,
+        'accounts': cards,
+        'main_account': main_card,
+        'transactions': transactions,
+    }
+    
+    return render(request, 'transfers.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def set_primary_card(request, card_id):
+    """Установка основной карты для клиента"""
+    try:
+        client = Client.objects.get(user=request.user)
+    except Client.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Клиент не найден'}, status=400)
+
+    try:
+        card = BankCard.objects.get(id=card_id, client=client)
+    except BankCard.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Карта не найдена'}, status=404)
+
+    if not card.is_active:
+        return JsonResponse({'success': False, 'error': 'Нельзя установить заблокированную карту как основную'}, status=400)
+
+    # Устанавливаем карту как основную
+    client.primary_card = card
+    client.save()
+
+    return JsonResponse({
+        'success': True,
+        'message': f'Карта {card.card_number} установлена как основная',
+        'card_number': card.card_number
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def unset_primary_card(request):
+    """Снятие основной карты у клиента"""
+    try:
+        client = Client.objects.get(user=request.user)
+    except Client.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Клиент не найден'}, status=400)
+
+    if not client.primary_card:
+        return JsonResponse({'success': False, 'error': 'Основная карта не установлена'}, status=400)
+
+    old_card_number = client.primary_card.card_number
+    client.primary_card = None
+    client.save()
+
+    return JsonResponse({
+        'success': True,
+        'message': f'Карта {old_card_number} больше не является основной'
+    })
+
+
+@login_required
+def cards_service(request):
+    """Страница управления банковскими картами"""
+    try:
+        client = Client.objects.get(user=request.user)
+    except Client.DoesNotExist:
+        messages.error(request, 'Клиент не найден')
+        return redirect('home')
+    
+    # Получаем все карты клиента
+    cards = BankCard.objects.filter(client=client).order_by('-created_at')
+    
+    context = {
+        'client': client,
+        'cards': cards,
+        'primary_card': client.primary_card,
+    }
+    
+    return render(request, 'cards.html', context)

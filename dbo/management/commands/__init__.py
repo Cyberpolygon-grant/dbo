@@ -62,7 +62,6 @@ class Command(BaseCommand):
                 'email': 'client1@example.com',
                 'phone': '+7 (999) 123-45-67',
                 'is_active': True,
-                'is_verified': True,
                 'created_by': operator1
             }
         )

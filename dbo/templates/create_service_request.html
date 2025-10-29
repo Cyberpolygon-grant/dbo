@@ -38,7 +38,7 @@
                        required>
             </div>
 
-            <!-- Описание услуги (XSS уязвимость) -->
+            <!-- Описание услуги -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                     <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -47,23 +47,7 @@
                     Описание услуги *
                 </label>
                 
-                <!-- Предупреждение о XSS -->
-                <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-4">
-                    <div class="flex items-start">
-                        <svg class="w-5 h-5 text-red-600 dark:text-red-400 mr-3 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                        </svg>
-                        <div>
-                            <h3 class="font-semibold text-red-800 dark:text-red-200 mb-1">⚠️ XSS Уязвимость!</h3>
-                            <p class="text-sm text-red-700 dark:text-red-300 mb-2">
-                                Это поле уязвимо к XSS атакам. Вы можете вставить JavaScript код для демонстрации.
-                            </p>
-                            <div class="text-xs text-red-600 dark:text-red-400">
-                                <strong>Пример:</strong> &lt;script&gt;alert('XSS!')&lt;/script&gt;
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                
                 
                 <textarea name="service_description" rows="6" placeholder="Опишите детали услуги..." 
                           class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" 
@@ -121,36 +105,6 @@
         </form>
     </div>
 
-    <!-- Информация о XSS уязвимости -->
-    <div class="mt-8">
-        <div class="card-hover bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-2xl p-6 border border-yellow-200 dark:border-yellow-800">
-            <div class="flex items-start">
-                <svg class="w-8 h-8 text-yellow-600 dark:text-yellow-400 mr-4 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                </svg>
-                <div>
-                    <h3 class="text-lg font-bold text-yellow-900 dark:text-yellow-100 mb-2">XSS (Cross-Site Scripting) Уязвимость</h3>
-                    <p class="text-yellow-800 dark:text-yellow-200 mb-3">
-                        Поле описания услуги не санитизируется и позволяет выполнять произвольный JavaScript код.
-                    </p>
-                    <div class="text-sm text-yellow-700 dark:text-yellow-300">
-                        <p><strong>Примеры атак:</strong></p>
-                        <ul class="list-disc list-inside space-y-1 mt-2">
-                            <li>Отображение произвольного контента: <code>&lt;script&gt;alert('XSS!')&lt;/script&gt;</code></li>
-                            <li>Кража сессии: <code>&lt;script&gt;fetch('/steal-session', {method: 'POST', body: document.cookie})&lt;/script&gt;</code></li>
-                            <li>Автоматические действия: <code>&lt;script&gt;fetch('/approve-service-request/1/', {method: 'POST'})&lt;/script&gt;</code></li>
-                        </ul>
-                        <p class="mt-3"><strong>Рекомендации по исправлению:</strong></p>
-                        <ul class="list-disc list-inside space-y-1 mt-2">
-                            <li>Использовать Django template filter |escape</li>
-                            <li>Применять библиотеки для санитизации HTML (bleach)</li>
-                            <li>Настроить Content Security Policy (CSP)</li>
-                            <li>Валидировать пользовательский ввод на сервере</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    
 </div>
 {% endblock %}

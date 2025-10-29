@@ -1,369 +1,326 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block title %}Переводы и платежи{% endblock %}
+{% block title %}Переводы и платежи - Банк "ФинансПро"{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <!-- Заголовок страницы -->
-    <div class="hero bg-gradient-to-r from-warning to-error text-primary-content rounded-lg mb-8">
-        <div class="hero-content text-center">
-            <div class="max-w-md">
-                <h1 class="text-4xl font-bold mb-4">Переводы и платежи</h1>
-                <p class="text-lg opacity-90">Мгновенные переводы между счетами, оплата услуг и коммунальных платежей</p>
-                <div class="badge badge-lg badge-accent mt-4">Мгновенно</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Быстрые действия -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <!-- Перевод между счетами -->
-        <div class="card bg-base-100 shadow-xl">
-            <div class="card-body text-center">
-                <div class="text-4xl mb-2">💸</div>
-                <h3 class="card-title justify-center">Перевод</h3>
-                <p class="text-sm text-base-content/70">Между своими счетами</p>
-                <div class="card-actions justify-center">
-                    <button class="btn btn-primary btn-sm" onclick="openTransferModal('internal')">Перевести</button>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Заголовок -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Переводы и платежи</h1>
+                    <p class="text-gray-600 dark:text-gray-300">Управление переводами и платежами</p>
                 </div>
             </div>
-        </div>
-
-        <!-- Перевод на карту -->
-        <div class="card bg-base-100 shadow-xl">
-            <div class="card-body text-center">
-                <div class="text-4xl mb-2">💳</div>
-                <h3 class="card-title justify-center">На карту</h3>
-                <p class="text-sm text-base-content/70">По номеру карты</p>
-                <div class="card-actions justify-center">
-                    <button class="btn btn-secondary btn-sm" onclick="openTransferModal('card')">Перевести</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Перевод по реквизитам -->
-        <div class="card bg-base-100 shadow-xl">
-            <div class="card-body text-center">
-                <div class="text-4xl mb-2">🏦</div>
-                <h3 class="card-title justify-center">По реквизитам</h3>
-                <p class="text-sm text-base-content/70">В другой банк</p>
-                <div class="card-actions justify-center">
-                    <button class="btn btn-accent btn-sm" onclick="openTransferModal('bank')">Перевести</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Оплата услуг -->
-        <div class="card bg-base-100 shadow-xl">
-            <div class="card-body text-center">
-                <div class="text-4xl mb-2">⚡</div>
-                <h3 class="card-title justify-center">Платежи</h3>
-                <p class="text-sm text-base-content/70">Коммунальные услуги</p>
-                <div class="card-actions justify-center">
-                    <button class="btn btn-info btn-sm" onclick="openPaymentModal()">Оплатить</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- История операций -->
-    <div class="card bg-base-100 shadow-xl mb-8">
-        <div class="card-body">
-            <h2 class="card-title text-2xl mb-4">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            <a href="{% url 'client_dashboard' %}" class="btn btn-outline">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                 </svg>
-                История операций
-            </h2>
+                Назад к дашборду
+            </a>
+        </div>
+    </div>
+
+    <!-- Форма перевода -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Форма -->
+        <div class="card bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Новый перевод</h2>
             
-            {% if transactions %}
-            <div class="overflow-x-auto">
-                <table class="table table-zebra w-full">
-                    <thead>
-                        <tr>
-                            <th>Дата</th>
-                            <th>Тип операции</th>
-                            <th>Описание</th>
-                            <th>Сумма</th>
-                            <th>Статус</th>
-                            <th>Действия</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for transaction in transactions %}
-                        <tr>
-                            <td>{{ transaction.created_at|date:"d.m.Y H:i" }}</td>
-                            <td>
-                                <span class="badge badge-outline">
-                                    {% if transaction.transaction_type == 'transfer' %}Перевод
-                                    {% elif transaction.transaction_type == 'payment' %}Платеж
-                                    {% elif transaction.transaction_type == 'deposit' %}Пополнение
-                                    {% elif transaction.transaction_type == 'withdrawal' %}Снятие
-                                    {% endif %}
-                                </span>
-                            </td>
-                            <td>{{ transaction.description }}</td>
-                            <td class="font-bold {% if transaction.transaction_type == 'deposit' %}text-success{% else %}text-error{% endif %}">
-                                {% if transaction.transaction_type == 'deposit' %}+{% else %}-{% endif %}{{ transaction.amount|floatformat:2 }} ₽
-                            </td>
-                            <td>
-                                {% if transaction.status == 'completed' %}
-                                    <span class="badge badge-success">Завершена</span>
-                                {% elif transaction.status == 'pending' %}
-                                    <span class="badge badge-warning">Ожидает</span>
-                                {% elif transaction.status == 'failed' %}
-                                    <span class="badge badge-error">Отклонена</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <button class="btn btn-sm btn-primary" onclick="viewTransactionDetails({{ transaction.id }})">Детали</button>
-                            </td>
-                        </tr>
+            <form method="POST" action="{% url 'transfers_service' %}" id="transferForm">
+                {% csrf_token %}
+                
+
+                <!-- Карточка списания -->
+                <div class="mb-6">
+                    <label class="label">
+                        <span class="label">Карточка списания</span>
+                    </label>
+                    <select name="from_account" class="select select-bordered w-full" required>
+                        <option value="">Выберите карточку</option>
+                        {% for account in accounts %}
+                            <option value="{{ account.id }}" {% if account == main_account %}selected{% endif %}>
+                                {{ account.card_number }} - {{ account.balance|floatformat:2 }} ₽
+                                {% if account == main_account %}(Основной){% endif %}
+                            </option>
                         {% endfor %}
-                    </tbody>
-                </table>
+                    </select>
+                </div>
+
+
+                <!-- Поле для перевода по номеру телефона -->
+                <div class="mb-6">
+                    <label class="label">
+                        <span class="label">Номер телефона получателя</span>
+                    </label>
+                    <div class="relative">
+                        <input type="tel" name="recipient_phone" id="recipientPhone" placeholder="+7 (999) 456-78-90" class="input input-bordered w-full pr-12" oninput="formatPhoneInput(this)" onkeyup="validatePhone()">
+                        <div id="phoneValidationIcon" class="absolute right-3 top-1/2 transform -translate-y-1/2 hidden">
+                            <!-- Иконка будет добавлена через JavaScript -->
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Средства поступят на основную карточку получателя</p>
+                    <div id="phoneValidationMessage" class="text-xs mt-1 hidden"></div>
+                </div>
+
+
+                <!-- Сумма -->
+                <div class="mb-6">
+                    <label class="label">
+                        <span class="label">Сумма перевода</span>
+                    </label>
+                    <input type="number" name="amount" step="0.01" min="0.01" placeholder="0.00" class="input input-bordered w-full" required>
+                </div>
+
+                <!-- Назначение платежа -->
+                <div class="mb-6">
+                    <label class="label">
+                        <span class="label">Назначение платежа</span>
+                    </label>
+                    <textarea name="description" placeholder="Введите назначение платежа" class="textarea textarea-bordered w-full" rows="3"></textarea>
+                </div>
+
+                <!-- Кнопка отправки -->
+                <button type="submit" class="btn btn-primary w-full">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                    </svg>
+                    Выполнить перевод
+                </button>
+            </form>
+        </div>
+
+        <!-- Быстрые действия -->
+        <div class="space-y-6">
+            <!-- Основной счет -->
+            <div class="card bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-800">
+                <div class="flex items-center space-x-3 mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-blue-900 dark:text-blue-100">Основная карточка</h3>
+                        <p class="text-sm text-blue-700 dark:text-blue-300">На эту карточку поступают переводы по номеру телефона</p>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-4">
+                    <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ main_account.balance|floatformat:2 }} ₽</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300">{{ main_account.card_number }}</div>
+                </div>
             </div>
-            {% else %}
-            <div class="text-center py-8">
-                <svg class="w-16 h-16 mx-auto text-base-content/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <h3 class="text-xl font-semibold mb-2">Операций пока нет</h3>
-                <p class="text-base-content/70 mb-4">Совершите свой первый перевод или платеж</p>
-                <button class="btn btn-primary" onclick="openTransferModal('internal')">Сделать перевод</button>
+
+            <!-- Информация о переводах -->
+            <div class="card bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Переводы по номеру телефона</h3>
+
+                <div class="space-y-3">
+                    <div class="flex items-center space-x-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                        </svg>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">Переводы только по номеру телефона</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Номер телефона должен быть уникальным</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-            {% endif %}
+
+            <!-- Информация -->
+            <div class="card bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-800">
+                <div class="flex items-start space-x-3">
+                    <svg class="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>
+                        <h4 class="font-semibold text-blue-900 dark:text-blue-100 mb-2">Важная информация</h4>
+                        <ul class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                            <li>• Переводы выполняются мгновенно</li>
+                            <li>• Комиссия не взимается</li>
+                            <li>• Максимальная сумма: 1 000 000 ₽</li>
+                            <li>• Проверяйте номер телефона получателя</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Популярные платежи -->
-    <div class="card bg-base-100 shadow-xl mb-8">
-        <div class="card-body">
-            <h2 class="card-title text-2xl mb-4">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+    <!-- История транзакций -->
+    <div class="card bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">История операций</h2>
+        
+        {% if transactions %}
+            <div class="space-y-4">
+                {% for transaction in transactions %}
+                    <div class="p-4 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 bg-gradient-to-r {% if transaction.from_card and transaction.from_card.client == client %}from-red-500 to-orange-500{% else %}from-green-500 to-teal-500{% endif %} rounded-xl flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-gray-900 dark:text-white">
+                                        {% if transaction.from_card and transaction.from_card.client == client %}
+                                            Перевод на карту {{ transaction.to_card.card_number }}
+                                        {% else %}
+                                            Получение от {{ transaction.from_card.card_number }}
+                                        {% endif %}
+                                    </h3>
+                                    <p class="text-sm text-gray-600 dark:text-gray-300">{{ transaction.description|truncatechars:50 }}</p>
+                                    <div class="flex items-center space-x-2 mt-1">
+                                        {% if transaction.status == 'completed' %}
+                                            <span class="px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 text-xs rounded-lg font-medium">
+                                                Завершена
+                                            </span>
+                                        {% elif transaction.status == 'pending' %}
+                                            <span class="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 text-xs rounded-lg font-medium">
+                                                В обработке
+                                            </span>
+                                        {% elif transaction.status == 'failed' %}
+                                            <span class="px-2 py-1 bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 text-xs rounded-lg font-medium">
+                                                Отклонена
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                {% if transaction.to_card and transaction.to_card.client == client %}
+                                    <div class="text-lg font-bold text-green-600 dark:text-green-400">+{{ transaction.amount|floatformat:2 }} ₽</div>
+                                {% else %}
+                                    <div class="text-lg font-bold text-red-600 dark:text-red-400">-{{ transaction.amount|floatformat:2 }} ₽</div>
+                                {% endif %}
+                                <div class="text-sm text-gray-500 dark:text-gray-400">{{ transaction.created_at|date:"d.m.Y H:i" }}</div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                <svg class="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
                 </svg>
-                Популярные платежи
-            </h2>
-            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                <div class="text-center p-4 hover:bg-base-200 rounded-lg cursor-pointer" onclick="payService('electricity')">
-                    <div class="text-3xl mb-2">⚡</div>
-                    <p class="text-sm font-medium">Электричество</p>
-                </div>
-                <div class="text-center p-4 hover:bg-base-200 rounded-lg cursor-pointer" onclick="payService('water')">
-                    <div class="text-3xl mb-2">💧</div>
-                    <p class="text-sm font-medium">Вода</p>
-                </div>
-                <div class="text-center p-4 hover:bg-base-200 rounded-lg cursor-pointer" onclick="payService('gas')">
-                    <div class="text-3xl mb-2">🔥</div>
-                    <p class="text-sm font-medium">Газ</p>
-                </div>
-                <div class="text-center p-4 hover:bg-base-200 rounded-lg cursor-pointer" onclick="payService('internet')">
-                    <div class="text-3xl mb-2">🌐</div>
-                    <p class="text-sm font-medium">Интернет</p>
-                </div>
-                <div class="text-center p-4 hover:bg-base-200 rounded-lg cursor-pointer" onclick="payService('mobile')">
-                    <div class="text-3xl mb-2">📱</div>
-                    <p class="text-sm font-medium">Мобильная связь</p>
-                </div>
-                <div class="text-center p-4 hover:bg-base-200 rounded-lg cursor-pointer" onclick="payService('tv')">
-                    <div class="text-3xl mb-2">📺</div>
-                    <p class="text-sm font-medium">Телевидение</p>
-                </div>
+                <p class="text-lg font-medium">Нет транзакций</p>
+                <p class="text-sm mt-2">Совершите первую операцию</p>
             </div>
-        </div>
-    </div>
-
-    <!-- Шаблоны переводов -->
-    <div class="card bg-base-100 shadow-xl">
-        <div class="card-body">
-            <h2 class="card-title text-2xl mb-4">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path>
-                </svg>
-                Мои шаблоны
-            </h2>
-            <div class="text-center py-8">
-                <svg class="w-16 h-16 mx-auto text-base-content/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path>
-                </svg>
-                <h3 class="text-xl font-semibold mb-2">Шаблонов пока нет</h3>
-                <p class="text-base-content/70 mb-4">Создайте шаблон для быстрых повторных переводов</p>
-                <button class="btn btn-primary" onclick="createTemplate()">Создать шаблон</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Модальное окно для перевода -->
-<div id="transferModal" class="modal">
-    <div class="modal-box">
-        <h3 class="font-bold text-lg mb-4" id="transferModalTitle">Перевод средств</h3>
-        <form id="transferForm">
-            <div class="form-control mb-4">
-                <label class="label">
-                    <span class="label-text">Счет списания</span>
-                </label>
-                <select class="select select-bordered" name="from_account" required>
-                    <option value="">Выберите счет</option>
-                    {% for account in accounts %}
-                        <option value="{{ account.id }}">{{ account.account_number }} ({{ account.balance|floatformat:0 }} ₽)</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="form-control mb-4">
-                <label class="label">
-                    <span class="label-text">Сумма перевода</span>
-                </label>
-                <input type="number" class="input input-bordered" name="amount" placeholder="1000" min="1" step="0.01" required>
-            </div>
-            <div class="form-control mb-4" id="recipientField">
-                <label class="label">
-                    <span class="label-text">Получатель</span>
-                </label>
-                <input type="text" class="input input-bordered" name="recipient" placeholder="Введите данные получателя">
-            </div>
-            <div class="form-control mb-4">
-                <label class="label">
-                    <span class="label-text">Назначение платежа</span>
-                </label>
-                <textarea class="textarea textarea-bordered" name="description" placeholder="Укажите назначение платежа" required></textarea>
-            </div>
-            <div class="modal-action">
-                <button type="button" class="btn btn-ghost" onclick="closeTransferModal()">Отмена</button>
-                <button type="submit" class="btn btn-primary">Перевести</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Модальное окно для платежа -->
-<div id="paymentModal" class="modal">
-    <div class="modal-box">
-        <h3 class="font-bold text-lg mb-4">Оплата услуг</h3>
-        <form id="paymentForm">
-            <div class="form-control mb-4">
-                <label class="label">
-                    <span class="label-text">Тип услуги</span>
-                </label>
-                <select class="select select-bordered" name="service_type" required>
-                    <option value="">Выберите услугу</option>
-                    <option value="electricity">Электричество</option>
-                    <option value="water">Вода</option>
-                    <option value="gas">Газ</option>
-                    <option value="internet">Интернет</option>
-                    <option value="mobile">Мобильная связь</option>
-                    <option value="tv">Телевидение</option>
-                </select>
-            </div>
-            <div class="form-control mb-4">
-                <label class="label">
-                    <span class="label-text">Номер лицевого счета</span>
-                </label>
-                <input type="text" class="input input-bordered" name="account_number" placeholder="Введите номер ЛС" required>
-            </div>
-            <div class="form-control mb-4">
-                <label class="label">
-                    <span class="label-text">Сумма к оплате</span>
-                </label>
-                <input type="number" class="input input-bordered" name="amount" placeholder="1000" min="1" step="0.01" required>
-            </div>
-            <div class="form-control mb-4">
-                <label class="label">
-                    <span class="label-text">Счет списания</span>
-                </label>
-                <select class="select select-bordered" name="from_account" required>
-                    <option value="">Выберите счет</option>
-                    {% for account in accounts %}
-                        <option value="{{ account.id }}">{{ account.account_number }} ({{ account.balance|floatformat:0 }} ₽)</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="modal-action">
-                <button type="button" class="btn btn-ghost" onclick="closePaymentModal()">Отмена</button>
-                <button type="submit" class="btn btn-primary">Оплатить</button>
-            </div>
-        </form>
+        {% endif %}
     </div>
 </div>
 
 <script>
-function openTransferModal(type) {
-    const modal = document.getElementById('transferModal');
-    const title = document.getElementById('transferModalTitle');
-    const recipientField = document.getElementById('recipientField');
-    
-    switch(type) {
-        case 'internal':
-            title.textContent = 'Перевод между счетами';
-            recipientField.style.display = 'none';
-            break;
-        case 'card':
-            title.textContent = 'Перевод на карту';
-            recipientField.style.display = 'block';
-            recipientField.querySelector('input').placeholder = 'Номер карты получателя';
-            break;
-        case 'bank':
-            title.textContent = 'Перевод по реквизитам';
-            recipientField.style.display = 'block';
-            recipientField.querySelector('input').placeholder = 'Реквизиты получателя';
-            break;
+// Функция форматирования номера телефона для отображения
+function formatPhone(phone) {
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length === 11 && digits.startsWith('7')) {
+        return `+7 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7, 9)}-${digits.slice(9, 11)}`;
     }
-    
-    modal.classList.add('modal-open');
+    return phone;
 }
 
-function closeTransferModal() {
-    document.getElementById('transferModal').classList.remove('modal-open');
+// Функция нормализации номера телефона для поиска
+function normalizePhone(phone) {
+    // Оставляем только цифры
+    return phone.replace(/\D/g, '');
 }
 
-function openPaymentModal() {
-    document.getElementById('paymentModal').classList.add('modal-open');
+// Функция автоформатирования номера телефона при вводе
+function formatPhoneInput(input) {
+    let value = input.value.replace(/\D/g, '');
+
+    if (value.length > 0) {
+        if (value.length <= 3) {
+            input.value = value;
+        } else if (value.length <= 6) {
+            input.value = `+7 (${value.slice(1, 4)}) ${value.slice(4)}`;
+        } else if (value.length <= 8) {
+            input.value = `+7 (${value.slice(1, 4)}) ${value.slice(4, 7)}-${value.slice(7)}`;
+        } else if (value.length <= 10) {
+            input.value = `+7 (${value.slice(1, 4)}) ${value.slice(4, 7)}-${value.slice(7, 9)}-${value.slice(9)}`;
+        } else {
+            input.value = `+7 (${value.slice(1, 4)}) ${value.slice(4, 7)}-${value.slice(7, 9)}-${value.slice(9, 11)}`;
+        }
+    }
 }
 
-function closePaymentModal() {
-    document.getElementById('paymentModal').classList.remove('modal-open');
+// Проверка существования пользователя по номеру телефона
+function validatePhone() {
+    const phoneInput = document.getElementById('recipientPhone');
+    const phone = phoneInput.value;
+    const icon = document.getElementById('phoneValidationIcon');
+    const message = document.getElementById('phoneValidationMessage');
+
+    // Скрываем иконку и сообщение если поле пустое
+    if (!phone) {
+        icon.classList.add('hidden');
+        message.classList.add('hidden');
+        return;
+    }
+
+    // Показываем загрузку
+    icon.classList.remove('hidden');
+    icon.innerHTML = '<div class="loading loading-spinner loading-xs"></div>';
+
+    // Нормализуем номер телефона перед отправкой
+    const normalizedPhone = normalizePhone(phone);
+
+    // Отправляем AJAX запрос для проверки
+    fetch('{% url "transfers_service" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: `check_phone=${encodeURIComponent(normalizedPhone)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.exists) {
+            // Пользователь найден - показываем галочку
+            icon.innerHTML = '<svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            message.textContent = 'Пользователь найден';
+            message.className = 'text-xs mt-1 text-green-600';
+            message.classList.remove('hidden');
+        } else {
+            // Пользователь не найден - показываем крестик
+            icon.innerHTML = '<svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+            message.textContent = 'Пользователь не найден';
+            message.className = 'text-xs mt-1 text-red-600';
+            message.classList.remove('hidden');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка проверки телефона:', error);
+        icon.classList.add('hidden');
+        message.classList.add('hidden');
+    });
 }
 
-function viewTransactionDetails(transactionId) {
-    showAlert('Просмотр деталей операции #' + transactionId, 'info');
-}
-
-function payService(serviceType) {
-    const serviceNames = {
-        'electricity': 'Электричество',
-        'water': 'Вода',
-        'gas': 'Газ',
-        'internet': 'Интернет',
-        'mobile': 'Мобильная связь',
-        'tv': 'Телевидение'
-    };
-    
-    showAlert('Оплата услуги: ' + serviceNames[serviceType], 'info');
-}
-
-function createTemplate() {
-    showAlert('Создание шаблона перевода', 'info');
-}
-
-// Обработка формы перевода
+// Валидация формы
 document.getElementById('transferForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    
-    showAlert('Перевод выполнен успешно! Средства поступят мгновенно.', 'success');
-    closeTransferModal();
-    this.reset();
-});
+    const phoneInput = document.querySelector('input[name="recipient_phone"]');
+    const phone = phoneInput.value;
 
-// Обработка формы платежа
-document.getElementById('paymentForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    
-    showAlert('Платеж выполнен успешно! Квитанция отправлена на email.', 'success');
-    closePaymentModal();
-    this.reset();
+    if (!phone) {
+        e.preventDefault();
+        alert('Введите номер телефона получателя');
+        return;
+    }
+
+    // Нормализуем номер телефона перед отправкой
+    const normalizedPhone = normalizePhone(phone);
+    phoneInput.value = normalizedPhone;
 });
 </script>
 {% endblock %}

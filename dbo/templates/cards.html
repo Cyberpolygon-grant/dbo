@@ -115,7 +115,7 @@
             {% if cards %}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {% for card in cards %}
-                <div class="card bg-gradient-to-br from-primary to-secondary text-primary-content shadow-xl">
+                <div class="card bg-gradient-to-br from-primary to-secondary text-primary-content shadow-xl {% if card == primary_card %}ring-4 ring-yellow-400 ring-opacity-75 border-2 border-yellow-400{% endif %}">
                     <div class="card-body">
                         <div class="flex justify-between items-start mb-4">
                             <div>
@@ -124,14 +124,23 @@
                                     {% elif card.card_type == 'credit' %}Кредитная карта
                                     {% endif %}
                                 </h3>
-                                <p class="text-sm opacity-90">{{ card.account.client.full_name }}</p>
+                                <p class="text-sm opacity-90">{{ card.client.full_name }}</p>
+                                {% if card == primary_card %}
+                                    <div class="badge badge-warning badge-sm mt-1 gap-1">
+                                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                        </svg>
+                                        Основная карта
+                                    </div>
+                                {% endif %}
                             </div>
-                            <div class="badge badge-outline">{{ card.account.account_number|slice:"-4:" }}****</div>
+                            <div class="badge badge-outline">{{ card.card_number|slice:"-4:" }}</div>
                         </div>
                         
                         <div class="mb-4">
                             <p class="text-2xl font-mono tracking-wider">{{ card.card_number }}</p>
                             <p class="text-sm opacity-90">Срок действия: {{ card.expiry_date|date:"m/Y" }}</p>
+                            <p class="text-lg font-bold mt-2">Баланс: {{ card.balance|floatformat:2 }} ₽</p>
                         </div>
                         
                         <div class="flex justify-between items-center">
@@ -143,7 +152,33 @@
                                 {% endif %}
                             </div>
                             <div class="card-actions">
-                                <button class="btn btn-sm btn-primary" onclick="viewCardDetails({{ card.id }})">Управление</button>
+                                {% if card != primary_card and card.is_active %}
+                                    <button
+                                        class="btn btn-sm btn-accent"
+                                        onclick="setPrimaryCard({{ card.id }})"
+                                        title="Назначить основной картой"
+                                    >
+                                        Назначить основной
+                                    </button>
+                                {% elif card == primary_card %}
+                                    <button
+                                        class="btn btn-sm btn-warning"
+                                        onclick="unsetPrimaryCard()"
+                                        title="Убрать статус основной карты"
+                                    >
+                                        Убрать основную
+                                    </button>
+                                {% endif %}
+                                <button 
+                                    class="btn btn-sm btn-primary"
+                                    onclick="openManageCardModal(this)"
+                                    data-card-id="{{ card.id }}"
+                                    data-card-type="{{ card.card_type }}"
+                                    data-card-number="{{ card.card_number }}"
+                                    data-expiry="{{ card.expiry_date|date:"m/Y" }}"
+                                    data-active="{% if card.is_active %}1{% else %}0{% endif %}"
+                                    data-balance="{{ card.balance }}"
+                                >Управление</button>
                             </div>
                         </div>
                     </div>
@@ -163,40 +198,7 @@
         </div>
     </div>
 
-    <!-- Управление картами -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <!-- Блокировка/разблокировка -->
-        <div class="card bg-base-100 shadow-xl">
-            <div class="card-body">
-                <h2 class="card-title text-xl mb-4">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                    </svg>
-                    Блокировка карты
-                </h2>
-                <p class="text-base-content/70 mb-4">Заблокируйте карту при утере или краже</p>
-                <div class="card-actions">
-                    <button class="btn btn-error" onclick="blockCard()">Заблокировать карту</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Смена PIN -->
-        <div class="card bg-base-100 shadow-xl">
-            <div class="card-body">
-                <h2 class="card-title text-xl mb-4">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
-                    </svg>
-                    Смена PIN-кода
-                </h2>
-                <p class="text-base-content/70 mb-4">Измените PIN-код для безопасности</p>
-                <div class="card-actions">
-                    <button class="btn btn-warning" onclick="changePin()">Сменить PIN</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    
 
     <!-- Бонусы и кэшбэк -->
     <div class="card bg-base-100 shadow-xl mb-8">
@@ -259,72 +261,282 @@
 
 <!-- Модальное окно для оформления карты -->
 <div id="cardModal" class="modal">
-    <div class="modal-box">
-        <h3 class="font-bold text-lg mb-4" id="cardModalTitle">Оформление карты</h3>
+    <div class="modal-box max-w-4xl">
+        <h3 class="font-bold text-xl mb-2" id="cardModalTitle">Оформление карты</h3>
+        <p class="text-base-content/70 mb-6">Выберите тип карты и привяжите ее к одному из ваших счетов</p>
         <form id="cardForm">
-            <div class="form-control mb-4">
-                <label class="label">
-                    <span class="label-text">Тип карты</span>
-                </label>
-                <select class="select select-bordered" name="card_type" required>
-                    <option value="">Выберите тип карты</option>
-                    <option value="debit">Дебетовая карта</option>
-                    <option value="credit">Кредитная карта</option>
-                </select>
-            </div>
-            <div class="form-control mb-4">
-                <label class="label">
-                    <span class="label-text">Счет для привязки</span>
-                </label>
-                <select class="select select-bordered" name="account" required>
-                    <option value="">Выберите счет</option>
-                    {% for account in accounts %}
-                        <option value="{{ account.id }}">{{ account.account_number }} ({{ account.balance|floatformat:0 }} ₽)</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="form-control mb-4">
-                <label class="label">
-                    <span class="label-text">Доставка карты</span>
-                </label>
-                <select class="select select-bordered" name="delivery" required>
-                    <option value="">Выберите способ доставки</option>
-                    <option value="office">В офис банка</option>
-                    <option value="courier">Курьером</option>
-                    <option value="post">Почтой</option>
-                </select>
-            </div>
-            <div class="form-control mb-4">
-                <label class="label">
-                    <span class="label-text">Адрес доставки</span>
-                </label>
-                <textarea class="textarea textarea-bordered" name="address" placeholder="Укажите адрес доставки" required></textarea>
-            </div>
-            <div class="modal-action">
-                <button type="button" class="btn btn-ghost" onclick="closeCardModal()">Отмена</button>
-                <button type="submit" class="btn btn-primary">Оформить карту</button>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Превью карты -->
+                <div>
+                    <div class="card bg-gradient-to-br from-primary to-secondary text-primary-content shadow-xl">
+                        <div class="card-body">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="badge badge-outline badge-lg" id="previewCardType">Дебетовая</span>
+                                <span class="badge">VISA</span>
+                            </div>
+                            <div class="mt-4 mb-6">
+                                <p class="text-2xl font-mono tracking-wider" id="previewCardNumber">0000 0000 0000 0000</p>
+                                <p class="text-sm opacity-90">Срок: <span id="previewExpiry">MM/YY</span></p>
+                            </div>
+                            <div class="flex justify-between items-end">
+                                <div>
+                                    <p class="text-xs opacity-70">Держатель</p>
+                                    <p class="font-semibold">{{ client.full_name }}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-xs opacity-70">Счет</p>
+                                    <p class="font-mono" id="previewAccount">—</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 grid grid-cols-3 gap-2">
+                        <div class="stat shadow">
+                            <div class="stat-title">Кэшбэк</div>
+                            <div class="stat-value text-primary">5%</div>
+                            <div class="stat-desc">на покупки</div>
+                        </div>
+                        <div class="stat shadow">
+                            <div class="stat-title">Обслуживание</div>
+                            <div class="stat-value text-secondary">0 ₽</div>
+                            <div class="stat-desc">в год</div>
+                        </div>
+                        <div class="stat shadow">
+                            <div class="stat-title">Лимит</div>
+                            <div class="stat-value">100k</div>
+                            <div class="stat-desc">в день</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Поля формы -->
+                <div>
+                    <div class="form-control mb-5">
+                        <label class="label"><span class="label-text">Тип карты</span></label>
+                        <div class="join join-horizontal w-full">
+                            <input class="btn join-item" type="radio" name="card_type" value="debit" aria-label="Дебетовая" checked>
+                            <input class="btn join-item" type="radio" name="card_type" value="credit" aria-label="Кредитная">
+                        </div>
+                        <label class="label"><span class="label-text-alt">Можно изменить в любой момент перед отправкой</span></label>
+                    </div>
+
+                    <div class="form-control mb-5">
+                        <label class="label"><span class="label-text">Начальная сумма на карте</span></label>
+                        <input id="initialAmountRange" type="range" min="0" max="1000000" step="1000" value="0" class="range range-primary" name="initial_amount">
+                        <div class="flex justify-between text-sm px-2 mt-2">
+                            <span class="text-gray-500">0 ₽</span>
+                            <span class="font-bold text-primary text-lg" id="initialAmountValue">0 ₽</span>
+                            <span class="text-gray-500">1 000 000 ₽</span>
+                        </div>
+                        <label class="label"><span class="label-text-alt">Сумма будет зачислена на новую карту при оформлении</span></label>
+                    </div>
+
+                    <!-- Начальная сумма для кредитной карты -->
+                    <div id="creditInitialWrap" class="form-control mb-5 hidden">
+                        <label class="label"><span class="label-text">Начальная сумма на кредитной карте</span></label>
+                        <input id="creditInitialRange" type="range" min="0" max="1000000" step="1000" value="0" class="range range-primary" name="credit_initial">
+                        <div class="flex justify-between text-sm px-2 mt-2">
+                            <span class="text-gray-500">0 ₽</span>
+                            <span class="font-bold text-primary text-lg" id="creditInitialValue">0 ₽</span>
+                            <span class="text-gray-500">1 000 000 ₽</span>
+                        </div>
+                        <label class="label"><span class="label-text-alt">Будет зачислена на новую кредитную карту</span></label>
+                    </div>
+
+                    <div class="form-control mb-5">
+                        <label class="label"><span class="label-text">Способ доставки</span></label>
+                        <div class="filter w-full">
+                            <input class="btn" type="radio" name="delivery" value="office" aria-label="В офис" required>
+                            <input class="btn" type="radio" name="delivery" value="courier" aria-label="Курьером">
+                            <input class="btn" type="radio" name="delivery" value="post" aria-label="Почтой">
+                        </div>
+                    </div>
+
+                    <label class="floating-label mb-6">
+                        <textarea class="textarea" name="address" placeholder="Адрес доставки" required></textarea>
+                        <span>Адрес доставки</span>
+                    </label>
+
+                    <div class="flex items-center justify-end gap-2">
+                        <button type="button" class="btn btn-ghost" onclick="closeCardModal()">Отмена</button>
+                        <button type="submit" class="btn btn-primary">Оформить карту</button>
+                    </div>
+                </div>
             </div>
         </form>
     </div>
 </div>
 
+<!-- Модалка управления конкретной картой -->
+<div id="manageCardModal" class="modal">
+    <div class="modal-box max-w-3xl">
+        <h3 class="font-bold text-xl mb-2">Управление картой</h3>
+        <p class="text-base-content/70 mb-4">Действия применяются только к выбранной карте</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <div class="card bg-gradient-to-br from-primary to-secondary text-primary-content shadow-xl">
+                    <div class="card-body">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="badge badge-outline" id="mCardType"></span>
+                            <span class="badge" id="mCardStatus"></span>
+                        </div>
+                        <div class="mt-4 mb-6">
+                            <p class="text-2xl font-mono tracking-wider" id="mCardNumber"></p>
+                            <p class="text-sm opacity-90">Срок: <span id="mCardExpiry"></span></p>
+                        </div>
+                        <div class="flex justify-between items-end">
+                            <div>
+                                <p class="text-xs opacity-70">Держатель</p>
+                                <p class="font-semibold">{{ client.full_name }}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs opacity-70">Счет</p>
+                                <p class="font-mono" id="mCardAccount"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="space-y-4">
+                    <div class="card bg-base-100 shadow">
+                        <div class="card-body">
+                            <h4 class="card-title text-base">Статус карты</h4>
+                            <p class="text-sm text-base-content/70">Блокируйте карту при утере или подозрительной активности</p>
+                            <div>
+                                <button id="mBlockBtn" class="btn btn-error hidden" onclick="blockUnblockCard('block')">Заблокировать</button>
+                                <button id="mUnblockBtn" class="btn btn-success hidden" onclick="blockUnblockCard('unblock')">Разблокировать</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card bg-base-100 shadow">
+                        <div class="card-body">
+                            <h4 class="card-title text-base">Смена PIN-кода</h4>
+                            <p class="text-sm text-base-content/70">Введите новый PIN (4 цифры)</p>
+                            <div class="join">
+                                <input id="mPinInput" type="password" maxlength="4" pattern="[0-9]{4}" class="input input-bordered join-item w-32" placeholder="0000">
+                                <button class="btn btn-warning join-item" onclick="changeSelectedCardPin()">Сменить PIN</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-action">
+            <button class="btn btn-ghost" onclick="closeManageCardModal()">Закрыть</button>
+        </div>
+    </div>
+</div>
+
 <script>
+// CSRF helper
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+let SELECTED_CARD_ID = null;
+
+function openManageCardModal(el) {
+    SELECTED_CARD_ID = el.dataset.cardId;
+    document.getElementById('mCardType').textContent = el.dataset.cardType === 'credit' ? 'Кредитная' : 'Дебетовая';
+    document.getElementById('mCardNumber').textContent = el.dataset.cardNumber;
+    document.getElementById('mCardExpiry').textContent = el.dataset.expiry;
+    document.getElementById('mCardAccount').textContent = el.dataset.account;
+
+    const isActive = el.dataset.active === '1';
+    document.getElementById('mCardStatus').textContent = isActive ? 'Активна' : 'Заблокирована';
+    document.getElementById('mCardStatus').className = 'badge ' + (isActive ? 'badge-success' : 'badge-error');
+
+    document.getElementById('mBlockBtn').classList.toggle('hidden', !isActive);
+    document.getElementById('mUnblockBtn').classList.toggle('hidden', isActive);
+
+    document.getElementById('manageCardModal').classList.add('modal-open');
+}
+
+function closeManageCardModal() {
+    document.getElementById('manageCardModal').classList.remove('modal-open');
+}
+
+async function blockUnblockCard(action) {
+    if (!SELECTED_CARD_ID) return;
+    const csrfToken = getCookie('csrftoken');
+    const endpoint = action === 'block' ? `/card/${SELECTED_CARD_ID}/block/` : `/card/${SELECTED_CARD_ID}/unblock/`;
+    try {
+        const resp = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken }
+        });
+        const data = await resp.json();
+        if (data.success) {
+            showAlert(action === 'block' ? 'Карта заблокирована' : 'Карта разблокирована', 'success');
+            window.location.reload();
+        } else {
+            showAlert(data.error || 'Ошибка операции', 'error');
+        }
+    } catch (e) {
+        showAlert('Сбой сети', 'error');
+    }
+}
+
+async function changeSelectedCardPin() {
+    if (!SELECTED_CARD_ID) return;
+    const pin = (document.getElementById('mPinInput').value || '').trim();
+    if (!(pin.length === 4 && /^\d{4}$/.test(pin))) {
+        showAlert('PIN должен быть из 4 цифр', 'warning');
+        return;
+    }
+    const csrfToken = getCookie('csrftoken');
+    try {
+        const resp = await fetch(`/card/${SELECTED_CARD_ID}/pin/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ new_pin: pin })
+        });
+        const data = await resp.json();
+        if (data.success) {
+            showAlert('PIN успешно изменен', 'success');
+            document.getElementById('mPinInput').value = '';
+        } else {
+            showAlert(data.error || 'Ошибка при смене PIN', 'error');
+        }
+    } catch (e) {
+        showAlert('Сбой сети', 'error');
+    }
+}
 function openCardModal(type) {
     const modal = document.getElementById('cardModal');
     const title = document.getElementById('cardModalTitle');
+    const typeBadge = document.getElementById('previewCardType');
+    const typeInputs = document.querySelectorAll('input[name="card_type"]');
     
     switch(type) {
         case 'debit':
             title.textContent = 'Оформление дебетовой карты';
+            typeBadge.textContent = 'Дебетовая';
+            typeInputs.forEach(i => { i.checked = (i.value === 'debit'); });
             break;
         case 'credit':
             title.textContent = 'Оформление кредитной карты';
+            typeBadge.textContent = 'Кредитная';
+            typeInputs.forEach(i => { i.checked = (i.value === 'credit'); });
             break;
         case 'premium':
             title.textContent = 'Оформление премиум карты';
             break;
     }
     
+    // Применяем UI сразу после выбора типа
+    if (typeof updateCardTypeUI === 'function') {
+        updateCardTypeUI();
+    }
+
     modal.classList.add('modal-open');
 }
 
@@ -332,68 +544,278 @@ function closeCardModal() {
     document.getElementById('cardModal').classList.remove('modal-open');
 }
 
-function viewCardDetails(cardId) {
-    showAlert('Управление картой #' + cardId, 'info');
-}
-
-function blockCard() {
-    confirmAction(
-        'Вы уверены, что хотите заблокировать карту?',
-        function() {
-            showAlert('Карта заблокирована. Для разблокировки обратитесь в банк.', 'warning');
-        }
-    );
-}
-
-function changePin() {
-    // Создаем модальное окно для ввода PIN-кода
-    const modal = document.createElement('div');
-    modal.className = 'modal modal-open';
-    modal.style.zIndex = '10000';
-    
-    modal.innerHTML = `
-        <div class="modal-box">
-            <h3 class="font-bold text-lg mb-4">Изменение PIN-кода</h3>
-            <p class="py-4">Введите новый PIN-код (4 цифры):</p>
-            <input type="password" id="pin-input" class="input input-bordered w-full max-w-xs" maxlength="4" pattern="[0-9]{4}" placeholder="0000">
-            <div class="modal-action">
-                <button class="btn btn-primary" id="confirm-pin-btn">Подтвердить</button>
-                <button class="btn btn-ghost" id="cancel-pin-btn">Отмена</button>
-            </div>
-        </div>
-        <div class="modal-backdrop" id="pin-modal-backdrop"></div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    // Обработчики событий
-    document.getElementById('confirm-pin-btn').onclick = function() {
-        const newPin = document.getElementById('pin-input').value;
-        if (newPin && newPin.length === 4 && /^\d+$/.test(newPin)) {
-            showAlert('PIN-код успешно изменен!', 'success');
-            modal.remove();
-        } else {
-            showAlert('PIN-код должен содержать 4 цифры', 'warning');
-        }
-    };
-    
-    document.getElementById('cancel-pin-btn').onclick = function() {
-        modal.remove();
-    };
-    
-    document.getElementById('pin-modal-backdrop').onclick = function() {
-        modal.remove();
-    };
-}
+// удалены устаревшие глобальные блокировка/смена PIN
 
 // Обработка формы оформления карты
-document.getElementById('cardForm').addEventListener('submit', function(e) {
+document.getElementById('cardForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     const formData = new FormData(this);
+
+    const payload = {
+        card_type: formData.get('card_type'),
+        initial_amount: formData.get('initial_amount'),
+        credit_initial: formData.get('credit_initial')
+    };
+
+    // Получаем CSRF токен из cookie
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+    const csrfToken = getCookie('csrftoken');
+
+    try {
+        const resp = await fetch('{% url "create_card" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(payload)
+        });
+        const data = await resp.json();
+        if (data.success) {
+            showAlert('Карта успешно выпущена', 'success');
+            // Мгновенно обновим страницу, чтобы показать новую карту
+            window.location.reload();
+        } else {
+            showAlert(data.error || 'Ошибка при выпуске карты', 'error');
+        }
+    } catch (err) {
+        showAlert('Сбой сети при выпуске карты', 'error');
+    }
+});
+
+// Единая функция применения UI по выбранному типу карты
+function updateCardTypeUI() {
+    const selected = document.querySelector('input[name="card_type"]:checked');
+    const value = selected ? selected.value : 'debit';
+    const badge = document.getElementById('previewCardType');
+    const amountLabel = document.getElementById('amountLabel');
+    const amountDescription = document.getElementById('amountDescription');
+    const initialRange = document.getElementById('initialAmountRange');
+    const initialValue = document.getElementById('initialAmountValue');
+    const previewAmount = document.getElementById('previewAmount');
+
+    badge.textContent = value === 'credit' ? 'Кредитная' : 'Дебетовая';
     
-    showAlert('Заявка на оформление карты отправлена! Карта будет изготовлена в течение 5-7 рабочих дней.', 'success');
-    closeCardModal();
-    this.reset();
+    if (value === 'credit') {
+        amountLabel.textContent = 'Начальная сумма на кредитной карте';
+        amountDescription.textContent = 'Будет зачислена на новую кредитную карту';
+    } else {
+        amountLabel.textContent = 'Начальная сумма на карте';
+        amountDescription.textContent = 'Сумма будет зачислена на новую карту при оформлении';
+    }
+    
+    if (initialRange && initialValue) {
+        initialRange.value = initialRange.value || 0;
+        initialValue.textContent = `${Number(initialRange.value).toLocaleString('ru-RU')} ₽`;
+        previewAmount.textContent = `${Number(initialRange.value).toLocaleString('ru-RU')} ₽`;
+    }
+}
+
+// Обновление UI при переключении типа карты
+document.querySelectorAll('input[name="card_type"]').forEach(r => {
+    r.addEventListener('change', function() {
+        updateCardTypeUI();
+    });
+});
+
+// Отображение значения бегунка суммы кредита
+document.getElementById('creditInitialRange')?.addEventListener('input', function() {
+    const v = Number(this.value || 0);
+    const out = document.getElementById('creditInitialValue');
+    const preview = document.getElementById('previewAmount');
+    if (out) out.textContent = `${v.toLocaleString('ru-RU')} ₽`;
+    if (preview) preview.textContent = `${v.toLocaleString('ru-RU')} ₽`;
+});
+
+// Отображение значения бегунка начальной суммы
+document.getElementById('initialAmountRange')?.addEventListener('input', function() {
+    const v = Number(this.value || 0);
+    const out = document.getElementById('initialAmountValue');
+    const preview = document.getElementById('previewAmount');
+    if (out) out.textContent = `${v.toLocaleString('ru-RU')} ₽`;
+    if (preview) preview.textContent = `${v.toLocaleString('ru-RU')} ₽`;
+});
+
+// Обновление способа доставки в предварительном просмотре
+document.querySelectorAll('input[name="delivery"]').forEach(r => {
+    r.addEventListener('change', function() {
+        const preview = document.getElementById('previewDelivery');
+        if (preview) {
+            preview.textContent = this.value === 'office' ? 'В офис' : 'Курьером';
+        }
+    });
+});
+
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    updateCardTypeUI();
 });
 </script>
+
+<!-- Модальное окно для создания карты -->
+<div id="cardModal" class="modal">
+    <div class="modal-box max-w-3xl w-full">
+        <h3 class="font-bold text-xl mb-2" id="cardModalTitle">Оформление дебетовой карты</h3>
+        <p class="text-base-content/70 mb-6">Заполните параметры, и модератор свяжется с вами для подтверждения</p>
+        <form id="cardForm">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <div class="form-control mb-5">
+                        <label class="label"><span class="label-text">Тип карты</span></label>
+                        <div class="join w-full">
+                            <input class="btn join-item" type="radio" name="card_type" value="debit" aria-label="Дебетовая" checked>
+                            <input class="btn join-item" type="radio" name="card_type" value="credit" aria-label="Кредитная">
+                        </div>
+                        <label class="label"><span class="label-text-alt">Можно изменить в любой момент перед отправкой</span></label>
+                    </div>
+
+                    <div class="form-control mb-5">
+                        <label class="label"><span class="label-text" id="amountLabel">Начальная сумма на карте</span></label>
+                        <input id="initialAmountRange" type="range" min="0" max="1000000" step="1000" value="0" class="range range-primary" name="initial_amount">
+                        <div class="flex justify-between text-sm px-2 mt-2">
+                            <span class="text-gray-500">0 ₽</span>
+                            <span class="font-bold text-primary text-lg" id="initialAmountValue">0 ₽</span>
+                            <span class="text-gray-500">1 000 000 ₽</span>
+                        </div>
+                        <label class="label"><span class="label-text-alt" id="amountDescription">Сумма будет зачислена на новую карту при оформлении</span></label>
+                    </div>
+
+                    <div class="form-control mb-5">
+                        <label class="label"><span class="label-text">Способ доставки</span></label>
+                        <div class="filter w-full">
+                            <input class="btn" type="radio" name="delivery" value="office" aria-label="В офис" required>
+                            <input class="btn" type="radio" name="delivery" value="courier" aria-label="Курьером">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="card bg-base-100 shadow">
+                        <div class="card-body">
+                            <h4 class="card-title text-base">Предварительный просмотр</h4>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-sm">Тип карты:</span>
+                                    <span class="font-semibold" id="previewCardType">Дебетовая</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm">Начальная сумма:</span>
+                                    <span class="font-semibold" id="previewAmount">0 ₽</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm">Способ доставки:</span>
+                                    <span class="font-semibold" id="previewDelivery">—</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2 mt-6">
+                        <button type="button" class="btn btn-ghost" onclick="closeCardModal()">Отмена</button>
+                        <button type="submit" class="btn btn-primary">Оставить заявку</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Функция для установки основной карты
+async function setPrimaryCard(cardId) {
+    try {
+        const response = await fetch(`/card/${cardId}/set-primary/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(data.message, 'success');
+            // Перезагружаем страницу для обновления интерфейса
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showAlert(data.error || 'Ошибка при установке основной карты', 'error');
+        }
+    } catch (error) {
+        showAlert('Ошибка сети при установке основной карты', 'error');
+    }
+}
+
+// Функция для снятия основной карты
+async function unsetPrimaryCard() {
+    try {
+        const response = await fetch('/card/unset-primary/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(data.message, 'success');
+            // Перезагружаем страницу для обновления интерфейса
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showAlert(data.error || 'Ошибка при снятии основной карты', 'error');
+        }
+    } catch (error) {
+        showAlert('Ошибка сети при снятии основной карты', 'error');
+    }
+}
+
+// Функция для получения CSRF токена
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Функция для показа уведомлений
+function showAlert(message, type = 'info') {
+    // Создаем элемент уведомления
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} fixed top-4 right-4 z-50 max-w-sm`;
+    alert.innerHTML = `
+        <div class="flex items-center">
+            <span>${message}</span>
+            <button class="btn btn-sm btn-ghost ml-2" onclick="this.parentElement.parentElement.remove()">×</button>
+        </div>
+    `;
+    
+    document.body.appendChild(alert);
+    
+    // Автоматически удаляем через 5 секунд
+    setTimeout(() => {
+        if (alert.parentElement) {
+            alert.remove();
+        }
+    }, 5000);
+}
+</script>
+
 {% endblock %}

@@ -213,7 +213,6 @@
                     <li><a href="{% url 'admin_dashboard' %}">⚙️ Админ-панель</a></li>
                     {% endif %}
                     <li><a href="{% url 'deposits' %}">💰 Депозиты</a></li>
-                    <li><a href="{% url 'credits' %}">💳 Кредиты</a></li>
                     <li><a href="{% url 'investments' %}">📈 Инвестиции</a></li>
                     <li><a href="{% url 'cards' %}">💳 Карты</a></li>
                     <li><a href="{% url 'services_management' %}">⚙️ Управление услугами</a></li>
@@ -296,7 +295,6 @@
                                 <li><a href="{% url 'services_management' %}">⚙️ Управление услугами</a></li>
                                 <li class="menu-title"><span class="opacity-60">Банковские продукты</span></li>
                                 <li><a href="{% url 'deposits' %}">💰 Депозиты</a></li>
-                                <li><a href="{% url 'credits' %}">💳 Кредиты</a></li>
                                 <li><a href="{% url 'investments' %}">📈 Инвестиции</a></li>
                                 <li><a href="{% url 'cards' %}">💳 Карты</a></li>
                             {% endif %}
@@ -366,49 +364,7 @@
     {% endif %}
 
 
-    <!-- Футер -->
-    <footer class="bg-base-200 border-t border-base-300 mt-16">
-        <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div>
-                    <div class="flex items-center space-x-3 mb-4">
-                        <div class="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                            </svg>
-                        </div>
-                        <h3 class="text-lg font-semibold text-base-content">ДБО Система</h3>
-                    </div>
-                    <p class="text-sm text-base-content/70">
-                        Демонстрационная система дистанционного банковского обслуживания для изучения кибербезопасности.
-                    </p>
-                </div>
-                
-                <div>
-                    <h4 class="text-sm font-semibold text-base-content mb-4">Быстрые ссылки</h4>
-                    <ul class="space-y-2">
-                        <li><a href="/" class="text-sm text-base-content/70 hover:text-primary transition-colors">Главная</a></li>
-                        <li><a href="/login" class="text-sm text-base-content/70 hover:text-primary transition-colors">Вход в систему</a></li>
-                        
-                    </ul>
-                </div>
-                
-                <div>
-                    <h4 class="text-sm font-semibold text-base-content mb-4">Информация</h4>
-                    <p class="text-sm text-base-content/70">
-                        Система содержит уязвимости для образовательных целей. 
-                        Не используйте в продакшене!
-                    </p>
-                </div>
-            </div>
-            
-            <div class="border-t border-base-300 mt-8 pt-8 text-center">
-                <p class="text-sm text-base-content/50">
-                    © 2024 ДБО Система - Киберполигон. Все права защищены.
-                </p>
-            </div>
-        </div>
-    </footer>
+    {% include 'footer.html' %}
 
     <!-- JS marquee with persistent offset across pages -->
     <script>

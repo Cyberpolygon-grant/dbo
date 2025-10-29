@@ -33,6 +33,7 @@ urlpatterns = [
     path("connect-service/<int:service_id>/", views.connect_service, name="connect_service"),
     path("disconnect-service/<int:service_id>/", views.disconnect_service, name="disconnect_service"),
     path("my-services/", views.my_services, name="my_services"),
+    path("my-requests/", views.my_requests, name="my_requests"),
     
     # Дашборды
     path("operator1/", views.operator1_dashboard, name="operator1_dashboard"),
@@ -47,6 +48,7 @@ urlpatterns = [
     # Функционал оператора ДБО #2
     path("review-request/<int:request_id>/", views.review_service_request, name="review_service_request"),
     path("approve-request/<int:request_id>/", views.approve_service_request, name="approve_service_request"),
+    path("reject-request/<int:request_id>/", views.reject_service_request, name="reject_service_request"),
     
     # Функционал клиента
     path("create-service-request/", views.create_service_request, name="create_service_request"),
@@ -57,32 +59,34 @@ urlpatterns = [
     path("admin-dashboard/", views.admin_dashboard, name="admin_dashboard"),
     
     # Банковские функции для клиентов
-    path("client/accounts/", views.accounts_view, name="accounts"),
-    path("client/accounts/create", views.create_bank_account, name="create_bank_account"),
     path("client/transfers/", views.transfers_view, name="transfers"),
     path("client/deposits/", views.deposits_view, name="deposits"),
-    path("client/credits/", views.credits_view, name="credits"),
+    # кредиты вырезаны
     
     # Банковские услуги
     path("deposits/", views.deposits_view, name="deposits"),
-    path("credits/", views.credits_view, name="credits"),
+    # кредиты вырезаны
     path("investments/", views.investments_view, name="investments"),
     path("cards/", views.cards_view, name="cards"),
     path("create-deposit/", views.create_deposit, name="create_deposit"),
-    path("create-credit-request/", views.create_credit_request, name="create_credit_request"),
+    # кредиты вырезаны
     path("create-investment-request/", views.create_investment_request, name="create_investment_request"),
     path("create-card-request/", views.create_card_request, name="create_card_request"),
+    path("create-card/", views.create_card, name="create_card"),
+    path("card/<int:card_id>/block/", views.block_card, name="block_card"),
+    path("card/<int:card_id>/unblock/", views.unblock_card, name="unblock_card"),
+    path("card/<int:card_id>/pin/", views.change_card_pin, name="change_card_pin"),
+    path("card/<int:card_id>/set-primary/", views.set_primary_card, name="set_primary_card"),
+    path("card/unset-primary/", views.unset_primary_card, name="unset_primary_card"),
     
     # Новые банковские сервисы
-    path("service/accounts/", views.accounts_service, name="accounts_service"),
-    path("service/credits/", views.credits_service, name="credits_service"),
+    # кредиты вырезаны
     path("service/deposits/", views.deposits_service, name="deposits_service"),
     path("service/transfers/", views.transfers_service, name="transfers_service"),
     path("service/cards/", views.cards_service, name="cards_service"),
     path("service/investments/", views.investments_service, name="investments_service"),
     
     # Старые маршруты для совместимости
-    path("accounts/", views.accounts, name="accounts_old"),
     path("transfers/", views.transfers, name="transfers_old"),
     path("dashboard/", views.dashboard, name="dashboard"),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

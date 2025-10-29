@@ -61,7 +61,7 @@
             <!-- Демо-аккаунты -->
             <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-600">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 text-center">Демо-аккаунты</h3>
-                
+
                 <div class="space-y-3">
                     <!-- Оператор ДБО #1 -->
                     <div class="demo-account bg-red-50 dark:bg-red-900/20 rounded-xl p-4 border border-red-200 dark:border-red-800 cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors" onclick="fillCredentials('operator1@bank.ru', 'password123')">
@@ -82,7 +82,7 @@
                             </svg>
                         </div>
                     </div>
-                    
+
                     <!-- Оператор ДБО #2 -->
                     <div class="demo-account bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4 border border-yellow-200 dark:border-yellow-800 cursor-pointer hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors" onclick="fillCredentials('operator2@bank.ru', 'password123')">
                         <div class="flex items-center justify-between">
@@ -102,8 +102,8 @@
                             </svg>
                         </div>
                     </div>
-                    
-                    <!-- Клиент ДБО -->
+
+                    <!-- Клиент ДБО #1 (верифицирован) -->
                     <div class="demo-account bg-green-50 dark:bg-green-900/20 rounded-xl p-4 border border-green-200 dark:border-green-800 cursor-pointer hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors" onclick="fillCredentials('client1@example.com', 'password123')">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-3">
@@ -118,6 +118,86 @@
                                 </div>
                             </div>
                             <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Клиент ДБО #2 (верифицирован) -->
+                    <div class="demo-account bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors" onclick="fillCredentials('client2@example.com', 'password123')">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="font-medium text-blue-800 dark:text-blue-200">Клиент банка</div>
+                                    <div class="text-sm text-blue-600 dark:text-blue-300">client2 / password123 (79992345678)</div>
+                                </div>
+                            </div>
+                            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Клиент ДБО #3 (верифицирован) -->
+                    <div class="demo-account bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 border border-purple-200 dark:border-purple-800 cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors" onclick="fillCredentials('client3@example.com', 'password123')">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="font-medium text-purple-800 dark:text-purple-200">Клиент банка</div>
+                                    <div class="text-sm text-purple-600 dark:text-purple-300">client3 / password123 (79993456789)</div>
+                                </div>
+                            </div>
+                            <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Клиент ДБО #4 (не верифицирован) -->
+                    <div class="demo-account bg-orange-50 dark:bg-orange-900/20 rounded-xl p-4 border border-orange-200 dark:border-orange-800 cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors" onclick="fillCredentials('client4@example.com', 'password123')">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="font-medium text-orange-800 dark:text-orange-200">Клиент банка</div>
+                                    <div class="text-sm text-orange-600 dark:text-orange-300">client4 / password123 (79994567890)</div>
+                                </div>
+                            </div>
+                            <svg class="w-5 h-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Клиент ДБО #5 (не верифицирован) -->
+                    <div class="demo-account bg-teal-50 dark:bg-teal-900/20 rounded-xl p-4 border border-teal-200 dark:border-teal-800 cursor-pointer hover:bg-teal-100 dark:hover:bg-teal-900/30 transition-colors" onclick="fillCredentials('client5@example.com', 'password123')">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-gradient-to-r from-teal-500 to-green-500 rounded-lg flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="font-medium text-teal-800 dark:text-teal-200">Клиент банка</div>
+                                    <div class="text-sm text-teal-600 dark:text-teal-300">client5 / password123 (79995678901)</div>
+                                </div>
+                            </div>
+                            <svg class="w-5 h-5 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                             </svg>
                         </div>

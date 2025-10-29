@@ -86,10 +86,10 @@
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Статус клиента</p>
                         <p class="text-lg font-bold text-gray-900 dark:text-white">
-                            {% if client.is_verified %}
-                                <span class="text-green-600 dark:text-green-400">Верифицирован</span>
+                            {% if client.is_active %}
+                                <span class="text-green-600 dark:text-green-400">Активен</span>
                             {% else %}
-                                <span class="text-yellow-600 dark:text-yellow-400">Не верифицирован</span>
+                                <span class="text-red-600 dark:text-red-400">Неактивен</span>
                             {% endif %}
                         </p>
                     </div>
@@ -99,7 +99,7 @@
 
         <!-- Быстрые действия -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <a href="{% url 'accounts' %}" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+            <a href="{% url 'cards_service' %}" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
                 <div class="flex items-center">
                     <div class="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
                         <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -113,7 +113,7 @@
                 </div>
             </a>
 
-            <a href="{% url 'transfers' %}" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+            <a href="{% url 'transfers_service' %}" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
                 <div class="flex items-center">
                     <div class="p-3 bg-green-100 dark:bg-green-900 rounded-lg">
                         <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -127,7 +127,7 @@
                 </div>
             </a>
 
-            <a href="{% url 'deposits' %}" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+            <a href="{% url 'deposits_service' %}" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
                 <div class="flex items-center">
                     <div class="p-3 bg-purple-100 dark:bg-purple-900 rounded-lg">
                         <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -181,7 +181,11 @@
                                 </div>
                             </div>
                             <div class="text-right">
-                                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ transaction.amount }} {{ transaction.currency }}</p>
+                                {% if transaction.to_card and transaction.to_card.client_id == client.id %}
+                                    <p class="text-sm font-bold text-green-600 dark:text-green-400">+{{ transaction.amount|floatformat:2 }} {{ transaction.currency }}</p>
+                                {% else %}
+                                    <p class="text-sm font-bold text-red-600 dark:text-red-400">-{{ transaction.amount|floatformat:2 }} {{ transaction.currency }}</p>
+                                {% endif %}
                                 <p class="text-xs text-gray-600 dark:text-gray-400">{{ transaction.created_at|date:"d.m.Y H:i" }}</p>
                             </div>
                         </div>

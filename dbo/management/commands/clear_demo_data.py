@@ -2,7 +2,7 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 from dbo.models import (
     Operator, Client, ServiceCategory, Service, ServiceRequest, News, PhishingEmail,
-    ClientService, BankAccount, BankCard, Transaction,
+    ClientService, BankCard, Transaction,
     Deposit, Credit, InvestmentProduct, ClientInvestment
 )
 
@@ -39,7 +39,6 @@ class Command(BaseCommand):
             'client_services': ClientService.objects.count(),
             # attack_logs отключены
             'attack_logs': 0,
-            'bank_accounts': BankAccount.objects.count(),
             'bank_cards': BankCard.objects.count(),
             'transactions': Transaction.objects.count(),
             'deposits': Deposit.objects.count(),
@@ -56,7 +55,6 @@ class Command(BaseCommand):
         Deposit.objects.all().delete()
         Transaction.objects.all().delete()
         BankCard.objects.all().delete()
-        BankAccount.objects.all().delete()
         
         # Логи атак отключены
         
@@ -99,7 +97,6 @@ class Command(BaseCommand):
             'phishing_emails': PhishingEmail.objects.count(),
             'client_services': ClientService.objects.count(),
             'attack_logs': 0,
-            'bank_accounts': BankAccount.objects.count(),
             'bank_cards': BankCard.objects.count(),
             'transactions': Transaction.objects.count(),
             'deposits': Deposit.objects.count(),

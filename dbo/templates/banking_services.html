@@ -34,58 +34,58 @@
     </div>
 
     <div class="container mx-auto px-4 py-8">
-        <!-- Фильтры и поиск -->
+        <!-- Фильтры и поиск (серверная фильтрация через GET) -->
         <div class="card bg-base-100 shadow-xl mb-8">
             <div class="card-body">
-                <div class="flex flex-col lg:flex-row gap-4 items-center">
+                <form method="get" class="flex flex-col lg:flex-row gap-4 items-center w-full">
+                    <!-- Сохраняем выбранную категорию при отправке формы -->
+                    {% if category_active %}
+                    <input type="hidden" name="category" value="{{ category_active }}">
+                    {% endif %}
+
                     <!-- Поиск -->
-                    <div class="form-control flex-1">
-                        <div class="input-group">
-                            <input type="text" id="searchInput" placeholder="Поиск услуг..." class="input input-bordered flex-1">
-                            <button class="btn btn-square" onclick="searchServices()">
+                    <div class="form-control flex-1 w-full">
+                        <div class="input-group w-full">
+                            <input type="text" name="q" value="{{ q }}" placeholder="Поиск услуг..." class="input input-bordered flex-1 w-full">
+                            <button type="submit" class="btn btn-square">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                                 </svg>
                             </button>
                         </div>
                     </div>
-                    
+
                     <!-- Фильтр по цене -->
                     <div class="form-control">
-                        <select id="priceFilter" class="select select-bordered" onchange="filterByPrice()">
-                            <option value="all">Любая цена</option>
-                            <option value="free">Бесплатно</option>
-                            <option value="low">До 1000 ₽</option>
-                            <option value="medium">1000-5000 ₽</option>
-                            <option value="high">Свыше 5000 ₽</option>
+                        <select name="price" class="select select-bordered" onchange="this.form.submit()">
+                            <option value="all" {% if price == 'all' %}selected{% endif %}>Любая цена</option>
+                            <option value="free" {% if price == 'free' %}selected{% endif %}>Бесплатно</option>
+                            <option value="low" {% if price == 'low' %}selected{% endif %}>До 1000 ₽</option>
+                            <option value="medium" {% if price == 'medium' %}selected{% endif %}>1000-5000 ₽</option>
+                            <option value="high" {% if price == 'high' %}selected{% endif %}>Свыше 5000 ₽</option>
                         </select>
                     </div>
-                    
+
                     <!-- Сортировка -->
                     <div class="form-control">
-                        <select id="sortBy" class="select select-bordered" onchange="sortServices()">
-                            <option value="name">По названию</option>
-                            <option value="price-low">Цена: по возрастанию</option>
-                            <option value="price-high">Цена: по убыванию</option>
-                            <option value="popular">Популярные</option>
+                        <select name="sort" class="select select-bordered" onchange="this.form.submit()">
+                            <option value="name" {% if sort == 'name' %}selected{% endif %}>По названию</option>
+                            <option value="price-low" {% if sort == 'price-low' %}selected{% endif %}>Цена: по возрастанию</option>
+                            <option value="price-high" {% if sort == 'price-high' %}selected{% endif %}>Цена: по убыванию</option>
+                            <option value="popular" {% if sort == 'popular' %}selected{% endif %}>Популярные</option>
                         </select>
                     </div>
-                </div>
+                </form>
             </div>
         </div>
 
         <!-- Навигация по категориям -->
         <div id="categoryButtons" class="flex flex-wrap gap-2 mb-8 justify-center">
-            <button class="btn btn-ghost btn-sm active-category" onclick="showAllServices(this)">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                </svg>
-                Все услуги
-            </button>
             {% for category in categories %}
-            <button class="btn btn-ghost btn-sm" onclick="showCategory('{{ category.name }}', this)">
+            <a href="?category={{ category.name|urlencode }}{% if q %}&q={{ q|urlencode }}{% endif %}{% if price %}&price={{ price }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}"
+               class="btn btn-sm {% if category_active == category.name %}btn-primary{% else %}btn-ghost{% endif %}">
                 {{ category.name }}
-            </button>
+            </a>
             {% endfor %}
         </div>
 
@@ -104,7 +104,7 @@
                     <!-- Иконка-эмодзи по названию/категории услуги -->
                     <figure class="px-6 pt-6">
                         <div class="w-full h-48 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
-                            {% with name=service.name|lower cat=service.category.name|lower %}
+                            {% with name=service.name|lower cat=category_name|lower %}
                                 <span class="text-6xl select-none">
                                     {% if 'инвест' in name or 'инвест' in cat %}📈{% elif 'кредит' in name or 'ипотек' in name or 'кредит' in cat %}💳{% elif 'депозит' in name or 'вклад' in name or 'депозит' in cat %}💰{% elif 'карта' in name or 'карта' in cat %}💳{% elif 'перевод' in name or 'платеж' in name or 'платёж' in name or 'перевод' in cat or 'плат' in cat %}🔁{% elif 'страх' in name or 'страх' in cat %}🛡️{% elif 'счет' in name or 'счёт' in name or 'рко' in name or 'счет' in cat %}🏦{% elif 'интернет' in name or 'мобил' in name or 'онлайн' in name %}📱{% elif 'vip' in name or 'премиум' in name %}⭐{% elif 'поддерж' in name or 'консьерж' in name %}👩‍💼{% else %}🧩{% endif %}
                                 </span>
@@ -124,7 +124,7 @@
                         </div>
                         
                         <!-- Описание -->
-                        <p class="text-base-content/70 mb-4 line-clamp-3">{{ service.description|truncatewords:15 }}</p>
+                            <p class="text-base-content/70 mb-4 line-clamp-3">{{ service.description|truncatewords:15 }}</p>
                         
                         <!-- Рейтинг и отзывы -->
                         <div class="flex items-center mb-4">

@@ -89,8 +89,8 @@
                  data-category="{{ client_service.service.category.name }}">
                 <!-- Статус услуги -->
                 <div class="card-body p-6">
-                    <div class="flex items-start justify-between mb-4">
-                        <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <div class="mb-4">
+                        <div class="flex items-center gap-3 mb-2">
                             <div class="w-10 h-10 rounded-lg bg-base-200 flex items-center justify-center flex-shrink-0">
                                 {% with name=client_service.service.name|lower cat=client_service.service.category.name|lower %}
                                     <span class="text-2xl select-none">
@@ -98,13 +98,15 @@
                                     </span>
                                 {% endwith %}
                             </div>
-                            <div class="min-w-0">
+                            <div class="min-w-0 flex-1">
                                 <h3 class="card-title text-lg leading-tight truncate">{{ client_service.service.name }}</h3>
                                 <p class="text-sm text-base-content/60 truncate">{{ client_service.service.category.name }}</p>
                             </div>
                         </div>
-                        <div class="badge badge-lg {% if client_service.status == 'active' %}badge-success{% elif client_service.status == 'suspended' %}badge-warning{% elif client_service.status == 'cancelled' %}badge-error{% else %}badge-neutral{% endif %}">
-                            {{ client_service.get_status_display }}
+                        <div class="flex justify-end">
+                            <div class="badge {% if client_service.status == 'active' %}badge-success{% elif client_service.status == 'suspended' %}badge-warning{% elif client_service.status == 'cancelled' %}badge-error{% else %}badge-neutral{% endif %}" style="white-space: nowrap;">
+                                {% if client_service.status == 'pending' %}В ожидании{% else %}{{ client_service.get_status_display }}{% endif %}
+                            </div>
                         </div>
                     </div>
                     

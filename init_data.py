@@ -10,7 +10,7 @@ django.setup()
 
 from django.contrib.auth.models import User
 from django.utils import timezone
-from dbo.models import Operator, Client, ServiceCategory, Service, PhishingEmail, ServiceRequest, ClientService, News
+from dbo.models import Operator, Client, ServiceCategory, Service, PhishingEmail, ServiceRequest, ClientService, News, BankCard, Transaction, Deposit, Credit, InvestmentProduct, ClientInvestment
 
 def create_demo_data():
     print("Создание демо-данных...")
@@ -74,14 +74,35 @@ def create_demo_data():
             'client_id': 'CLI001',
             'full_name': 'Петр Иванов',
             'email': 'client1@example.com',
-            'phone': '+7 (999) 123-45-67',
+            'phone': '79991234567',
             'is_active': True,
-            'is_verified': True,
             'created_by': operator1
         }
     )
     if created:
         print("Создан клиент ДБО")
+        
+        # Создаем первую банковскую карту для клиента (автоматически становится основной)
+        try:
+            from datetime import date, timedelta
+            expiry_date = date.today() + timedelta(days=365*5)  # Карта действует 5 лет
+
+            card = BankCard.objects.create(
+                client=client1,
+                card_number="4081781099910004312",
+                card_type='debit',
+                balance=Decimal('100000.00'),  # Начальный баланс
+                currency='RUB',
+                expiry_date=expiry_date,
+                is_active=True
+            )
+
+            # Автоматически делаем первую карту основной
+            client1.primary_card = card
+            client1.save(update_fields=['primary_card'])
+            print(f"Создана основная карта: {card.card_number}")
+        except Exception as e:
+            print(f"Ошибка при создании карты: {e}")
     
     # Создаем категории услуг
     category1, created = ServiceCategory.objects.get_or_create(
@@ -244,8 +265,7 @@ def create_demo_data():
             'last_name': 'Смирнова',
             'client_id': 'CLI002',
             'full_name': 'Мария Смирнова',
-            'phone': '+7 (999) 234-56-78',
-            'is_verified': True
+            'phone': '79992345678'
         },
         {
             'username': 'client3',
@@ -255,8 +275,7 @@ def create_demo_data():
             'last_name': 'Козлов',
             'client_id': 'CLI003',
             'full_name': 'Алексей Козлов',
-            'phone': '+7 (999) 345-67-89',
-            'is_verified': True
+            'phone': '79993456789'
         },
         {
             'username': 'client4',
@@ -266,8 +285,7 @@ def create_demo_data():
             'last_name': 'Морозова',
             'client_id': 'CLI004',
             'full_name': 'Елена Морозова',
-            'phone': '+7 (999) 456-78-90',
-            'is_verified': False
+            'phone': '79994567890'
         },
         {
             'username': 'client5',
@@ -277,8 +295,7 @@ def create_demo_data():
             'last_name': 'Волков',
             'client_id': 'CLI005',
             'full_name': 'Дмитрий Волков',
-            'phone': '+7 (999) 567-89-01',
-            'is_verified': False
+            'phone': '79995678901'
         }
     ]
     
@@ -295,7 +312,7 @@ def create_demo_data():
             user.set_password(client_data['password'])
             user.save()
         
-        Client.objects.get_or_create(
+        client, created = Client.objects.get_or_create(
             user=user,
             defaults={
                 'client_id': client_data['client_id'],
@@ -303,10 +320,32 @@ def create_demo_data():
                 'email': client_data['email'],
                 'phone': client_data['phone'],
                 'is_active': True,
-                'is_verified': client_data['is_verified'],
                 'created_by': operator1
             }
         )
+        
+        # Создаем первую банковскую карту для нового клиента (автоматически становится основной)
+        if created:
+            try:
+                from datetime import date, timedelta
+                expiry_date = date.today() + timedelta(days=365*5)  # Карта действует 5 лет
+
+                card = BankCard.objects.create(
+                    client=client,
+                    card_number=f"40817810{str(client.client_id).zfill(10)}0004312",
+                    card_type='debit',
+                    balance=Decimal('50000.00'),  # Начальный баланс
+                    currency='RUB',
+                    expiry_date=expiry_date,
+                    is_active=True
+                )
+
+                # Автоматически делаем первую карту основной
+                client.primary_card = card
+                client.save(update_fields=['primary_card'])
+                print(f"Создан клиент {client.full_name} с основной картой: {card.card_number}")
+            except Exception as e:
+                print(f"Ошибка при создании карты для {client.full_name}: {e}")
 
     # Создаем много фишинговых писем
     phishing_emails_data = [
@@ -601,10 +640,47 @@ HR-отдел''',
     print("\n⚠️ ВНИМАНИЕ: Необходимо добавить создание банковских программ в базе данных")
     print("Данные находятся в файле: banking_programs_data.py")
     
+    print("\nДемо-данные успешно созданы!")
+    print("Доступные аккаунты:")
+    print("- Оператор ДБО #1: operator1 / password123")
+    print("- Оператор ДБО #2: operator2 / password123")
+    print("- Клиент ДБО: client1 / password123")
+    print("- Клиент ДБО: client2 / password123")
+    print("- Клиент ДБО: client3 / password123")
+    print("- Клиент ДБО: client4 / password123 (не верифицирован)")
+    print("- Клиент ДБО: client5 / password123 (не верифицирован)")
+    print("\nСоздано:")
+    print(f"- {Service.objects.count()} услуг")
+    print(f"- {ServiceCategory.objects.count()} категорий услуг")
+    print(f"- {Client.objects.count()} клиентов")
+    print(f"- {BankCard.objects.count()} банковских карт")
+    print(f"- {Deposit.objects.count()} депозитов")
+    print(f"- {Credit.objects.count()} кредитов")
+    print(f"- {InvestmentProduct.objects.count()} инвестиционных продуктов")
+    print(f"- {ClientInvestment.objects.count()} инвестиций клиентов")
+    print(f"- {PhishingEmail.objects.count()} фишинговых писем")
+    print(f"- {ServiceRequest.objects.count()} заявок на услуги")
+    print(f"- {ClientService.objects.count()} подключенных услуг")
+    print(f"- {News.objects.count()} новостей")
+    
+    # Проверяем созданных пользователей
+    print("\nПроверка пользователей:")
+    for username in ['operator1', 'operator2', 'client1', 'client2', 'client3', 'client4', 'client5']:
+        try:
+            user = User.objects.get(username=username)
+            print(f"✓ {username}: {user.username} (активен: {user.is_active})")
+        except User.DoesNotExist:
+            print(f"✗ {username}: не найден")
+    
+    print("\n✅ Функционал основной карты:")
+    print("- Первая карта каждого клиента автоматически становится основной")
+    print("- Новые карты НЕ становятся основными автоматически")
+    print("- Пользователь может вручную выбрать основную карту")
+    print("- Только одна карта может быть основной одновременно")
+    print("- Основная карта выделяется визуально на странице карт")
+    
     # Создаем демо-новости для бегущей строки
     print("\n📰 Создание демо-новостей...")
-    from dbo.models import News
-    
     demo_news = [
         # Основные новости
         {
@@ -1169,6 +1245,219 @@ HR-отдел''',
             print(f"  - Новость уже существует: {news.title}")
     
     print(f"📰 Создано новостей: {News.objects.count()}")
+    
+    # Создаем инвестиционные продукты
+    print("\n💼 Создание инвестиционных продуктов...")
+    investment_products_data = [
+        {
+            'name': 'Консервативный портфель',
+            'description': 'Низкорисковые инвестиции в государственные облигации',
+            'product_type': 'brokerage',
+            'min_amount': Decimal('10000.00'),
+            'risk_level': 'low',
+            'expected_return': Decimal('6.50')
+        },
+        {
+            'name': 'Сбалансированный портфель',
+            'description': 'Смешанные инвестиции в акции и облигации',
+            'product_type': 'brokerage',
+            'min_amount': Decimal('50000.00'),
+            'risk_level': 'medium',
+            'expected_return': Decimal('9.20')
+        },
+        {
+            'name': 'Агрессивный портфель',
+            'description': 'Высокодоходные инвестиции в акции роста',
+            'product_type': 'brokerage',
+            'min_amount': Decimal('100000.00'),
+            'risk_level': 'high',
+            'expected_return': Decimal('12.80')
+        },
+        {
+            'name': 'ИИС "Доходный"',
+            'description': 'Индивидуальный инвестиционный счет с налоговыми льготами',
+            'product_type': 'iis',
+            'min_amount': Decimal('400000.00'),
+            'risk_level': 'medium',
+            'expected_return': Decimal('8.50')
+        },
+        {
+            'name': 'ПИФ "Золотой стандарт"',
+            'description': 'Паевой инвестиционный фонд золота',
+            'product_type': 'pif',
+            'min_amount': Decimal('25000.00'),
+            'risk_level': 'medium',
+            'expected_return': Decimal('7.80')
+        }
+    ]
+    
+    for product_data in investment_products_data:
+        InvestmentProduct.objects.get_or_create(
+            name=product_data['name'],
+            defaults=product_data
+        )
+    
+    print(f"💼 Создано инвестиционных продуктов: {InvestmentProduct.objects.count()}")
+    
+    # Создаем демо-депозиты для клиентов
+    print("\n💰 Создание демо-депозитов...")
+    if Client.objects.filter(user__username='client1').exists():
+        client1 = Client.objects.get(user__username='client1')
+        primary_card = client1.primary_card
+        
+        if primary_card:
+            from datetime import date, timedelta
+            start_date = date.today()
+            end_date = start_date + timedelta(days=365)  # 1 год
+            
+            Deposit.objects.get_or_create(
+                client=client1,
+                card=primary_card,
+                defaults={
+                    'amount': Decimal('500000.00'),
+                    'interest_rate': Decimal('7.50'),
+                    'term_months': 12,
+                    'start_date': start_date,
+                    'end_date': end_date,
+                    'is_active': True
+                }
+            )
+            print(f"Создан депозит для {client1.full_name}: 500,000 ₽ под 7.5% на 12 месяцев")
+    
+    print(f"💰 Создано депозитов: {Deposit.objects.count()}")
+    
+    # Создаем демо-кредиты для клиентов
+    print("\n💳 Создание демо-кредитов...")
+    if Client.objects.filter(user__username='client2').exists():
+        client2 = Client.objects.get(user__username='client2')
+        
+        from datetime import date, timedelta
+        start_date = date.today()
+        end_date = start_date + timedelta(days=365*3)  # 3 года
+        
+        Credit.objects.get_or_create(
+            client=client2,
+            defaults={
+                'amount': Decimal('300000.00'),
+                'interest_rate': Decimal('12.50'),
+                'term_months': 36,
+                'monthly_payment': Decimal('10000.00'),
+                'remaining_amount': Decimal('300000.00'),
+                'status': 'active',
+                'start_date': start_date,
+                'end_date': end_date
+            }
+        )
+        print(f"Создан кредит для {client2.full_name}: 300,000 ₽ под 12.5% на 36 месяцев")
+    
+    print(f"💳 Создано кредитов: {Credit.objects.count()}")
+    
+    # Создаем демо-инвестиции для клиентов
+    print("\n📈 Создание демо-инвестиций...")
+    if Client.objects.filter(user__username='client3').exists():
+        client3 = Client.objects.get(user__username='client3')
+        conservative_product = InvestmentProduct.objects.filter(risk_level='low').first()
+        
+        if conservative_product:
+            from datetime import date
+            ClientInvestment.objects.get_or_create(
+                client=client3,
+                product=conservative_product,
+                defaults={
+                    'amount': Decimal('100000.00'),
+                    'current_value': Decimal('105000.00'),  # +5% роста
+                    'purchase_date': date.today() - timedelta(days=90),
+                    'status': 'active'
+                }
+            )
+            print(f"Создана инвестиция для {client3.full_name}: 100,000 ₽ в консервативный портфель")
+    
+    print(f"📈 Создано инвестиций: {ClientInvestment.objects.count()}")
+    
+    # Создаем дополнительные карты для демонстрации функционала основной карты
+    print("\n💳 Создание дополнительных карт...")
+    if Client.objects.filter(user__username='client1').exists():
+        try:
+            client1 = Client.objects.get(user__username='client1')
+            
+            # Создаем кредитную карту (НЕ основную)
+            from datetime import date, timedelta
+            expiry_date = date.today() + timedelta(days=365*3)
+            
+            credit_card = BankCard.objects.create(
+                client=client1,
+                card_number="5300001099910004312",
+                card_type='credit',
+                balance=Decimal('0.00'),
+                currency='RUB',
+                expiry_date=expiry_date,
+                is_active=True
+            )
+            print(f"Создана кредитная карта для {client1.full_name}: {credit_card.card_number} (НЕ основная)")
+        except Exception as e:
+            print(f"Ошибка при создании дополнительной карты: {e}")
+    
+    print(f"💳 Всего создано карт: {BankCard.objects.count()}")
+    
+    # Показываем статистику по основным картам
+    clients_with_primary = Client.objects.filter(primary_card__isnull=False).count()
+    print(f"👑 Клиентов с основной картой: {clients_with_primary}")
+    
+    for client in Client.objects.filter(primary_card__isnull=False):
+        print(f"  - {client.full_name}: {client.primary_card.card_number} ({client.primary_card.card_type})")
+
+    # --------------------
+    # Демо-переводы между клиентами
+    # --------------------
+    try:
+        print("\n💸 Создание демо-переводов между клиентами...")
+        from decimal import Decimal as D
+        import random
+
+        demo_clients = list(Client.objects.filter(is_active=True).exclude(primary_card__isnull=True))
+        if len(demo_clients) >= 2:
+            # Собираем активные карты (предпочтительно основную)
+            cards = []
+            for c in demo_clients:
+                card = c.primary_card or BankCard.objects.filter(client=c, is_active=True).first()
+                if card and card.is_active:
+                    cards.append(card)
+
+            if len(cards) >= 2:
+                amounts = [D('150.00'), D('250.50'), D('499.99'), D('750.00'), D('1200.00'), D('3500.00')]
+                created_count = 0
+                # Создадим 20 переводов в случайных парах
+                for _ in range(20):
+                    from_card = random.choice(cards)
+                    to_card = random.choice(cards)
+                    if from_card.id == to_card.id:
+                        continue
+                    amount = random.choice(amounts)
+                    if from_card.balance >= amount:
+                        # Обновляем балансы
+                        from_card.balance -= amount
+                        to_card.balance += amount
+                        from_card.save(update_fields=['balance'])
+                        to_card.save(update_fields=['balance'])
+
+                        Transaction.objects.create(
+                            from_card=from_card,
+                            to_card=to_card,
+                            amount=amount,
+                            currency='RUB',
+                            transaction_type='transfer',
+                            description=f"Демо-перевод {from_card.card_number[-4:]}→{to_card.card_number[-4:]}",
+                            status='completed',
+                        )
+                        created_count += 1
+
+                print(f"✅ Создано демо-переводов: {created_count}")
+            else:
+                print("⚠️ Недостаточно активных карт для создания переводов")
+        else:
+            print("⚠️ Недостаточно активных клиентов для создания переводов")
+    except Exception as e:
+        print(f"Ошибка при создании демо-переводов: {e}")
 
 if __name__ == '__main__':
     create_demo_data()

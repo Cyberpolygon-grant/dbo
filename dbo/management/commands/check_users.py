@@ -98,7 +98,6 @@ class Command(BaseCommand):
                         email=user_data['email'],
                         phone='+7 (999) 123-45-67',
                         is_active=True,
-                        is_verified=True,
                         created_by=operator1
                     )
                     self.stdout.write(

@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Мои заявки - Интернет-банк "ФинансПро"{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-8">
+  <div class="mb-6 flex items-center justify-between">
+    <h1 class="text-2xl font-bold">Мои заявки</h1>
+    <a href="{% url 'create_service_request' %}" class="btn btn-primary btn-sm">Создать заявку</a>
+  </div>
+
+  <div class="mb-4 text-sm text-base-content/70">
+    Всего: {{ total_requests }}
+    {% if pending_requests %} • В ожидании: {{ pending_requests }}{% endif %}
+  </div>
+
+  {% if service_requests %}
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Услуга</th>
+          <th>Описание</th>
+          <th>Цена</th>
+          <th>Статус</th>
+          <th>Создана</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in service_requests %}
+        <tr>
+          <td>#{{ r.id }}</td>
+          <td class="font-medium">{{ r.service_name }}</td>
+          <td class="max-w-96 truncate">{{ r.service_description }}</td>
+          <td>{% if r.price %}{{ r.price }} ₽{% else %}Бесплатно{% endif %}</td>
+          <td>
+            {% if r.status %}
+              <span class="badge {% if r.status == 'approved' %}badge-success{% elif r.status == 'rejected' %}badge-error{% elif r.status == 'pending' %}badge-warning{% else %}badge-ghost{% endif %}">
+                {{ r.get_status_display|default:r.status }}
+              </span>
+            {% else %}
+              <span class="badge badge-ghost">Создана</span>
+            {% endif %}
+          </td>
+          <td>{{ r.created_at|date:"d.m.Y H:i" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-12 text-base-content/70">
+    Заявок пока нет. Создайте первую заявку.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+

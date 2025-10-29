@@ -20,7 +20,6 @@
                         <span class="mr-3">ID: {{ client.client_id }}</span>
                         <span class="mr-3">Email: {{ client.email }}</span>
                         <span class="mr-3">Телефон: {{ client.phone }}</span>
-                        <span class="mr-3">Статус: {% if client.is_verified %}верифицирован{% else %}не верифицирован{% endif %}</span>
                         <span class="mr-3">Создан: {{ client.created_at|date:"d.m.Y" }}</span>
                     </div>
                 </div>
@@ -31,14 +30,17 @@
                 </div>
                 <div class="text-right">
                     <p class="text-sm font-medium text-gray-900 dark:text-white">{{ client.full_name }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Активен</p>
+                    <div class="flex items-center justify-end space-x-1">
+                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Активен</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Статистика -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
         <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
             <div class="flex items-center">
                 <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-teal-500 rounded-xl flex items-center justify-center mr-4">
@@ -49,129 +51,133 @@
                 <div>
                     <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_balance|floatformat:0 }} ₽</div>
                     <div class="text-sm text-gray-600 dark:text-gray-300">Общий баланс</div>
+                    {% if total_balance|floatformat:0|add:'0' %}
+                        {% if total_balance > 100000 %}
+                        <div class="mt-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-2xl">🎉</span>
+                                <div>
+                                    <div class="text-sm font-semibold text-green-800 dark:text-green-200">Поздравляем!</div>
+                                    <div class="text-xs text-green-700 dark:text-green-300">У вас крепкая финансовая подушка</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% elif total_balance > 0 %}
+                        <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-2xl">👍</span>
+                                <div>
+                                    <div class="text-sm font-semibold text-blue-800 dark:text-blue-200">Отличный прогресс</div>
+                                    <div class="text-xs text-blue-700 dark:text-blue-300">Продолжайте увеличивать сбережения</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-2xl">⚠️</span>
+                                <div>
+                                    <div class="text-sm font-semibold text-yellow-800 dark:text-yellow-200">Внимание</div>
+                                    <div class="text-xs text-yellow-700 dark:text-yellow-300">Баланс 0 ₽ — рекомендуем пополнить счёт</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endif %}
                 </div>
             </div>
         </div>
 
         <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
             <div class="flex items-center">
-                <div class="w-12 h-12 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl flex items-center justify-center mr-4">
+                <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mr-4">
                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                 </div>
                 <div>
-                    <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_credit_debt|floatformat:0 }} ₽</div>
-                    <div class="text-sm text-gray-600 dark:text-gray-300">Кредитная задолженность</div>
+                    <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_credit_amount|floatformat:0 }} ₽</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300">Кредиты</div>
+                </div>
+            </div>
+            <!-- Поздравляющее сообщение -->
+            <div class="mt-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <div class="flex items-center space-x-2">
+                    <span class="text-2xl">🎉</span>
+                    <div>
+                        <div class="text-sm font-semibold text-green-800 dark:text-green-200">Поздравляем!</div>
+                        <div class="text-xs text-green-700 dark:text-green-300">У вас нет кредитов. Вы финансово свободны!</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Депозиты и Инвестиции - на всю ширину -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_deposit_amount|floatformat:0 }} ₽</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-300">Депозиты</div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-xs text-blue-600 dark:text-blue-400 font-medium">+8% годовых</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">Доходность</div>
+                </div>
+            </div>
+            <!-- Мини-реклама -->
+            <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-blue-700 dark:text-blue-300">💡 Если бы вложили 50 000 ₽</span>
+                    <span class="font-semibold text-green-600 dark:text-green-400">+4 000 ₽/год</span>
                 </div>
             </div>
         </div>
 
         <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-            <div class="flex items-center">
-                <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mr-4">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                    </svg>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_investment_value|floatformat:0 }} ₽</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-300">Инвестиции</div>
+                    </div>
                 </div>
-                <div>
-                    <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_deposit_amount|floatformat:0 }} ₽</div>
-                    <div class="text-sm text-gray-600 dark:text-gray-300">Депозиты</div>
+                <div class="text-right">
+                    <div class="text-xs text-purple-600 dark:text-purple-400 font-medium">+12% годовых</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">Доходность</div>
                 </div>
             </div>
-        </div>
-
-        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-            <div class="flex items-center">
-                <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center mr-4">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-                    </svg>
-                </div>
-                <div>
-                    <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_investment_value|floatformat:0 }} ₽</div>
-                    <div class="text-sm text-gray-600 dark:text-gray-300">Инвестиции</div>
+            <!-- Мини-реклама -->
+            <div class="mt-4 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-purple-700 dark:text-purple-300">💡 Если бы вложили 50 000 ₽</span>
+                    <span class="font-semibold text-green-600 dark:text-green-400">+6 000 ₽/год</span>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Основной контент -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <!-- Банковские счета -->
-        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white">Банковские счета</h2>
-                <div class="flex items-center space-x-3">
-                    <span class="px-3 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 text-sm rounded-full font-medium">
-                        {{ accounts|length }} счетов
-                    </span>
-                    <a href="{% url 'accounts_service' %}" class="btn btn-sm btn-outline">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                        </svg>
-                        Управление
-                    </a>
-                </div>
-            </div>
-            
-            {% if accounts %}
-                <div class="space-y-4">
-                    {% for account in accounts %}
-                        <div class="p-4 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-4">
-                                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
-                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <h3 class="font-semibold text-gray-900 dark:text-white">{{ account.account_number }}</h3>
-                                        <p class="text-sm text-gray-600 dark:text-gray-300">
-                                            {% if account.account_type == 'checking' %}Текущий счет
-                                            {% elif account.account_type == 'savings' %}Сберегательный счет
-                                            {% elif account.account_type == 'deposit' %}Депозитный счет
-                                            {% endif %}
-                                        </p>
-                                        <div class="flex items-center space-x-2 mt-1">
-                                            {% if account.is_active %}
-                                                <span class="px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 text-xs rounded-lg font-medium">
-                                                    Активен
-                                                </span>
-                                            {% else %}
-                                                <span class="px-2 py-1 bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 text-xs rounded-lg font-medium">
-                                                    Заблокирован
-                                                </span>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <div class="text-lg font-bold text-green-600 dark:text-green-400">{{ account.balance|floatformat:2 }} ₽</div>
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-                    <svg class="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                    </svg>
-                    <p class="text-lg font-medium">Нет банковских счетов</p>
-                    <p class="text-sm mt-2">Откройте свой первый банковский счет</p>
-                </div>
-            {% endif %}
-        </div>
-
+    <div class="mb-8">
         <!-- Банковские карты -->
         <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white">Банковские карты</h2>
                 <div class="flex items-center space-x-3">
-                    <span class="px-3 py-1 bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-200 text-sm rounded-full font-medium">
+                    <span class="px-3 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 text-sm rounded-full font-medium">
                         {{ cards|length }} карт
                     </span>
                     <a href="{% url 'cards_service' %}" class="btn btn-sm btn-outline">
@@ -185,10 +191,11 @@
             </div>
             
             {% if cards %}
-                <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {% for card in cards %}
-                        <div class="p-4 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200">
-                            <div class="flex items-center justify-between">
+                        <!-- Карта -->
+                        <div class="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800 hover:shadow-md transition-all duration-200 {% if card == client.primary_card %}ring-4 ring-yellow-400 ring-opacity-75 border-2 border-yellow-400{% endif %}">
+                            <div class="flex items-center justify-between mb-3">
                                 <div class="flex items-center space-x-4">
                                     <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center">
                                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -203,6 +210,14 @@
                                             {% endif %}
                                         </p>
                                         <div class="flex items-center space-x-2 mt-1">
+                                            {% if card == client.primary_card %}
+                                                <span class="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 text-xs rounded-lg font-medium gap-1 inline-flex items-center">
+                                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                                    </svg>
+                                                    Основная карта
+                                                </span>
+                                            {% endif %}
                                             {% if card.is_active %}
                                                 <span class="px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 text-xs rounded-lg font-medium">
                                                     Активна
@@ -212,11 +227,13 @@
                                                     Заблокирована
                                                 </span>
                                             {% endif %}
+                                            <span class="text-xs text-gray-500 dark:text-gray-400">до {{ card.expiry_date|date:"m/Y" }}</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="text-right">
-                                    <div class="text-sm text-gray-500 dark:text-gray-400">До {{ card.expiry_date|date:"m/Y" }}</div>
+                                    <div class="text-lg font-bold text-green-600 dark:text-green-400">{{ card.balance|floatformat:2 }} ₽</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ card.currency }}</div>
                                 </div>
                             </div>
                         </div>
@@ -236,73 +253,7 @@
 
     <!-- Второй ряд банковских сервисов -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <!-- Кредиты -->
-        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white">Кредиты</h2>
-                <div class="flex items-center space-x-3">
-                    <span class="px-3 py-1 bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 text-sm rounded-full font-medium">
-                        {{ credits|length }} кредитов
-                    </span>
-                    <a href="{% url 'credits_service' %}" class="btn btn-sm btn-outline">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                        </svg>
-                        Управление
-                    </a>
-                </div>
-            </div>
-            
-            {% if credits %}
-                <div class="space-y-4">
-                    {% for credit in credits %}
-                        <div class="p-4 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-4">
-                                    <div class="w-12 h-12 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl flex items-center justify-center">
-                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <h3 class="font-semibold text-gray-900 dark:text-white">Кредит #{{ credit.id }}</h3>
-                                        <p class="text-sm text-gray-600 dark:text-gray-300">Ставка {{ credit.interest_rate }}%</p>
-                                        <div class="flex items-center space-x-2 mt-1">
-                                            {% if credit.status == 'active' %}
-                                                <span class="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 text-xs rounded-lg font-medium">
-                                                    Активный
-                                                </span>
-                                            {% elif credit.status == 'paid' %}
-                                            <span class="px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 text-xs rounded-lg font-medium">
-                                                    Погашен
-                                            </span>
-                                            {% elif credit.status == 'overdue' %}
-                                                <span class="px-2 py-1 bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 text-xs rounded-lg font-medium">
-                                                    Просрочен
-                                                </span>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <div class="text-lg font-bold text-red-600 dark:text-red-400">{{ credit.remaining_amount|floatformat:0 }} ₽</div>
-                                    <div class="text-sm text-gray-500 dark:text-gray-400">{{ credit.monthly_payment|floatformat:0 }} ₽/мес</div>
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-                    <svg class="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <p class="text-lg font-medium">Нет кредитов</p>
-                    <p class="text-sm mt-2">Подайте заявку на кредит</p>
-                </div>
-            {% endif %}
-        </div>
+        
 
         <!-- Депозиты -->
         <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
@@ -351,6 +302,39 @@
                         </div>
                     {% endfor %}
                 </div>
+                
+                <!-- Рекламный блок для существующих депозитов -->
+                <div class="mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-green-900 dark:text-green-100">💎 Увеличьте доходность</h4>
+                                <p class="text-sm text-green-700 dark:text-green-300">Дополнительный депозит на 200 000 ₽ принесет</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-lg font-bold text-green-600 dark:text-green-400">+16 000 ₽</div>
+                            <div class="text-xs text-green-600 dark:text-green-400">за год</div>
+                        </div>
+                    </div>
+                    <div class="mt-3 flex items-center justify-between text-sm">
+                        <span class="text-green-700 dark:text-green-300">Через 3 года: <span class="font-semibold text-green-600 dark:text-green-400">+52 000 ₽</span></span>
+                        <span class="text-green-700 dark:text-green-300">Через 5 лет: <span class="font-semibold text-green-600 dark:text-green-400">+94 000 ₽</span></span>
+                    </div>
+                    <div class="mt-3">
+                        <a href="{% url 'deposits_service' %}" class="btn btn-sm btn-success w-full">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            Открыть еще депозит
+                        </a>
+                    </div>
+                </div>
             {% else %}
                 <div class="text-center py-8 text-gray-500 dark:text-gray-400">
                     <svg class="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -360,11 +344,41 @@
                     <p class="text-sm mt-2">Откройте депозит для получения дохода</p>
                 </div>
             {% endif %}
+            
+            <!-- Рекламный блок с потенциальной прибылью -->
+            <div class="mt-6 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-blue-900 dark:text-blue-100">💰 Потенциальная прибыль</h4>
+                            <p class="text-sm text-blue-700 dark:text-blue-300">Если бы вы вложили 100 000 ₽ на депозит под 8% годовых</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-lg font-bold text-green-600 dark:text-green-400">+8 000 ₽</div>
+                        <div class="text-xs text-blue-600 dark:text-blue-400">за год</div>
+                    </div>
+                </div>
+                <div class="mt-3 flex items-center justify-between text-sm">
+                    <span class="text-blue-700 dark:text-blue-300">Через 3 года: <span class="font-semibold text-green-600 dark:text-green-400">+26 000 ₽</span></span>
+                    <span class="text-blue-700 dark:text-blue-300">Через 5 лет: <span class="font-semibold text-green-600 dark:text-green-400">+47 000 ₽</span></span>
+                </div>
+                <div class="mt-3">
+                    <a href="{% url 'deposits_service' %}" class="btn btn-sm btn-primary w-full">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Открыть депозит
+                    </a>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <!-- Третий ряд банковских сервисов -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <!-- Инвестиции -->
         <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
             <div class="flex items-center justify-between mb-6">
@@ -423,6 +437,43 @@
                         </div>
                     {% endfor %}
                 </div>
+                
+                <!-- Рекламный блок для существующих инвестиций -->
+                <div class="mt-6 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-emerald-900 dark:text-emerald-100">🚀 Диверсифицируйте портфель</h4>
+                                <p class="text-sm text-emerald-700 dark:text-emerald-300">Дополнительные 150 000 ₽ в ПИФ принесут</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-lg font-bold text-green-600 dark:text-green-400">+18 000 ₽</div>
+                            <div class="text-xs text-emerald-600 dark:text-emerald-400">за год</div>
+                        </div>
+                    </div>
+                    <div class="mt-3 flex items-center justify-between text-sm">
+                        <span class="text-emerald-700 dark:text-emerald-300">Через 3 года: <span class="font-semibold text-green-600 dark:text-green-400">+60 000 ₽</span></span>
+                        <span class="text-emerald-700 dark:text-emerald-300">Через 5 лет: <span class="font-semibold text-green-600 dark:text-green-400">+114 000 ₽</span></span>
+                    </div>
+                    <div class="mt-3 flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400">
+                        <span>+ Снижение рисков</span>
+                        <span>+ Стабильный доход</span>
+                    </div>
+                    <div class="mt-3">
+                        <a href="{% url 'investments_service' %}" class="btn btn-sm btn-accent w-full">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            Расширить портфель
+                        </a>
+                    </div>
+                </div>
             {% else %}
                 <div class="text-center py-8 text-gray-500 dark:text-gray-400">
                     <svg class="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -432,9 +483,48 @@
                     <p class="text-sm mt-2">Начните инвестировать для получения дохода</p>
                 </div>
             {% endif %}
+            
+            <!-- Рекламный блок с потенциальной прибылью -->
+            <div class="mt-6 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-purple-900 dark:text-purple-100">📈 Потенциальная прибыль</h4>
+                            <p class="text-sm text-purple-700 dark:text-purple-300">Если бы вы вложили 100 000 ₽ в ИИС под 12% годовых</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-lg font-bold text-green-600 dark:text-green-400">+12 000 ₽</div>
+                        <div class="text-xs text-purple-600 dark:text-purple-400">за год</div>
+                    </div>
+                </div>
+                <div class="mt-3 flex items-center justify-between text-sm">
+                    <span class="text-purple-700 dark:text-purple-300">Через 3 года: <span class="font-semibold text-green-600 dark:text-green-400">+40 000 ₽</span></span>
+                    <span class="text-purple-700 dark:text-purple-300">Через 5 лет: <span class="font-semibold text-green-600 dark:text-green-400">+76 000 ₽</span></span>
+                </div>
+                <div class="mt-3 flex items-center justify-between text-xs text-purple-600 dark:text-purple-400">
+                    <span>+ Налоговый вычет: 13 000 ₽</span>
+                    <span>+ Налоговые льготы</span>
+                </div>
+                <div class="mt-3">
+                    <a href="{% url 'investments_service' %}" class="btn btn-sm btn-secondary w-full">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Начать инвестировать
+                    </a>
+                </div>
+            </div>
         </div>
+    </div>
 
-        <!-- Последние транзакции -->
+    <!-- Последние транзакции -->
+    <div class="mb-8">
         <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white">Последние транзакции</h2>
@@ -471,7 +561,7 @@
                                             {% elif transaction.transaction_type == 'withdrawal' %}Снятие
                                             {% endif %}
                                         </h3>
-                                        <p class="text-sm text-gray-600 dark:text-gray-300">{{ transaction.description|truncatechars:30 }}</p>
+                                        <p class="text-sm text-gray-600 dark:text-gray-300">{{ transaction.description }}</p>
                                         <div class="flex items-center space-x-2 mt-1">
                                             {% if transaction.status == 'completed' %}
                                                 <span class="px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 text-xs rounded-lg font-medium">
@@ -490,9 +580,11 @@
                                     </div>
                                 </div>
                                 <div class="text-right">
-                                    <div class="text-lg font-bold {% if transaction.transaction_type == 'deposit' %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
-                                        {% if transaction.transaction_type == 'deposit' %}+{% else %}-{% endif %}{{ transaction.amount|floatformat:2 }} ₽
-                                    </div>
+                                    {% if transaction.to_card and transaction.to_card.client_id == client.id %}
+                                        <div class="text-lg font-bold text-green-600 dark:text-green-400">+{{ transaction.amount|floatformat:2 }} ₽</div>
+                                    {% else %}
+                                        <div class="text-lg font-bold text-red-600 dark:text-red-400">-{{ transaction.amount|floatformat:2 }} ₽</div>
+                                    {% endif %}
                                     <div class="text-sm text-gray-500 dark:text-gray-400">{{ transaction.created_at|date:"d.m H:i" }}</div>
                                 </div>
                             </div>
@@ -593,19 +685,14 @@
         <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Банковские сервисы</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <a href="{% url 'accounts_service' %}" class="btn btn-modern">
+                <a href="{% url 'cards_service' %}" class="btn btn-modern">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
                     </svg>
-                    Расчетно-кассовое обслуживание
+                    Банковские карты
                 </a>
                 
-                <a href="{% url 'credits_service' %}" class="btn btn-modern">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    Кредитные продукты
-                </a>
+                
                 
                 <a href="{% url 'deposits_service' %}" class="btn btn-modern">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

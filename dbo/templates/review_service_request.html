@@ -107,25 +107,11 @@
         </div>
     </div>
 
-    <!-- Описание услуги (XSS уязвимость) -->
+    <!-- Описание услуги -->
     <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-700 mb-8">
         <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Описание услуги</h2>
         
-        <!-- Предупреждение о XSS -->
-        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-6">
-            <div class="flex items-start">
-                <svg class="w-6 h-6 text-red-600 dark:text-red-400 mr-3 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                </svg>
-                <div>
-                    <h3 class="font-semibold text-red-800 dark:text-red-200 mb-1">⚠️ XSS Уязвимость!</h3>
-                    <p class="text-sm text-red-700 dark:text-red-300">
-                        Содержимое ниже может содержать вредоносный JavaScript код. 
-                        В реальной системе это поле должно быть санитизировано.
-                    </p>
-                </div>
-            </div>
-        </div>
+        
         
         <!-- Уязвимое содержимое -->
         <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-6 border border-gray-200 dark:border-gray-600">
@@ -150,12 +136,15 @@
                 </button>
             </form>
             
-            <button onclick="rejectRequest()" class="btn btn-outline btn-error">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-                Отклонить заявку
-            </button>
+            <form method="post" action="{% url 'reject_service_request' service_request.id %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline btn-error">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    Отклонить заявку
+                </button>
+            </form>
             
             <a href="{% url 'operator2_dashboard' %}" class="btn btn-outline">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,44 +155,8 @@
         </div>
     </div>
 
-    <!-- Информация о XSS уязвимости -->
-    <div class="card-hover bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-2xl p-6 border border-yellow-200 dark:border-yellow-800">
-        <div class="flex items-start">
-            <svg class="w-8 h-8 text-yellow-600 dark:text-yellow-400 mr-4 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-            </svg>
-            <div>
-                <h3 class="text-lg font-bold text-yellow-900 dark:text-yellow-100 mb-2">XSS (Cross-Site Scripting) Уязвимость</h3>
-                <p class="text-yellow-800 dark:text-yellow-200 mb-3">
-                    Поле описания услуги отображается без санитизации, что позволяет выполнять произвольный JavaScript код.
-                </p>
-                <div class="text-sm text-yellow-700 dark:text-yellow-300">
-                    <p><strong>Пример вредоносного кода:</strong></p>
-                    <code class="block bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded mt-2 text-xs">
-                        &lt;script&gt;fetch('/approve-service-request/{{ service_request.id }}/', {method: 'POST', headers: {'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value}})&lt;/script&gt;
-                    </code>
-                    <p class="mt-3"><strong>Рекомендации по исправлению:</strong></p>
-                    <ul class="list-disc list-inside space-y-1 mt-2">
-                        <li>Использовать Django template filter |escape</li>
-                        <li>Применять библиотеки для санитизации HTML (bleach)</li>
-                        <li>Настроить Content Security Policy (CSP)</li>
-                        <li>Валидировать пользовательский ввод на сервере</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
+    
 </div>
 
-<script>
-    function rejectRequest() {
-        confirmAction(
-            'Вы уверены, что хотите отклонить эту заявку?',
-            function() {
-                // В реальной системе здесь был бы запрос на сервер
-                showAlert('Заявка отклонена', 'success');
-            }
-        );
-    }
-</script>
+<script></script>
 {% endblock %}
