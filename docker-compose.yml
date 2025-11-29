@@ -1,0 +1,110 @@
+services:
+  # Init container to ensure .env exists (from up.sh logic)
+  # This runs before app starts to ensure .env file exists
+  init-env:
+    image: alpine:latest
+    container_name: init-env
+    volumes:
+      - .:/workspace:rw
+    working_dir: /workspace
+    command: >
+      sh -c "
+      if [ ! -f .env ]; then
+        if [ -f env.sample ]; then
+          cp env.sample .env
+          echo '✓ Created .env from env.sample'
+        else
+          echo '⚠ env.sample not found. Using default values.'
+        fi
+      else
+        echo '✓ .env already exists'
+      fi
+      "
+    restart: "no"
+
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: django-app
+    env_file:
+      - .env
+    depends_on:
+      init-env:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+    environment:
+      # Database connection (from up.sh)
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-appdb}
+      - POSTGRES_USER=${POSTGRES_USER:-appuser}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-apppass}
+      # Django settings (auto-detected in entrypoint, but can be overridden)
+      - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-cyberpolygon.settings}
+      - DJANGO_WSGI_MODULE=${DJANGO_WSGI_MODULE:-cyberpolygon.wsgi:application}
+      # ALLOWED_HOSTS (from up.sh - includes localhost,127.0.0.1,172.18.252.50)
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1,172.18.252.50}
+      # Optional: Initialize demo data (from up.sh)
+      - INIT_DATA=${INIT_DATA:-0}
+    expose:
+      - "8000"
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    volumes:
+      - static_volume:/app/staticfiles
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  db:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-appdb}
+      POSTGRES_USER: ${POSTGRES_USER:-appuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-apppass}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-appuser} -d ${POSTGRES_DB:-appdb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - app-network
+    # PostgreSQL performance tuning
+    command: >
+      postgres
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=128MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=4MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+      -c max_connections=100
+
+volumes:
+  db_data:
+  static_volume:
+
+networks:
+  app-network:
+    driver: bridge
+
+

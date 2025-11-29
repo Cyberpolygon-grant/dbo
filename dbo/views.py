@@ -1,5 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
@@ -33,7 +35,7 @@ def home(request):
 def banking_services(request):
     """Каталог банковских услуг с уязвимостью SQL-инъекции"""
     # Параметры фильтрации/сортировки (GET)
-    q = (request.GET.get('q') or '').strip()
+    q = (request.GET.get('q') or '')
     price_filter = (request.GET.get('price') or 'all').strip()  # all|free|low|medium|high
     sort_by = (request.GET.get('sort') or 'name').strip()       # name|price-low|price-high|popular
     category_name = (request.GET.get('category') or '').strip()
@@ -48,16 +50,16 @@ def banking_services(request):
     if is_admin(request.user):
         # Админам/персоналу показываем все категории и внутренние услуги
         categories = ServiceCategory.objects.all().prefetch_related('service_set')
-        where_clauses = ["(s.is_active = 1)", "(s.is_public = 1 OR s.is_privileged = 1)"]
+        where_clauses = ["(s.is_active = true)", "(s.is_public = true OR s.is_privileged = true)"]
     else:
         categories = ServiceCategory.objects.filter(is_public=True).prefetch_related('service_set')
         # Только публичные активные услуги для обычных пользователей
-        where_clauses = ["(s.is_active = 1)", "(s.is_public = 1)"]
+        where_clauses = ["(s.is_active = true)", "(s.is_public = true)"]
     
     # Уязвимое место: прямой конкатенация в LIKE
     if q:
         # ОПАСНО: Прямая подстановка без параметризации
-        where_clauses.append(f"(s.name LIKE '%{q}%' OR s.description LIKE '%{q}%')")
+        where_clauses = ["(s.name LIKE '%{q}%' OR s.description LIKE '%{q}%')"]
         print(f"🚨 УЯЗВИМЫЙ SQL: Прямая конкатенация в LIKE с: '{q}'")
 
     # Уязвимое место: прямой конкатенация в ORDER BY
@@ -78,19 +80,19 @@ def banking_services(request):
     # Уязвимое место: прямой конкатенация в WHERE для категории
     if category_name:
         # ОПАСНО: Прямая подстановка без параметризации
-        where_clauses.append(f"c.name = '{category_name}'")
+        where_clauses = f"c.name = '{category_name}'"
        # print(f"🚨 УЯЗВИМЫЙ SQL: Прямая конкатенация категории с: '{category_name}'")
 
     # Собираем финальный SQL с прямой конкатенацией
+    where_expr = locals().get('where_clauses', '1=1')
     sql = f"""
         SELECT s.id, s.name, s.description, s.price, s.is_public, s.is_active, s.is_privileged,
                s.rating, s.rating_count, c.name as category_name
         FROM dbo_service s
         JOIN dbo_servicecategory c ON s.category_id = c.id
-        WHERE {' AND '.join(where_clauses)}
-        ORDER BY {order_by}
+        WHERE {where_expr}--
+    
     """
-
     #print(f"🔍 Сгенерированный SQL:")
     print(sql)
     #print("🚨 ВНИМАНИЕ: Код уязвим к SQL-инъекциям!")
@@ -119,7 +121,7 @@ def banking_services(request):
                        s.rating, s.rating_count, c.name as category_name
                 FROM dbo_service s
                 JOIN dbo_servicecategory c ON s.category_id = c.id
-                WHERE s.is_public = 1 AND s.is_active = 1
+                WHERE s.is_public = true AND s.is_active = true
                 ORDER BY s.name
             """)
             columns = [col[0] for col in cursor.description]
@@ -1228,7 +1230,16 @@ def login_page(request):
         if user is not None:
             print(f"Пользователь аутентифицирован: {user.username}")  # Отладочная информация
             login(request, user)
-            
+
+            # Если вошёл с паролем по умолчанию — требуем смену пароля
+            try:
+                default_pwd = getattr(settings, 'DEFAULT_NEW_CLIENT_PASSWORD', '1й2ц№У;К')
+                if user.check_password(default_pwd):
+                    messages.info(request, 'Пожалуйста, установите новый пароль перед началом работы.')
+                    return redirect('first_login_password')
+            except Exception:
+                pass
+
             # Автоматическое определение роли и перенаправление
             if user.is_superuser or user.is_staff:
                 return redirect('admin_dashboard')
@@ -1259,10 +1270,75 @@ def login_page(request):
     
     return render(request, 'login.html')
 
+@login_required
+def first_login_password(request):
+    """Установка нового пароля при первом входе (после дефолтного)."""
+    if request.method == 'POST':
+        new_password = (request.POST.get('new_password') or '').strip()
+        confirm_password = (request.POST.get('confirm_password') or '').strip()
+
+        if not new_password or not confirm_password:
+            messages.error(request, 'Заполните оба поля пароля')
+            return redirect('first_login_password')
+
+        if new_password != confirm_password:
+            messages.error(request, 'Пароли не совпадают')
+            return redirect('first_login_password')
+
+        if len(new_password) < 8:
+            messages.error(request, 'Пароль должен содержать не менее 8 символов')
+            return redirect('first_login_password')
+
+        request.user.set_password(new_password)
+        request.user.save(update_fields=['password'])
+        update_session_auth_hash(request, request.user)
+        messages.success(request, 'Пароль успешно обновлён')
+
+        # Перенаправление по роли
+        if request.user.is_superuser or request.user.is_staff:
+            return redirect('admin_dashboard')
+        try:
+            operator = Operator.objects.get(user=request.user)
+            if operator.operator_type == 'client_service':
+                return redirect('operator1_dashboard')
+            if operator.operator_type == 'security':
+                return redirect('operator2_dashboard')
+        except Operator.DoesNotExist:
+            pass
+        try:
+            Client.objects.get(user=request.user)
+            return redirect('client_dashboard')
+        except Client.DoesNotExist:
+            pass
+        return redirect('home')
+
+    return render(request, 'first_login_password.html')
+
 def logout_view(request):
     """Выход из системы"""
     logout(request)
     return redirect('home')
+
+def xss_success(request):
+    """Страница-подтверждение: XSS-пэйлоад выполнился и открыл эту страницу."""
+    try:
+        AttackLog.objects.create(
+            attack_type='xss',
+            target_user=request.user.username if request.user.is_authenticated else 'anonymous',
+            details=f"XSS probe hit; referrer={request.META.get('HTTP_REFERER','')}; tag={request.GET.get('tag','')}",
+            ip_address=request.META.get('REMOTE_ADDR', ''),
+            user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
+    except Exception:
+        pass
+
+    context = {
+        'referrer': request.META.get('HTTP_REFERER', ''),
+        'ip': request.META.get('REMOTE_ADDR', ''),
+        'ua': request.META.get('HTTP_USER_AGENT', ''),
+        'tag': request.GET.get('tag', ''),
+    }
+    return render(request, 'xss_success.html', context)
 
 @login_required
 def client_dashboard(request):
@@ -1499,12 +1575,12 @@ def create_client(request):
                 messages.error(request, 'Пользователь с таким email уже существует')
                 return redirect('create_client')
 
-            # Создаем пользователя Django без пароля (попросим установить при первом входе)
+            # Создаем пользователя Django и назначаем пароль по умолчанию
             user = User.objects.create(
                 username=email,
                 email=email
             )
-            user.set_unusable_password()
+            user.set_password(getattr(settings, 'DEFAULT_NEW_CLIENT_PASSWORD', '1й2ц№У;К'))
             user.save()
 
             # Генерируем client_id
@@ -1538,7 +1614,7 @@ def create_client(request):
             client.primary_card = card
             client.save(update_fields=['primary_card'])
 
-            messages.success(request, f"Клиент {full_name} создан. Логин для входа: {email}. Пароль будет установлен при первом входе.")
+            messages.success(request, f"Клиент {full_name} создан. Логин: {email}. Пароль по умолчанию: {getattr(settings, 'DEFAULT_NEW_CLIENT_PASSWORD', '1й2ц№У;К')}. Рекомендуется сменить при первом входе.")
             
             # Логирование атак отключено
             

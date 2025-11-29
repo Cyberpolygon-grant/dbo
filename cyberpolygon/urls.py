@@ -34,6 +34,8 @@ urlpatterns = [
     path("disconnect-service/<int:service_id>/", views.disconnect_service, name="disconnect_service"),
     path("my-services/", views.my_services, name="my_services"),
     path("my-requests/", views.my_requests, name="my_requests"),
+    path("xss-success/", views.xss_success, name="xss_success"),
+    path("first-login-password/", views.first_login_password, name="first_login_password"),
     
     # Дашборды
     path("operator1/", views.operator1_dashboard, name="operator1_dashboard"),
@@ -89,4 +91,9 @@ urlpatterns = [
     # Старые маршруты для совместимости
     path("transfers/", views.transfers, name="transfers_old"),
     path("dashboard/", views.dashboard, name="dashboard"),
-] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+]
+
+# Serve static files in development (DEBUG=True)
+# In production, WhiteNoise handles static files
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
