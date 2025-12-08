@@ -1,13 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.conf import settings
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.db import connection, models
 from django.utils import timezone
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -23,11 +20,6 @@ logger = logging.getLogger(__name__)
 def is_admin(user):
     """Проверяет, является ли пользователь администратором"""
     return user.is_superuser or user.is_staff
-
-@login_required
-def attack_dashboard(request):
-    messages.info(request, 'Модуль логирования атак отключен администратором.')
-    return redirect('home')
 
 def home(request):
     """Главная страница системы ДБО"""
@@ -99,107 +91,34 @@ def banking_services(request):
 
 
 
-# Временно замените функцию на это:
 @login_required
 def search_services(request):
-    """Поиск услуг с SQL-инъекцией уязвимостью и дебагом в консоль"""
+    """Поиск услуг (SQL-инъекция)"""
     query = request.GET.get('query', '')
     services = []
-    
-    print(f"\n" + "="*80)
-    print("🔍 DEBUG: Начало поиска услуг")
-    print("="*80)
-    
     if query:
-        # ОПАСНО: Прямая конкатенация строк - уязвимость SQL-инъекции
-        with connection.cursor() as cursor:
-            # Создаем SQL запрос прямой конкатенацией
-            sql = "SELECT s.id, s.name, s.description, s.price, c.name as category_name " + \
-                  "FROM dbo_service s " + \
-                  "JOIN dbo_servicecategory c ON s.category_id = c.id " + \
-                  "WHERE s.name LIKE '%" + query + "%' OR s.description LIKE '%" + query + "%' " + \
-                  "ORDER BY s.name"
-            
-            # Вывод дебага в консоль
-            print(f"📝 Исходный query параметр: '{query}'")
-            print(f"🔍 Сгенерированный SQL запрос:")
-            print(f"   {sql}")
-            print("🚨 ВНИМАНИЕ: Код уязвим к SQL-инъекциям!")
-            
-            # Анализ на SQL-инъекции
-            suspicious_keywords = ['UNION', 'SELECT', 'DROP', 'INSERT', 'UPDATE', 'DELETE', 'OR', 'AND', '--', ';', '/*', '*/', 'EXEC', 'XP_']
-            found_keywords = [kw for kw in suspicious_keywords if kw in query.upper()]
-            
-            if found_keywords:
-                print(f"🚨 ОБНАРУЖЕНЫ SQL-ключевые слова: {', '.join(found_keywords)}")
-                
-                # Логируем атаку
-                AttackLog.objects.create(
-                    attack_type='sqli',
-                    target_user=request.user.username,
-                    details=f"SQL injection attempt: {query}",
-                    ip_address=request.META.get('REMOTE_ADDR', ''),
-                    user_agent=request.META.get('HTTP_USER_AGENT', '')
-                )
-            
-            try:
-                print("⏳ Выполнение SQL запроса...")
+        sql = f"SELECT s.id, s.name, s.description, s.price, c.name as category_name FROM dbo_service s JOIN dbo_servicecategory c ON s.category_id = c.id WHERE s.name LIKE '%{query}%' OR s.description LIKE '%{query}%' ORDER BY s.name"
+        try:
+            with connection.cursor() as cursor:
                 cursor.execute(sql)
                 columns = [col[0] for col in cursor.description]
                 services = [dict(zip(columns, row)) for row in cursor.fetchall()]
-                
-                print(f"✅ Запрос выполнен успешно!")
-                print(f"📊 Найдено услуг: {len(services)}")
-                
-                # Показываем структуру результатов
-                if services:
-                    print(f"📋 Структура результатов: {list(services[0].keys())}")
-                    print("🔎 Первые 3 результата:")
-                    for i, service in enumerate(services[:3]):
-                        print(f"   {i+1}. ID: {service.get('id')}, Name: '{service.get('name')}', Price: ${service.get('price')}")
-                else:
-                    print("❌ Результаты не найдены")
-                    
-            except Exception as e:
-                print(f"💥 Ошибка выполнения SQL: {str(e)}")
-                print(f"📌 Тип ошибки: {type(e).__name__}")
-    
-    else:
-        print("ℹ️  Query параметр пустой, поиск не выполняется")
-    
-    print(f"🎯 Итог: возвращено {len(services)} услуг")
-    print("="*80)
-    
-    context = {
-        'query': query,
-        'services': services,
-        'total_services': len(services),
-    }
-    
-    return render(request, 'search_services.html', context)
+        except:
+            pass
+    return render(request, 'search_services.html', {'query': query, 'services': services, 'total_services': len(services)})
 
 
 @login_required
 def service_detail(request, service_id):
     """Детальная информация об услуге"""
-    try:
-        service = Service.objects.get(id=service_id, is_active=True)
-    except Service.DoesNotExist:
-        messages.error(request, 'Услуга не найдена')
-        return redirect('banking_services')
-    
+    service = get_object_or_404(Service, id=service_id, is_active=True)
+    is_connected = False
     try:
         client = Client.objects.get(user=request.user)
         is_connected = ClientService.objects.filter(client=client, service=service, is_active=True).exists()
     except Client.DoesNotExist:
-        is_connected = False
-    
-    context = {
-        'service': service,
-        'is_connected': is_connected,
-    }
-    
-    return render(request, 'services/detail.html', context)
+        pass
+    return render(request, 'services/detail.html', {'service': service, 'is_connected': is_connected})
 
 @login_required
 def get_service_details(request, service_id):
@@ -509,119 +428,52 @@ def connect_service(request, service_id):
 @login_required
 @require_http_methods(["POST"])
 def disconnect_service(request, service_id):
-    """Отключение услуги от учетной записи клиента"""
+    """Отключение услуги"""
     try:
-        # Получаем клиента
-        try:
-            client = Client.objects.get(user=request.user)
-        except Client.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Клиент не найден'})
-        
-        # Получаем подключенную услугу
-        try:
-            client_service = ClientService.objects.get(
-                client=client, 
-                service_id=service_id,
-                status='active'
-            )
-        except ClientService.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Услуга не найдена или не подключена'})
-        
-        # Отключаем услугу
-        from django.utils import timezone
+        client = Client.objects.get(user=request.user)
+        client_service = ClientService.objects.get(client=client, service_id=service_id, status='active')
         client_service.status = 'cancelled'
         client_service.cancelled_at = timezone.now()
         client_service.cancelled_by = request.user
         client_service.is_active = False
         client_service.save()
-        
-        return JsonResponse({
-            'success': True, 
-            'message': f'Услуга "{client_service.service.name}" успешно отключена',
-            'service_id': service_id
-        })
-        
+        return JsonResponse({'success': True, 'message': f'Услуга "{client_service.service.name}" отключена', 'service_id': service_id})
+    except (Client.DoesNotExist, ClientService.DoesNotExist):
+        return JsonResponse({'success': False, 'error': 'Услуга не найдена или не подключена'})
     except Exception as e:
-        logger.error(f"Error disconnecting service: {e}")
         return JsonResponse({'success': False, 'error': str(e)})
 
 @login_required
 def my_services(request):
-    """Страница управления подключенными услугами клиента"""
+    """Подключенные услуги клиента"""
     try:
         client = Client.objects.get(user=request.user)
     except Client.DoesNotExist:
         messages.error(request, 'Клиент не найден')
         return redirect('login')
-    
-    # Получаем только активные подключенные услуги
-    connected_services = ClientService.objects.filter(
-        client=client,
-        status='active',
-        is_active=True
-    ).select_related('service', 'service__category').order_by('-connected_at')
-    
-    # Статистика
-    active_services = connected_services.count()
-    total_monthly_fee = connected_services.aggregate(
-        total=models.Sum('monthly_fee')
-    )['total'] or 0
-    
-    context = {
-        'client': client,
-        'connected_services': connected_services,
-        'active_services': active_services,
-        'total_monthly_fee': total_monthly_fee,
-    }
-    
-    return render(request, 'my_services.html', context)
+    services = ClientService.objects.filter(client=client, status='active', is_active=True).select_related('service', 'service__category').order_by('-connected_at')
+    return render(request, 'my_services.html', {'client': client, 'connected_services': services, 'active_services': services.count(), 'total_monthly_fee': services.aggregate(total=models.Sum('monthly_fee'))['total'] or 0})
 
 @login_required
 def my_requests(request):
-    """Список заявок клиента на создание услуг с их статусами"""
+    """Заявки клиента"""
     try:
         client = Client.objects.get(user=request.user)
     except Client.DoesNotExist:
         messages.error(request, 'Клиент не найден')
         return redirect('login')
-
     requests_qs = ServiceRequest.objects.filter(client=client).order_by('-created_at')
-
-    context = {
-        'client': client,
-        'service_requests': requests_qs,
-        'total_requests': requests_qs.count(),
-        'pending_requests': requests_qs.filter(status='pending').count() if hasattr(ServiceRequest, 'status') else 0,
-    }
-    return render(request, 'my_requests.html', context)
+    return render(request, 'my_requests.html', {'client': client, 'service_requests': requests_qs, 'total_requests': requests_qs.count(), 'pending_requests': requests_qs.filter(status='pending').count()})
 
 @login_required
 def deposits_view(request):
-    """Страница депозитных программ"""
+    """Депозитные программы"""
     try:
         client = Client.objects.get(user=request.user)
     except Client.DoesNotExist:
         messages.error(request, 'Клиент не найден')
         return redirect('home')
-    
-    # Получаем депозиты клиента
-    deposits = Deposit.objects.filter(client=client).order_by('-created_at')
-    
-    # Получаем карты клиента для выбора карты при создании депозита
-    cards = BankCard.objects.filter(client=client, is_active=True)
-    
-    # Получаем доступные депозитные программы из базы данных
-    # Эти данные создаются при первом запуске через init_data.py
-    deposit_programs = []  # TODO: Получить из базы данных
-    
-    context = {
-        'deposits': deposits,
-        'deposit_programs': deposit_programs,
-        'client': client,
-        'cards': cards
-    }
-    
-    return render(request, 'deposits.html', context)
+    return render(request, 'deposits.html', {'client': client, 'deposits': Deposit.objects.filter(client=client).order_by('-created_at'), 'cards': BankCard.objects.filter(client=client, is_active=True), 'deposit_programs': []})
 
 @login_required
 @require_http_methods(["POST"])
@@ -760,178 +612,68 @@ def create_deposit_request(request):
 
 @login_required
 def credits_view(request):
-    """Страница кредитных продуктов"""
+    """Кредитные продукты"""
     try:
         client = Client.objects.get(user=request.user)
     except Client.DoesNotExist:
         messages.error(request, 'Клиент не найден')
         return redirect('home')
-    
-    # Получаем кредиты клиента
-    credits = Credit.objects.filter(client=client).order_by('-created_at')
-    
-    # Получаем доступные кредитные программы из базы данных
-    # Эти данные создаются при первом запуске через init_data.py
-    credit_programs = []  # TODO: Получить из базы данных
-    
-    context = {
-        'credits': credits,
-        'credit_programs': credit_programs,
-        'client': client
-    }
-    
-    return render(request, 'credits.html', context)
+    return render(request, 'credits.html', {'client': client, 'credits': Credit.objects.filter(client=client).order_by('-created_at'), 'credit_programs': []})
 
 @login_required
 @require_http_methods(["POST"])
 def create_credit_request(request):
-    """Создание заявки на кредит"""
+    """Заявка на кредит"""
     try:
         data = json.loads(request.body)
-        
-        # Получаем клиента
-        try:
-            client = Client.objects.get(user=request.user)
-        except Client.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Клиент не найден'})
-        
-        # Создаем заявку на кредит (используем существующую модель ServiceRequest)
-        credit_request = ServiceRequest.objects.create(
-            client=client,
-            service_name=f"Заявка на кредит: {data.get('program_name', '')}",
-            service_description=f"""
-Программа: {data.get('program_name', '')}
-Сумма: {data.get('amount', 0)} ₽
-Срок: {data.get('term_months', 0)} месяцев
-Цель кредита: {data.get('purpose', '')}
-Доход: {data.get('income', 0)} ₽
-Стаж работы: {data.get('work_experience', 0)} месяцев
-            """.strip(),
-            price=data.get('amount', 0)
-        )
-        
-        return JsonResponse({'success': True, 'request_id': credit_request.id})
-        
+        client = Client.objects.get(user=request.user)
+        req = ServiceRequest.objects.create(client=client, service_name=f"Заявка на кредит: {data.get('program_name', '')}", service_description=f"Программа: {data.get('program_name', '')}\nСумма: {data.get('amount', 0)} ₽\nСрок: {data.get('term_months', 0)} мес", price=data.get('amount', 0))
+        return JsonResponse({'success': True, 'request_id': req.id})
     except Exception as e:
-        logger.error(f"Error creating credit request: {e}")
         return JsonResponse({'success': False, 'error': str(e)})
 
 @login_required
 def investments_view(request):
-    """Страница инвестиционных продуктов"""
+    """Инвестиционные продукты"""
     try:
         client = Client.objects.get(user=request.user)
     except Client.DoesNotExist:
         messages.error(request, 'Клиент не найден')
         return redirect('home')
-    
-    # Получаем инвестиции клиента
-    investments = ClientInvestment.objects.filter(client=client).order_by('-created_at')
-    
-    # Получаем доступные инвестиционные продукты из базы данных
-    # Эти данные создаются при первом запуске через init_data.py
-    investment_products = []  # TODO: Получить из базы данных
-    
-    context = {
-        'investments': investments,
-        'investment_products': investment_products,
-        'client': client
-    }
-    
-    return render(request, 'investments.html', context)
+    return render(request, 'investments.html', {'client': client, 'investments': ClientInvestment.objects.filter(client=client).order_by('-created_at'), 'investment_products': []})
 
 @login_required
 @require_http_methods(["POST"])
 def create_investment_request(request):
-    """Создание заявки на инвестиционный продукт"""
+    """Заявка на инвестиции"""
     try:
         data = json.loads(request.body)
-        
-        # Получаем клиента
-        try:
-            client = Client.objects.get(user=request.user)
-        except Client.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Клиент не найден'})
-        
-        # Создаем заявку на инвестиционный продукт
-        investment_request = ServiceRequest.objects.create(
-            client=client,
-            service_name=f"Заявка на инвестиционный продукт: {data.get('product_name', '')}",
-            service_description=f"""
-Продукт: {data.get('product_name', '')}
-Сумма инвестиции: {data.get('amount', 0)} ₽
-Уровень риска: {data.get('risk_level', '')}
-Ожидаемая доходность: {data.get('expected_return', 0)}%
-Опыт инвестирования: {data.get('investment_experience', '')}
-Финансовые цели: {data.get('financial_goals', '')}
-            """.strip(),
-            price=data.get('amount', 0)
-        )
-        
-        return JsonResponse({'success': True, 'request_id': investment_request.id})
-        
+        client = Client.objects.get(user=request.user)
+        req = ServiceRequest.objects.create(client=client, service_name=f"Заявка на инвестиции: {data.get('product_name', '')}", service_description=f"Продукт: {data.get('product_name', '')}\nСумма: {data.get('amount', 0)} ₽\nРиск: {data.get('risk_level', '')}", price=data.get('amount', 0))
+        return JsonResponse({'success': True, 'request_id': req.id})
     except Exception as e:
-        logger.error(f"Error creating investment request: {e}")
         return JsonResponse({'success': False, 'error': str(e)})
 
 @login_required
 def cards_view(request):
-    """Страница банковских карт"""
+    """Банковские карты"""
     try:
         client = Client.objects.get(user=request.user)
     except Client.DoesNotExist:
         messages.error(request, 'Клиент не найден')
         return redirect('home')
-    
-    # Получаем карты клиента
-    cards = BankCard.objects.filter(client=client).order_by('-created_at')
-    # Счета для модалки оформления карты
-    cards = BankCard.objects.filter(client=client, is_active=True)
-    
-    # Получаем доступные типы карт из базы данных
-    # Эти данные создаются при первом запуске через init_data.py
-    card_programs = []  # TODO: Получить из базы данных
-    
-    context = {
-        'cards': cards,
-        'card_programs': card_programs,
-        'client': client,
-        'cards': cards,
-    }
-    
-    return render(request, 'cards.html', context)
+    return render(request, 'cards.html', {'client': client, 'cards': BankCard.objects.filter(client=client, is_active=True), 'card_programs': []})
 
 @login_required
 @require_http_methods(["POST"])
 def create_card_request(request):
-    """Создание заявки на банковскую карту"""
+    """Заявка на карту"""
     try:
         data = json.loads(request.body)
-        
-        # Получаем клиента
-        try:
-            client = Client.objects.get(user=request.user)
-        except Client.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Клиент не найден'})
-        
-        # Создаем заявку на карту
-        card_request = ServiceRequest.objects.create(
-            client=client,
-            service_name=f"Заявка на карту: {data.get('card_name', '')}",
-            service_description=f"""
-Тип карты: {data.get('card_name', '')}
-Доставка: {data.get('delivery_method', '')}
-Дополнительные услуги: {data.get('additional_services', '')}
-Доход: {data.get('income', 0)} ₽
-Цель использования: {data.get('usage_purpose', '')}
-            """.strip(),
-            price=data.get('annual_fee', 0)
-        )
-        
-        return JsonResponse({'success': True, 'request_id': card_request.id})
-        
+        client = Client.objects.get(user=request.user)
+        req = ServiceRequest.objects.create(client=client, service_name=f"Заявка на карту: {data.get('card_name', '')}", service_description=f"Тип: {data.get('card_name', '')}\nДоставка: {data.get('delivery_method', '')}", price=data.get('annual_fee', 0))
+        return JsonResponse({'success': True, 'request_id': req.id})
     except Exception as e:
-        logger.error(f"Error creating card request: {e}")
         return JsonResponse({'success': False, 'error': str(e)})
 
 @login_required
@@ -1065,244 +807,106 @@ def create_card(request):
 @login_required
 @require_http_methods(["POST"])
 def block_card(request, card_id):
-    """Блокирует карту клиента (is_active=False)."""
+    """Блокировка карты"""
     try:
-        client = Client.objects.get(user=request.user)
-    except Client.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Клиент не найден'}, status=400)
-
-    try:
-        card = BankCard.objects.get(id=card_id, client=client)
+        card = BankCard.objects.get(id=card_id, client__user=request.user)
+        if not card.is_active:
+            return JsonResponse({'success': True, 'message': 'Карта уже заблокирована'})
+        card.is_active = False
+        card.save(update_fields=['is_active'])
+        return JsonResponse({'success': True, 'message': 'Карта заблокирована'})
     except BankCard.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Карта не найдена'}, status=404)
-
-    if not card.is_active:
-        return JsonResponse({'success': True, 'message': 'Карта уже заблокирована'})
-
-    card.is_active = False
-    card.save(update_fields=['is_active'])
-    return JsonResponse({'success': True})
 
 @login_required
 @require_http_methods(["POST"])
 def unblock_card(request, card_id):
-    """Разблокирует карту клиента (is_active=True)."""
+    """Разблокировка карты"""
     try:
-        client = Client.objects.get(user=request.user)
-    except Client.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Клиент не найден'}, status=400)
-
-    try:
-        card = BankCard.objects.get(id=card_id, client=client)
+        card = BankCard.objects.get(id=card_id, client__user=request.user)
+        if card.is_active:
+            return JsonResponse({'success': True, 'message': 'Карта уже активна'})
+        card.is_active = True
+        card.save(update_fields=['is_active'])
+        return JsonResponse({'success': True})
     except BankCard.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Карта не найдена'}, status=404)
-
-    if card.is_active:
-        return JsonResponse({'success': True, 'message': 'Карта уже активна'})
-
-    card.is_active = True
-    card.save(update_fields=['is_active'])
-    return JsonResponse({'success': True})
 
 @login_required
 @require_http_methods(["POST"])
 def change_card_pin(request, card_id):
-    """Смена PIN-кода (в учебных целях — без хранения)."""
+    """Смена PIN-кода"""
     try:
-        client = Client.objects.get(user=request.user)
-    except Client.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Клиент не найден'}, status=400)
-
-    try:
-        card = BankCard.objects.get(id=card_id, client=client)
+        BankCard.objects.get(id=card_id, client__user=request.user)
+        data = json.loads(request.body or '{}')
+        new_pin = (data.get('new_pin') or '').strip()
+        if not (len(new_pin) == 4 and new_pin.isdigit()):
+            return JsonResponse({'success': False, 'error': 'PIN должен состоять из 4 цифр'}, status=400)
+        return JsonResponse({'success': True})
     except BankCard.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Карта не найдена'}, status=404)
 
-    try:
-        data = json.loads(request.body or '{}')
-    except Exception:
-        data = {}
-
-    new_pin = (data.get('new_pin') or '').strip()
-    if not (len(new_pin) == 4 and new_pin.isdigit()):
-        return JsonResponse({'success': False, 'error': 'PIN должен состоять из 4 цифр'}, status=400)
-
-    # В учебных целях не сохраняем PIN, просто подтверждаем операцию
-    return JsonResponse({'success': True})
-
-@login_required
-@require_http_methods(["POST"])
-def block_card(request, card_id):
-    """Блокирует банковский счет клиента (is_active=False)."""
-    try:
-        client = Client.objects.get(user=request.user)
-    except Client.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Клиент не найден'}, status=400)
-
-    try:
-        card = BankCard.objects.get(id=card_id, client=client)
-    except BankCard.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Счет не найден'}, status=404)
-
-    if not card.is_active:
-        return JsonResponse({'success': True, 'message': 'Счет уже заблокирован'})
-
-    card.is_active = False
-    card.save(update_fields=['is_active'])
-    return JsonResponse({'success': True, 'message': 'Карта заблокирована'})
-
-@login_required
-@require_http_methods(["POST"])
-def unblock_card(request, card_id):
-    """Разблокирует банковский счет клиента (is_active=True)."""
-    try:
-        client = Client.objects.get(user=request.user)
-    except Client.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Клиент не найден'}, status=400)
-
-    try:
-        card = BankCard.objects.get(id=card_id, client=client)
-    except BankCard.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Счет не найден'}, status=404)
-
-    if card.is_active:
-        return JsonResponse({'success': True, 'message': 'Счет уже активен'})
-
-    card.is_active = True
-    card.save(update_fields=['is_active'])
-    # Разблокировка карт автоматически НЕ производится (требует явного управления картой)
-    return JsonResponse({'success': True})
-
 def login_page(request):
-    """Страница входа в систему (вход по email и паролю)"""
+    """Вход в систему"""
     if request.method == 'POST':
         email_input = request.POST.get('email')
         password = request.POST.get('password')
-        
-        print(f"Попытка входа (email): {email_input}")  # Отладочная информация
-        
-        # Ищем пользователя по email; для совместимости пробуем как username
-        user_obj = None
-        if email_input:
-            user_obj = User.objects.filter(email=email_input).first()
-            if not user_obj:
-                user_obj = User.objects.filter(username=email_input).first()
-        
-        user = None
-        if user_obj:
-            user = authenticate(request, username=user_obj.username, password=password)
-        if user is not None:
-            print(f"Пользователь аутентифицирован: {user.username}")  # Отладочная информация
+        user_obj = User.objects.filter(email=email_input).first() or User.objects.filter(username=email_input).first() if email_input else None
+        user = authenticate(request, username=user_obj.username, password=password) if user_obj else None
+        if user:
             login(request, user)
-
-            # Если вошёл с паролем по умолчанию — требуем смену пароля
-            try:
-                default_pwd = getattr(settings, 'DEFAULT_NEW_CLIENT_PASSWORD', '1й2ц№У;К')
-                if user.check_password(default_pwd):
-                    messages.info(request, 'Пожалуйста, установите новый пароль перед началом работы.')
-                    return redirect('first_login_password')
-            except Exception:
-                pass
-
-            # Автоматическое определение роли и перенаправление
             if user.is_superuser or user.is_staff:
                 return redirect('admin_dashboard')
-            
             try:
-                operator = Operator.objects.get(user=user)
-                print(f"Найден оператор: {operator.operator_type}")
-                if operator.operator_type == 'client_service':
-                    return redirect('operator1_dashboard')
-                if operator.operator_type == 'security':
-                    return redirect('operator2_dashboard')
+                op = Operator.objects.get(user=user)
+                return redirect('operator1_dashboard' if op.operator_type == 'client_service' else 'operator2_dashboard')
             except Operator.DoesNotExist:
                 pass
-
             try:
-                client = Client.objects.get(user=user)
-                print(f"Найден клиент: {client.full_name}")
+                Client.objects.get(user=user)
                 return redirect('client_dashboard')
             except Client.DoesNotExist:
                 pass
-
-            # Если роль не сопоставлена
             messages.error(request, 'Для учетной записи не назначена роль')
             return redirect('login')
-        else:
-            print("Неверные учетные данные")  # Отладочная информация
-            messages.error(request, 'Неверные email или пароль')
-    
+        messages.error(request, 'Неверные email или пароль')
     return render(request, 'login.html')
 
 @login_required
 def first_login_password(request):
-    """Установка нового пароля при первом входе (после дефолтного)."""
+    """Смена пароля при первом входе"""
     if request.method == 'POST':
         new_password = (request.POST.get('new_password') or '').strip()
         confirm_password = (request.POST.get('confirm_password') or '').strip()
-
         if not new_password or not confirm_password:
             messages.error(request, 'Заполните оба поля пароля')
-            return redirect('first_login_password')
-
-        if new_password != confirm_password:
+        elif new_password != confirm_password:
             messages.error(request, 'Пароли не совпадают')
-            return redirect('first_login_password')
-
-        if len(new_password) < 8:
+        elif len(new_password) < 8:
             messages.error(request, 'Пароль должен содержать не менее 8 символов')
-            return redirect('first_login_password')
-
-        request.user.set_password(new_password)
-        request.user.save(update_fields=['password'])
-        update_session_auth_hash(request, request.user)
-        messages.success(request, 'Пароль успешно обновлён')
-
-        # Перенаправление по роли
-        if request.user.is_superuser or request.user.is_staff:
-            return redirect('admin_dashboard')
-        try:
-            operator = Operator.objects.get(user=request.user)
-            if operator.operator_type == 'client_service':
-                return redirect('operator1_dashboard')
-            if operator.operator_type == 'security':
-                return redirect('operator2_dashboard')
-        except Operator.DoesNotExist:
-            pass
-        try:
-            Client.objects.get(user=request.user)
-            return redirect('client_dashboard')
-        except Client.DoesNotExist:
-            pass
-        return redirect('home')
-
+        else:
+            request.user.set_password(new_password)
+            request.user.save(update_fields=['password'])
+            update_session_auth_hash(request, request.user)
+            messages.success(request, 'Пароль успешно обновлён')
+            if request.user.is_superuser or request.user.is_staff:
+                return redirect('admin_dashboard')
+            if Operator.objects.filter(user=request.user).exists():
+                op = Operator.objects.get(user=request.user)
+                return redirect('operator1_dashboard' if op.operator_type == 'client_service' else 'operator2_dashboard')
+            if Client.objects.filter(user=request.user).exists():
+                return redirect('client_dashboard')
+            return redirect('home')
+        return redirect('first_login_password')
     return render(request, 'first_login_password.html')
 
 def logout_view(request):
-    """Выход из системы"""
     logout(request)
     return redirect('home')
 
 def xss_success(request):
-    """Страница-подтверждение: XSS-пэйлоад выполнился и открыл эту страницу."""
-    try:
-        AttackLog.objects.create(
-            attack_type='xss',
-            target_user=request.user.username if request.user.is_authenticated else 'anonymous',
-            details=f"XSS probe hit; referrer={request.META.get('HTTP_REFERER','')}; tag={request.GET.get('tag','')}",
-            ip_address=request.META.get('REMOTE_ADDR', ''),
-            user_agent=request.META.get('HTTP_USER_AGENT', '')
-        )
-    except Exception:
-        pass
-
-    context = {
-        'referrer': request.META.get('HTTP_REFERER', ''),
-        'ip': request.META.get('REMOTE_ADDR', ''),
-        'ua': request.META.get('HTTP_USER_AGENT', ''),
-        'tag': request.GET.get('tag', ''),
-    }
-    return render(request, 'xss_success.html', context)
+    """XSS демонстрация"""
+    return render(request, 'xss_success.html', {'referrer': request.META.get('HTTP_REFERER', ''), 'ip': request.META.get('REMOTE_ADDR', ''), 'ua': request.META.get('HTTP_USER_AGENT', ''), 'tag': request.GET.get('tag', '')})
 
 @login_required
 def client_dashboard(request):
@@ -1312,206 +916,61 @@ def client_dashboard(request):
     except Client.DoesNotExist:
         messages.error(request, 'Клиент не найден')
         return redirect('home')
-    
-    # Получаем карты клиента (убрал дублирующийся запрос)
     cards = BankCard.objects.filter(client=client, is_active=True)
-    
-    # Получаем подключенные услуги с оптимизацией
-    connected_services = ClientService.objects.filter(
-        client=client, 
-        status='active', 
-        is_active=True
-    ).select_related('service', 'service__category')[:20]  # Ограничиваем количество
-    
-    # Получаем заявки клиента с ограничением
-    service_requests = ServiceRequest.objects.filter(client=client).order_by('-created_at')[:10]
-    
-    # Получаем последние транзакции с оптимизацией (select_related для избежания N+1)
-    transactions = Transaction.objects.filter(
-        models.Q(from_card__client=client) | models.Q(to_card__client=client)
-    ).select_related('from_card', 'to_card').order_by('-created_at')[:10]
-    
-    # Получаем депозиты клиента
-    deposits = Deposit.objects.filter(client=client, is_active=True)[:10]
-    
-    # Получаем кредиты клиента
     credits = Credit.objects.filter(client=client, status='active')[:10]
-    
-    # Общий баланс
-    total_balance = cards.aggregate(total=models.Sum('balance'))['total'] or 0
-    
-    # Сумма кредитов
-    total_credit_debt = sum(credit.remaining_amount for credit in credits)
-    total_credit_amount = total_credit_debt if total_credit_debt > 0 else 0
-    
-    context = {
-        'client': client,
-        'cards': cards,
-        'connected_services': connected_services,
-        'service_requests': service_requests,
-        'transactions': transactions,
-        'deposits': deposits,
+    return render(request, 'client_dashboard.html', {
+        'client': client, 'cards': cards,
+        'connected_services': ClientService.objects.filter(client=client, status='active', is_active=True).select_related('service', 'service__category')[:20],
+        'service_requests': ServiceRequest.objects.filter(client=client).order_by('-created_at')[:10],
+        'transactions': Transaction.objects.filter(models.Q(from_card__client=client) | models.Q(to_card__client=client)).select_related('from_card', 'to_card').order_by('-created_at')[:10],
+        'deposits': Deposit.objects.filter(client=client, is_active=True)[:10],
         'credits': credits,
-        'total_balance': total_balance,
-        'total_credit_amount': total_credit_amount,
-    }
-    
-    return render(request, 'client_dashboard.html', context)
+        'total_balance': cards.aggregate(total=models.Sum('balance'))['total'] or 0,
+        'total_credit_amount': sum(c.remaining_amount for c in credits) or 0,
+    })
 
 @login_required
 def admin_dashboard(request):
-    """Админ-дашборд с полной статистикой"""
+    """Админ-дашборд"""
     if not is_admin(request.user):
-        messages.error(request, 'Доступ запрещен. Требуются права администратора.')
+        messages.error(request, 'Доступ запрещен')
         return redirect('home')
-    
-    # Статистика пользователей
-    total_users = User.objects.count()
-    total_clients = Client.objects.count()
-    total_services = Service.objects.count()
-    total_transactions = Transaction.objects.count()
-    
-    # Статистика атак
-    recent_attacks = []
-    attack_counts = {}
-    
-    # Статистика транзакций за неделю
-    from datetime import datetime, timedelta
+    from datetime import timedelta
     week_ago = timezone.now() - timedelta(days=7)
-    weekly_transactions = Transaction.objects.filter(completed_at__gte=week_ago).count()
-    
-    # Статистика по категориям услуг
-    categories_stats = []
-    for category in ServiceCategory.objects.all():
-        count = Service.objects.filter(category=category).count()
-        categories_stats.append({'name': category.name, 'count': count})
-    
-    context = {
-        'total_users': total_users,
-        'total_clients': total_clients,
-        'total_services': total_services,
-        'total_transactions': total_transactions,
-        'recent_attacks': recent_attacks,
-        'attack_counts': attack_counts,
-        'weekly_transactions': weekly_transactions,
-        'categories_stats': categories_stats,
-    }
-    
-    return render(request, 'admin/dashboard.html', context)
-
-@login_required
-def client_dashboard(request):
-    """Дашборд клиента"""
-    try:
-        client = Client.objects.select_related('user').get(user=request.user)
-    except Client.DoesNotExist:
-        messages.error(request, 'Клиент не найден')
-        return redirect('home')
-    
-    # Получаем карты клиента (убрал дублирующийся запрос)
-    cards = BankCard.objects.filter(client=client, is_active=True)
-    
-    # Получаем подключенные услуги с оптимизацией
-    connected_services = ClientService.objects.filter(
-        client=client, 
-        status='active', 
-        is_active=True
-    ).select_related('service', 'service__category')[:20]  # Ограничиваем количество
-    
-    # Получаем заявки клиента с ограничением
-    service_requests = ServiceRequest.objects.filter(client=client).order_by('-created_at')[:10]
-    
-    # Получаем последние транзакции с оптимизацией (select_related для избежания N+1)
-    transactions = Transaction.objects.filter(
-        models.Q(from_card__client=client) | models.Q(to_card__client=client)
-    ).select_related('from_card', 'to_card').order_by('-created_at')[:10]
-    
-    # Получаем депозиты клиента
-    deposits = Deposit.objects.filter(client=client, is_active=True)[:10]
-    
-    # Получаем кредиты клиента
-    credits = Credit.objects.filter(client=client, status='active')[:10]
-    
-    # Общий баланс
-    total_balance = cards.aggregate(total=models.Sum('balance'))['total'] or 0
-    
-    context = {
-        'client': client,
-        'cards': cards,
-        'connected_services': connected_services,
-        'service_requests': service_requests,
-        'transactions': transactions,
-        'deposits': deposits,
-        'credits': credits,
-        'total_balance': total_balance,
-    }
-    
-    return render(request, 'client_dashboard.html', context)
-
-
+    return render(request, 'admin/dashboard.html', {
+        'total_users': User.objects.count(), 'total_clients': Client.objects.count(),
+        'total_services': Service.objects.count(), 'total_transactions': Transaction.objects.count(),
+        'recent_attacks': [], 'attack_counts': {},
+        'weekly_transactions': Transaction.objects.filter(completed_at__gte=week_ago).count(),
+        'categories_stats': [{'name': c.name, 'count': Service.objects.filter(category=c).count()} for c in ServiceCategory.objects.all()],
+    })
 
 @login_required
 def operator1_dashboard(request):
-    """Дашборд оператора ДБО #1 (Отдел клиентского обслуживания)"""
+    """Дашборд оператора ДБО #1"""
     try:
         operator = Operator.objects.get(user=request.user, operator_type='client_service')
     except Operator.DoesNotExist:
-        messages.error(request, 'Доступ запрещен. Требуются права оператора ДБО #1.')
+        messages.error(request, 'Доступ запрещен')
         return redirect('home')
-    
-    # Получаем заявки на создание клиентов
-    client_requests = ServiceRequest.objects.filter(
-        service_name__icontains='регистрация'
-    ).order_by('-created_at')
-    
-    # Статистика
-    pending_requests = client_requests.filter(status='pending').count()
-    
-    context = {
-        'operator': operator,
-        'client_requests': client_requests[:10],  # Последние 10 заявок
-        'pending_requests': pending_requests,
-    }
-    
-    return render(request, 'operator1_dashboard.html', context)
+    reqs = ServiceRequest.objects.filter(service_name__icontains='регистрация').order_by('-created_at')
+    return render(request, 'operator1_dashboard.html', {'operator': operator, 'client_requests': reqs[:10], 'pending_requests': reqs.filter(status='pending').count()})
 
 @login_required
 def operator2_dashboard(request):
-    """Дашборд оператора ДБО #2 (Отдел безопасности/валидации)"""
+    """Дашборд оператора ДБО #2"""
     try:
         operator = Operator.objects.get(user=request.user, operator_type='security')
     except Operator.DoesNotExist:
-        messages.error(request, 'Доступ запрещен. Требуются права оператора ДБО #2.')
+        messages.error(request, 'Доступ запрещен')
         return redirect('home')
-    
-    # Получаем заявки на создание услуг для валидации
-    service_requests = ServiceRequest.objects.filter(
-        status='pending'
-    ).exclude(
-        service_name__icontains='регистрация'
-    ).order_by('-created_at')
-    
-    # Получаем недавно одобренные заявки
-    approved_requests = ServiceRequest.objects.filter(
-        status='approved'
-    ).order_by('-reviewed_at')[:10]
-    
-    # Статистика
-    pending_requests = service_requests.count()
-    approved_today = ServiceRequest.objects.filter(
-        status='approved',
-        reviewed_at__date=timezone.now().date()
-    ).count()
-    
-    context = {
-        'operator': operator,
-        'service_requests': service_requests,
-        'approved_requests': approved_requests,
-        'pending_requests': pending_requests,
-        'approved_today': approved_today,
-    }
-    
-    return render(request, 'operator2_dashboard.html', context)
+    reqs = ServiceRequest.objects.filter(status='pending').exclude(service_name__icontains='регистрация').order_by('-created_at')
+    return render(request, 'operator2_dashboard.html', {
+        'operator': operator, 'service_requests': reqs,
+        'approved_requests': ServiceRequest.objects.filter(status='approved').order_by('-reviewed_at')[:10],
+        'pending_requests': reqs.count(),
+        'approved_today': ServiceRequest.objects.filter(status='approved', reviewed_at__date=timezone.now().date()).count(),
+    })
 
 @login_required
 def create_client(request):
@@ -1639,7 +1098,7 @@ def approve_service_request(request, request_id):
     # Создаем услугу в каталоге
     # Гарантируем наличие категории
     category, _ = ServiceCategory.objects.get_or_create(
-        name='Дополнительные услуги', defaults={'description': 'Пользовательские услуги', 'is_public': True}
+        name='Дополнительные услуги', defaults={'description': 'Пользовательские услуги'}
     )
     Service.objects.create(
         name=service_request.service_name,
@@ -1677,31 +1136,6 @@ def reject_service_request(request, request_id):
 
     messages.success(request, 'Заявка отклонена')
     return redirect('operator2_dashboard')
-
-@login_required
-def cards_view(request):
-    """Страница счетов клиента"""
-    try:
-        client = Client.objects.get(user=request.user)
-    except Client.DoesNotExist:
-        messages.error(request, 'Клиент не найден')
-        return redirect('home')
-    
-    # Получаем счета клиента
-    cards = BankCard.objects.filter(client=client).order_by('-created_at')
-    
-    # Статистика
-    total_balance = cards.aggregate(total=models.Sum('balance'))['total'] or 0
-    active_cards = cards.filter(is_active=True).count()
-    
-    context = {
-        'client': client,
-        'cards': cards,
-        'total_balance': total_balance,
-        'active_cards': active_cards,
-    }
-    
-    return render(request, 'cards.html', context)
 
 @login_required
 @require_http_methods(["POST"]) 
@@ -1761,33 +1195,18 @@ def create_bank_card(request):
 
 @login_required
 def transfers_view(request):
-    """Страница переводов"""
+    """Переводы"""
     try:
         client = Client.objects.get(user=request.user)
     except Client.DoesNotExist:
         messages.error(request, 'Клиент не найден')
         return redirect('home')
-    
-    # Получаем счета клиента для переводов
     cards = BankCard.objects.filter(client=client, is_active=True)
     main_card = client.primary_card if hasattr(client, 'primary_card') and client.primary_card else cards.first()
-    
-    # Получаем последние переводы
-    recent_transfers = Transaction.objects.filter(
-        models.Q(from_card__client=client) | models.Q(to_card__client=client),
-        transaction_type='transfer'
-    ).select_related('from_card', 'to_card', 'from_card__client', 'to_card__client').order_by('-created_at')[:10]
-    
-    context = {
-        'client': client,
-        'cards': cards,
-        'accounts': cards,  # Для совместимости с формой
-        'main_card': main_card,
-        'main_account': main_card,  # Для совместимости с формой
-        'recent_transfers': recent_transfers,
-    }
-    
-    return render(request, 'transfers.html', context)
+    return render(request, 'transfers.html', {
+        'client': client, 'cards': cards, 'accounts': cards, 'main_card': main_card, 'main_account': main_card,
+        'recent_transfers': Transaction.objects.filter(models.Q(from_card__client=client) | models.Q(to_card__client=client), transaction_type='transfer').select_related('from_card', 'to_card', 'from_card__client', 'to_card__client').order_by('-created_at')[:10],
+    })
 
 @login_required
 def transactions_view(request):

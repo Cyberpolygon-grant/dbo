@@ -41,7 +41,6 @@ class ClientAdmin(admin.ModelAdmin):
 @admin.register(ServiceCategory)
 class ServiceCategoryAdmin(admin.ModelAdmin):
     list_display = ('name', 'description')
-    list_filter = ()
     search_fields = ('name', 'description')
 
 
@@ -84,7 +83,7 @@ class TransactionAdmin(admin.ModelAdmin):
 class DepositAdmin(admin.ModelAdmin):
     list_display = ('client', 'card', 'amount', 'interest_rate', 'term_months', 'start_date', 'end_date', 'is_active', 'created_at')
     list_filter = ('is_active', 'term_months')
-    search_fields = ('client__full_name', 'card_number')
+    search_fields = ('client__full_name', 'card__card_number')
 
 
 @admin.register(Credit)

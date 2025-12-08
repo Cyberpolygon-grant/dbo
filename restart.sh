@@ -1,78 +1,39 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Полный перезапуск с очисткой volumes
-echo "🛑 Остановка контейнеров и удаление volumes..."
-sudo docker compose down -v
+echo "🛑 Остановка контейнеров..."
+sudo docker compose down -v 2>/dev/null
 
 echo "🔨 Сборка образов..."
-sudo docker compose build
+sudo docker compose build --quiet
 
 echo "🚀 Запуск контейнеров..."
 sudo docker compose up -d
 
-
-echo "⏳ Ожидание готовности базы данных и приложения..."
-# Ждем, пока база данных будет готова
-echo "   - Ожидание PostgreSQL..."
+echo "⏳ Ожидание БД..."
 timeout=60
 counter=0
 while ! sudo docker compose exec -T db pg_isready -U appuser -d appdb >/dev/null 2>&1; do
     sleep 2
     counter=$((counter + 2))
-    if [ $counter -ge $timeout ]; then
-        echo "❌ Таймаут ожидания базы данных"
-        exit 1
-    fi
+    [ $counter -ge $timeout ] && echo "❌ Таймаут БД" && exit 1
 done
-echo "   ✓ PostgreSQL готов"
 
-# Полная очистка базы данных
-echo ""
-echo "🗑️  Полная очистка базы данных..."
-sudo docker compose exec -T db psql -U appuser -d appdb -c "DROP SCHEMA public CASCADE;" 2>/dev/null || true
-sudo docker compose exec -T db psql -U appuser -d appdb -c "CREATE SCHEMA public;" 2>/dev/null || true
-sudo docker compose exec -T db psql -U appuser -d appdb -c "GRANT ALL ON SCHEMA public TO appuser;" 2>/dev/null || true
-sudo docker compose exec -T db psql -U appuser -d appdb -c "GRANT ALL ON SCHEMA public TO public;" 2>/dev/null || true
-echo "✅ База данных полностью очищена!"
+echo "🗑️ Очистка БД..."
+sudo docker compose exec -T db psql -U appuser -d appdb -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO appuser, public;" >/dev/null 2>&1 || true
 
-# Ждем, пока контейнер app будет готов
-echo "   - Ожидание готовности приложения..."
+echo "⏳ Ожидание приложения..."
 counter=0
 while ! sudo docker compose exec -T app nc -z localhost 8000 >/dev/null 2>&1; do
     sleep 2
     counter=$((counter + 2))
-    if [ $counter -ge $timeout ]; then
-        echo "⚠️  Приложение еще не готово, но продолжаем..."
-        break
-    fi
+    [ $counter -ge $timeout ] && break
 done
 
-# Применяем миграции после очистки базы данных
-echo ""
 echo "📦 Применение миграций..."
-sudo docker compose exec -T app python manage.py migrate --noinput
-echo "✅ Миграции применены!"
+sudo docker compose exec -T app python manage.py migrate --noinput >/dev/null 2>&1
 
-# Явно пересоздаем транзакции для всех клиентов
-echo ""
-echo "💸 Пересоздание транзакций для всех клиентов..."
-if sudo docker compose exec -T app python init_data.py; then
-    echo "✅ Транзакции успешно пересозданы!"
-else
-    echo "⚠️  Предупреждение: не удалось пересоздать транзакции автоматически"
-    echo "   Выполните вручную: sudo docker compose exec app python init_data.py"
-fi
+echo "💾 Создание демо-данных..."
+sudo docker compose exec -T app python init_data.py >/dev/null 2>&1 || echo "⚠️ Ошибка init_data.py"
 
-echo ""
-echo "✅ Проект перезапущен с очисткой volumes!"
-echo "📊 Просмотр логов: sudo docker compose logs -f app"
-echo "🌐 Доступ: http://localhost:8000"
-echo ""
-echo "💡 Транзакции созданы для всех клиентов:"
-echo "   - Петр Иванов (client1)"
-echo "   - Мария Смирнова (client2)"
-echo "   - Алексей Козлов (client3)"
-echo "   - Елена Морозова (client4)"
-echo "   - Дмитрий Волков (client5)"
-
+echo "✅ Готово! http://localhost:8000"
