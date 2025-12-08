@@ -1,0 +1,25 @@
+FROM python:3.11-slim
+
+WORKDIR /bot
+
+# Устанавливаем зависимости для работы с Django
+RUN pip install --no-cache-dir Django>=5.2.4 psycopg2-binary>=2.9.9 requests
+
+# Копируем весь проект для работы Django ORM
+# Бот будет использовать Django ORM напрямую, поэтому нужен доступ к проекту
+COPY dbo_user_bot.py .
+COPY cyberpolygon/ ./cyberpolygon/
+COPY dbo/ ./dbo/
+COPY manage.py .
+
+# Устанавливаем переменные окружения
+ENV DJANGO_SETTINGS_MODULE=cyberpolygon.settings
+ENV PYTHONUNBUFFERED=1
+ENV POSTGRES_HOST=db
+ENV POSTGRES_PORT=5432
+ENV POSTGRES_DB=appdb
+ENV POSTGRES_USER=appuser
+ENV POSTGRES_PASSWORD=apppass
+
+CMD ["python", "-u", "dbo_user_bot.py"]
+

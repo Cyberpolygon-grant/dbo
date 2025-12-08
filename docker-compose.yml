@@ -67,6 +67,44 @@ services:
       -c max_wal_size=4GB
       -c max_connections=100
 
+  operator2-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.bot
+    container_name: operator2-bot
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      - APP_URL=http://app:8000
+      - BOT_USERNAME=operator2
+      - BOT_PASSWORD=password123
+      - CHECK_INTERVAL=30
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  dbo-user-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.user_bot
+    container_name: dbo-user-bot
+    depends_on:
+      db:
+        condition: service_healthy
+      app:
+        condition: service_healthy
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=appdb
+      - POSTGRES_USER=appuser
+      - POSTGRES_PASSWORD=apppass
+      - DJANGO_SETTINGS_MODULE=cyberpolygon.settings
+    restart: unless-stopped
+    networks:
+      - app-network
+
 volumes:
   db_data:
   static_volume:

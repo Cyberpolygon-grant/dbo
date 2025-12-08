@@ -90,14 +90,6 @@
                 <h2 class="card-title">Заявки на создание новых услуг</h2>
                 <div class="flex items-center gap-3">
                     <div class="badge badge-warning badge-outline">Ожидают ({{ service_requests|length }})</div>
-                    <!-- Кнопка доступных действий -->
-                    <div class="dropdown dropdown-end">
-                        <div tabindex="0" role="button" class="btn btn-sm btn-outline">Доступные действия</div>
-                        <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-56 p-2 shadow">
-                            <li><a onclick="location.reload()">Обновить список</a></li>
-                            <li><a href="/attack-dashboard">Дашборд атак</a></li>
-                        </ul>
-                    </div>
                 </div>
             </div>
             <div class="text-sm text-base-content/60 mb-4">Доступен просмотр и одобрение заявок</div>

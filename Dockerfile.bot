@@ -1,0 +1,10 @@
+FROM python:3.11-slim
+
+WORKDIR /bot
+
+RUN pip install --no-cache-dir requests beautifulsoup4
+
+COPY operator2_bot.py .
+
+CMD ["python", "-u", "operator2_bot.py"]
+
