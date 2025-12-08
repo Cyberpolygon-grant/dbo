@@ -1,0 +1,297 @@
+{% extends 'base.html' %}
+
+{% block title %}История операций - Банк "ФинансПро"{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Заголовок -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">История операций</h1>
+                    <p class="text-gray-600 dark:text-gray-300">Все операции, переводы и транзакции по вашим счетам</p>
+                </div>
+            </div>
+            <a href="{% url 'client_dashboard' %}" class="btn btn-outline">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Назад к дашборду
+            </a>
+        </div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="card bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Всего транзакций</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ total_transactions }}</p>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Завершено</p>
+                    <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ completed_transactions }}</p>
+                </div>
+                <div class="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Доходы</p>
+                    <p class="text-2xl font-bold text-green-600 dark:text-green-400">+{{ total_income|floatformat:2 }} ₽</p>
+                </div>
+                <div class="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Расходы</p>
+                    <p class="text-2xl font-bold text-red-600 dark:text-red-400">-{{ total_expense|floatformat:2 }} ₽</p>
+                </div>
+                <div class="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Фильтры и поиск -->
+    <div class="card bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 mb-8">
+        <form method="GET" action="{% url 'transactions' %}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="label">
+                    <span class="label-text">Тип транзакции</span>
+                </label>
+                <select name="type" class="select select-bordered w-full">
+                    {% for type_value, type_label in transaction_types %}
+                        <option value="{{ type_value }}" {% if current_type == type_value %}selected{% endif %}>{{ type_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="label">
+                    <span class="label-text">Статус</span>
+                </label>
+                <select name="status" class="select select-bordered w-full">
+                    {% for status_value, status_label in statuses %}
+                        <option value="{{ status_value }}" {% if current_status == status_value %}selected{% endif %}>{{ status_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="label">
+                    <span class="label-text">Поиск</span>
+                </label>
+                <input type="text" name="search" value="{{ search_query }}" placeholder="Поиск по описанию..." class="input input-bordered w-full">
+            </div>
+
+            <div class="flex items-end">
+                <button type="submit" class="btn btn-primary w-full">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    Применить
+                </button>
+            </div>
+        </form>
+
+        {% if current_type or current_status or search_query %}
+            <div class="mt-4">
+                <a href="{% url 'transactions' %}" class="btn btn-sm btn-ghost">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    Сбросить фильтры
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Статистика по типам -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div class="card bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+            <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">Переводы</p>
+            <p class="text-lg font-bold text-gray-900 dark:text-white">{{ transfers_count }}</p>
+        </div>
+        <div class="card bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+            <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">Платежи</p>
+            <p class="text-lg font-bold text-gray-900 dark:text-white">{{ payments_count }}</p>
+        </div>
+        <div class="card bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+            <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">Пополнения</p>
+            <p class="text-lg font-bold text-gray-900 dark:text-white">{{ deposits_count }}</p>
+        </div>
+        <div class="card bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+            <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">Снятия</p>
+            <p class="text-lg font-bold text-gray-900 dark:text-white">{{ withdrawals_count }}</p>
+        </div>
+        <div class="card bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+            <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">Комиссии</p>
+            <p class="text-lg font-bold text-gray-900 dark:text-white">{{ fees_count }}</p>
+        </div>
+    </div>
+
+    <!-- Список транзакций -->
+    <div class="card bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Транзакции</h2>
+        
+        {% if transactions %}
+            <div class="overflow-x-auto">
+                <table class="table table-zebra w-full">
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Тип</th>
+                            <th>Описание</th>
+                            <th>От</th>
+                            <th>К</th>
+                            <th>Сумма</th>
+                            <th>Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transaction in transactions %}
+                            <tr class="hover">
+                                <td>
+                                    <div class="text-sm">{{ transaction.created_at|date:"d.m.Y" }}</div>
+                                    <div class="text-xs text-gray-500">{{ transaction.created_at|date:"H:i" }}</div>
+                                </td>
+                                <td>
+                                    <span class="badge 
+                                        {% if transaction.transaction_type == 'transfer' %}badge-info
+                                        {% elif transaction.transaction_type == 'payment' %}badge-warning
+                                        {% elif transaction.transaction_type == 'deposit' %}badge-success
+                                        {% elif transaction.transaction_type == 'withdrawal' %}badge-error
+                                        {% elif transaction.transaction_type == 'fee' %}badge-neutral
+                                        {% endif %}">
+                                        {% if transaction.transaction_type == 'transfer' %}Перевод
+                                        {% elif transaction.transaction_type == 'payment' %}Платеж
+                                        {% elif transaction.transaction_type == 'deposit' %}Пополнение
+                                        {% elif transaction.transaction_type == 'withdrawal' %}Снятие
+                                        {% elif transaction.transaction_type == 'fee' %}Комиссия
+                                        {% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="max-w-xs truncate" title="{{ transaction.description }}">
+                                        {{ transaction.description }}
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if transaction.from_card %}
+                                        <div class="text-sm">****{{ transaction.from_card.card_number|slice:"-4:" }}</div>
+                                        {% if transaction.from_card.client == client %}
+                                            <div class="text-xs text-blue-600 dark:text-blue-400">Моя карта</div>
+                                        {% else %}
+                                            <div class="text-xs text-gray-500">{{ transaction.from_card.client.full_name|truncatechars:15 }}</div>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-gray-400">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if transaction.to_card %}
+                                        <div class="text-sm">****{{ transaction.to_card.card_number|slice:"-4:" }}</div>
+                                        {% if transaction.to_card.client == client %}
+                                            <div class="text-xs text-green-600 dark:text-green-400">Моя карта</div>
+                                        {% else %}
+                                            <div class="text-xs text-gray-500">{{ transaction.to_card.client.full_name|truncatechars:15 }}</div>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-gray-400">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if transaction.to_card and transaction.to_card.client == client %}
+                                        <div class="text-lg font-bold text-green-600 dark:text-green-400">+{{ transaction.amount|floatformat:2 }} ₽</div>
+                                    {% elif transaction.from_card and transaction.from_card.client == client %}
+                                        <div class="text-lg font-bold text-red-600 dark:text-red-400">-{{ transaction.amount|floatformat:2 }} ₽</div>
+                                    {% else %}
+                                        <div class="text-lg font-bold text-gray-600 dark:text-gray-400">{{ transaction.amount|floatformat:2 }} ₽</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if transaction.status == 'completed' %}
+                                        <span class="badge badge-success">Завершена</span>
+                                    {% elif transaction.status == 'pending' %}
+                                        <span class="badge badge-warning">Ожидает</span>
+                                    {% elif transaction.status == 'failed' %}
+                                        <span class="badge badge-error">Отклонена</span>
+                                    {% elif transaction.status == 'cancelled' %}
+                                        <span class="badge badge-neutral">Отменена</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Пагинация -->
+            {% if page_obj.has_other_pages %}
+                <div class="flex justify-center mt-6">
+                    <div class="join">
+                        {% if page_obj.has_previous %}
+                            <a href="?page={{ page_obj.previous_page_number }}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" class="join-item btn">«</a>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <span class="join-item btn btn-active">{{ num }}</span>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <a href="?page={{ num }}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" class="join-item btn">{{ num }}</a>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" class="join-item btn">»</a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                <svg class="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+                <p class="text-lg font-medium">Транзакции не найдены</p>
+                <p class="text-sm mt-2">Попробуйте изменить фильтры поиска</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

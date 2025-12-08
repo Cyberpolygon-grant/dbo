@@ -46,6 +46,7 @@ urlpatterns = [
     # Функционал оператора ДБО #1
     path("create-client/", views.create_client, name="create_client"),
     path("phishing-email/<int:email_id>/", views.phishing_email_view, name="phishing_email"),
+    path("operator/transactions/", views.operator_transactions_view, name="operator_transactions"),
     
     # Функционал оператора ДБО #2
     path("review-request/<int:request_id>/", views.review_service_request, name="review_service_request"),
@@ -61,8 +62,10 @@ urlpatterns = [
     path("admin-dashboard/", views.admin_dashboard, name="admin_dashboard"),
     
     # Банковские функции для клиентов
-    path("client/transfers/", views.transfers_view, name="transfers"),
+    path("client/transfers/", views.transfers_view, name="transfers"),  # Отдельная страница переводов
     path("client/deposits/", views.deposits_view, name="deposits"),
+    path("client/transactions/", views.transactions_view, name="transactions"),  # Страница истории операций
+    path("client/history/", views.history_view, name="history"),  # Алиас для истории операций
     # кредиты вырезаны
     
     # Банковские услуги
@@ -87,6 +90,7 @@ urlpatterns = [
     path("service/transfers/", views.transfers_service, name="transfers_service"),
     path("service/cards/", views.cards_service, name="cards_service"),
     path("service/investments/", views.investments_service, name="investments_service"),
+    
     
     # Старые маршруты для совместимости
     path("transfers/", views.transfers, name="transfers_old"),

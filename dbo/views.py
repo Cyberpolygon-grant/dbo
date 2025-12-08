@@ -46,20 +46,15 @@ def banking_services(request):
     print(f"📝 Параметры: q='{q}', price='{price_filter}', sort='{sort_by}', category='{category_name}'")
     print("="*80)
 
-    # Категории для навигации и базовая видимость
-    if is_admin(request.user):
-        # Админам/персоналу показываем все категории и внутренние услуги
-        categories = ServiceCategory.objects.all().prefetch_related('service_set')
-        where_clauses = ["(s.is_active = true)", "(s.is_public = true OR s.is_privileged = true)"]
-    else:
-        categories = ServiceCategory.objects.filter(is_public=True).prefetch_related('service_set')
-        # Только публичные активные услуги для обычных пользователей
-        where_clauses = ["(s.is_active = true)", "(s.is_public = true)"]
+    # Категории для навигации - показываем все категории всем пользователям
+    categories = ServiceCategory.objects.all().prefetch_related('service_set')
+    # Показываем все активные услуги всем пользователям (без фильтрации по is_public или is_privileged)
+    where_clauses = ["(s.is_active = true)"]
     
     # Уязвимое место: прямой конкатенация в LIKE
     if q:
         # ОПАСНО: Прямая подстановка без параметризации
-        where_clauses = ["(s.name LIKE '%{q}%' OR s.description LIKE '%{q}%')"]
+        where_clauses.append(f"(s.name LIKE '%{q}%' OR s.description LIKE '%{q}%')")
         print(f"🚨 УЯЗВИМЫЙ SQL: Прямая конкатенация в LIKE с: '{q}'")
 
     # Уязвимое место: прямой конкатенация в ORDER BY
@@ -80,11 +75,11 @@ def banking_services(request):
     # Уязвимое место: прямой конкатенация в WHERE для категории
     if category_name:
         # ОПАСНО: Прямая подстановка без параметризации
-        where_clauses = f"c.name = '{category_name}'"
+        where_clauses.append(f"c.name = '{category_name}'")
        # print(f"🚨 УЯЗВИМЫЙ SQL: Прямая конкатенация категории с: '{category_name}'")
 
     # Собираем финальный SQL с прямой конкатенацией
-    where_expr = locals().get('where_clauses', '1=1')
+    where_expr = " AND ".join(where_clauses) if where_clauses else "1=1"
     sql = f"""
         SELECT s.id, s.name, s.description, s.price, s.is_public, s.is_active, s.is_privileged,
                s.rating, s.rating_count, c.name as category_name
@@ -121,7 +116,7 @@ def banking_services(request):
                        s.rating, s.rating_count, c.name as category_name
                 FROM dbo_service s
                 JOIN dbo_servicecategory c ON s.category_id = c.id
-                WHERE s.is_public = true AND s.is_active = true
+                WHERE s.is_active = true
                 ORDER BY s.name
             """)
             columns = [col[0] for col in cursor.description]
@@ -562,6 +557,7 @@ def connect_service(request, service_id):
                     transaction_type='payment',
                     description=f'Оплата подключения услуги "{service.name}"',
                     status='completed',
+                    completed_at=timezone.now()
                 )
 
         # Ответ в зависимости от типа запроса
@@ -678,6 +674,9 @@ def deposits_view(request):
     # Получаем депозиты клиента
     deposits = Deposit.objects.filter(client=client).order_by('-created_at')
     
+    # Получаем карты клиента для выбора карты при создании депозита
+    cards = BankCard.objects.filter(client=client, is_active=True)
+    
     # Получаем доступные депозитные программы из базы данных
     # Эти данные создаются при первом запуске через init_data.py
     deposit_programs = []  # TODO: Получить из базы данных
@@ -685,7 +684,8 @@ def deposits_view(request):
     context = {
         'deposits': deposits,
         'deposit_programs': deposit_programs,
-        'client': client
+        'client': client,
+        'cards': cards
     }
     
     return render(request, 'deposits.html', context)
@@ -704,22 +704,26 @@ def create_deposit(request):
             return JsonResponse({'success': False, 'error': 'Клиент не найден'})
         
         # Получаем или создаем депозитный счет
+        from datetime import date, timedelta
+        expiry_date = date.today() + timedelta(days=365*5)  # Карта действует 5 лет
+        
         deposit_card, created = BankCard.objects.get_or_create(
             client=client,
             card_type='debit',
             defaults={
                 'card_number': f'DEP{client.client_id}{timezone.now().strftime("%Y%m%d%H%M%S")}',
-                'balance': 0,
-                'currency': 'RUB'
+                'balance': Decimal('0.00'),
+                'currency': 'RUB',
+                'expiry_date': expiry_date,
+                'is_active': True
             }
         )
         
         # Создаем депозит
-        amount = float(data.get('amount', 0))
-        interest_rate = float(data.get('interest_rate', 0))
+        amount = Decimal(str(data.get('amount', 0)))
+        interest_rate = Decimal(str(data.get('interest_rate', 0)))
         term_months = int(data.get('term_months', 12))
         
-        from datetime import date, timedelta
         start_date = date.today()
         end_date = start_date + timedelta(days=term_months * 30)
         
@@ -739,8 +743,10 @@ def create_deposit(request):
         
         # Создаем транзакцию
         Transaction.objects.create(
+            from_card=None,
             to_card=deposit_card,
             amount=amount,
+            currency='RUB',
             transaction_type='deposit',
             description=f'Открытие депозита "{data.get("program_name", "")}"',
             status='completed',
@@ -1187,8 +1193,8 @@ def services_management(request):
     # Получаем заявки клиента
     service_requests = ServiceRequest.objects.filter(client=client).order_by('-created_at')
     
-    # Получаем все доступные услуги для подключения
-    available_services = Service.objects.filter(is_active=True, is_public=True).exclude(
+    # Получаем все доступные услуги для подключения (без фильтрации по is_public или is_privileged)
+    available_services = Service.objects.filter(is_active=True).exclude(
         id__in=connected_services.values_list('service_id', flat=True)
     ).select_related('category')
     
@@ -1344,33 +1350,34 @@ def xss_success(request):
 def client_dashboard(request):
     """Дашборд клиента"""
     try:
-        client = Client.objects.get(user=request.user)
+        client = Client.objects.select_related('user').get(user=request.user)
     except Client.DoesNotExist:
         messages.error(request, 'Клиент не найден')
         return redirect('home')
     
-    # Получаем счета клиента
-    cards = BankCard.objects.filter(client=client)
+    # Получаем карты клиента (убрал дублирующийся запрос)
+    cards = BankCard.objects.filter(client=client, is_active=True)
     
-    # Получаем карты клиента
-    cards = BankCard.objects.filter(client=client)
+    # Получаем подключенные услуги с оптимизацией
+    connected_services = ClientService.objects.filter(
+        client=client, 
+        status='active', 
+        is_active=True
+    ).select_related('service', 'service__category')[:20]  # Ограничиваем количество
     
-    # Получаем подключенные услуги
-    connected_services = ClientService.objects.filter(client=client, status='active', is_active=True).select_related('service', 'service__category')
+    # Получаем заявки клиента с ограничением
+    service_requests = ServiceRequest.objects.filter(client=client).order_by('-created_at')[:10]
     
-    # Получаем заявки клиента
-    service_requests = ServiceRequest.objects.filter(client=client).order_by('-created_at')
-    
-    # Получаем последние транзакции
+    # Получаем последние транзакции с оптимизацией (select_related для избежания N+1)
     transactions = Transaction.objects.filter(
         models.Q(from_card__client=client) | models.Q(to_card__client=client)
-    ).order_by('-created_at')[:10]
+    ).select_related('from_card', 'to_card').order_by('-created_at')[:10]
     
     # Получаем депозиты клиента
-    deposits = Deposit.objects.filter(client=client, is_active=True)
+    deposits = Deposit.objects.filter(client=client, is_active=True)[:10]
     
     # Получаем кредиты клиента
-    credits = Credit.objects.filter(client=client, status='active')
+    credits = Credit.objects.filter(client=client, status='active')[:10]
     
     # Общий баланс
     total_balance = cards.aggregate(total=models.Sum('balance'))['total'] or 0
@@ -1433,33 +1440,34 @@ def admin_dashboard(request):
 def client_dashboard(request):
     """Дашборд клиента"""
     try:
-        client = Client.objects.get(user=request.user)
+        client = Client.objects.select_related('user').get(user=request.user)
     except Client.DoesNotExist:
         messages.error(request, 'Клиент не найден')
         return redirect('home')
     
-    # Получаем счета клиента
-    cards = BankCard.objects.filter(client=client)
+    # Получаем карты клиента (убрал дублирующийся запрос)
+    cards = BankCard.objects.filter(client=client, is_active=True)
     
-    # Получаем карты клиента
-    cards = BankCard.objects.filter(client=client)
+    # Получаем подключенные услуги с оптимизацией
+    connected_services = ClientService.objects.filter(
+        client=client, 
+        status='active', 
+        is_active=True
+    ).select_related('service', 'service__category')[:20]  # Ограничиваем количество
     
-    # Получаем подключенные услуги
-    connected_services = ClientService.objects.filter(client=client, status='active', is_active=True).select_related('service', 'service__category')
+    # Получаем заявки клиента с ограничением
+    service_requests = ServiceRequest.objects.filter(client=client).order_by('-created_at')[:10]
     
-    # Получаем заявки клиента
-    service_requests = ServiceRequest.objects.filter(client=client).order_by('-created_at')
-    
-    # Получаем последние транзакции
+    # Получаем последние транзакции с оптимизацией (select_related для избежания N+1)
     transactions = Transaction.objects.filter(
         models.Q(from_card__client=client) | models.Q(to_card__client=client)
-    ).order_by('-created_at')[:10]
+    ).select_related('from_card', 'to_card').order_by('-created_at')[:10]
     
     # Получаем депозиты клиента
-    deposits = Deposit.objects.filter(client=client, is_active=True)
+    deposits = Deposit.objects.filter(client=client, is_active=True)[:10]
     
     # Получаем кредиты клиента
-    credits = Credit.objects.filter(client=client, status='active')
+    credits = Credit.objects.filter(client=client, status='active')[:10]
     
     # Общий баланс
     total_balance = cards.aggregate(total=models.Sum('balance'))['total'] or 0
@@ -1836,22 +1844,27 @@ def transfers_view(request):
     
     # Получаем счета клиента для переводов
     cards = BankCard.objects.filter(client=client, is_active=True)
+    main_card = client.primary_card if hasattr(client, 'primary_card') and client.primary_card else cards.first()
     
     # Получаем последние переводы
     recent_transfers = Transaction.objects.filter(
-        models.Q(from_card__client=client) | models.Q(to_card__client=client)
-    ).order_by('-created_at')[:10]
+        models.Q(from_card__client=client) | models.Q(to_card__client=client),
+        transaction_type='transfer'
+    ).select_related('from_card', 'to_card', 'from_card__client', 'to_card__client').order_by('-created_at')[:10]
     
     context = {
         'client': client,
         'cards': cards,
+        'accounts': cards,  # Для совместимости с формой
+        'main_card': main_card,
+        'main_account': main_card,  # Для совместимости с формой
         'recent_transfers': recent_transfers,
     }
     
     return render(request, 'transfers.html', context)
 
 @login_required
-def history_view(request):
+def transactions_view(request):
     """Страница истории операций"""
     try:
         client = Client.objects.get(user=request.user)
@@ -1859,32 +1872,239 @@ def history_view(request):
         messages.error(request, 'Клиент не найден')
         return redirect('home')
     
-    # Получаем все транзакции клиента
+    # Получаем все операции клиента (входящие и исходящие) - транзакции, переводы и т.д.
     transactions = Transaction.objects.filter(
         models.Q(from_card__client=client) | models.Q(to_card__client=client)
-    ).order_by('-created_at')
+    ).select_related('from_card', 'to_card', 'from_card__client', 'to_card__client').order_by('-created_at')
+    
+    # Фильтрация по типу транзакции
+    transaction_type = request.GET.get('type', '')
+    if transaction_type:
+        transactions = transactions.filter(transaction_type=transaction_type)
+    
+    # Фильтрация по статусу
+    status_filter = request.GET.get('status', '')
+    if status_filter:
+        transactions = transactions.filter(status=status_filter)
+    
+    # Поиск по описанию
+    search_query = request.GET.get('search', '')
+    if search_query:
+        transactions = transactions.filter(description__icontains=search_query)
     
     # Пагинация
-    paginator = Paginator(transactions, 20)
+    paginator = Paginator(transactions, 50)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
     # Статистика
-    total_transactions = transactions.count()
-    completed_transactions = transactions.filter(status='completed').count()
-    total_amount = transactions.filter(status='completed').aggregate(
-        total=models.Sum('amount')
-    )['total'] or 0
+    all_transactions = Transaction.objects.filter(
+        models.Q(from_card__client=client) | models.Q(to_card__client=client)
+    )
+    total_transactions = all_transactions.count()
+    completed_transactions = all_transactions.filter(status='completed').count()
+    pending_transactions = all_transactions.filter(status='pending').count()
+    failed_transactions = all_transactions.filter(status='failed').count()
+    
+    # Статистика по типам
+    transfers_count = all_transactions.filter(transaction_type='transfer').count()
+    payments_count = all_transactions.filter(transaction_type='payment').count()
+    deposits_count = all_transactions.filter(transaction_type='deposit').count()
+    withdrawals_count = all_transactions.filter(transaction_type='withdrawal').count()
+    fees_count = all_transactions.filter(transaction_type='fee').count()
+    
+    # Общая сумма по типам
+    total_income = all_transactions.filter(
+        models.Q(to_card__client=client) & models.Q(status='completed')
+    ).aggregate(total=models.Sum('amount'))['total'] or 0
+    
+    total_expense = all_transactions.filter(
+        models.Q(from_card__client=client) & models.Q(status='completed')
+    ).aggregate(total=models.Sum('amount'))['total'] or 0
+    
+    # Типы транзакций для фильтра
+    transaction_types = [
+        ('', 'Все типы'),
+        ('transfer', 'Переводы'),
+        ('payment', 'Платежи'),
+        ('deposit', 'Пополнения'),
+        ('withdrawal', 'Снятия'),
+        ('fee', 'Комиссии'),
+    ]
+    
+    # Статусы для фильтра
+    statuses = [
+        ('', 'Все статусы'),
+        ('completed', 'Завершена'),
+        ('pending', 'Ожидает'),
+        ('failed', 'Отклонена'),
+        ('cancelled', 'Отменена'),
+    ]
     
     context = {
         'client': client,
         'page_obj': page_obj,
+        'transactions': page_obj,
         'total_transactions': total_transactions,
         'completed_transactions': completed_transactions,
-        'total_amount': total_amount,
+        'pending_transactions': pending_transactions,
+        'failed_transactions': failed_transactions,
+        'transfers_count': transfers_count,
+        'payments_count': payments_count,
+        'deposits_count': deposits_count,
+        'withdrawals_count': withdrawals_count,
+        'fees_count': fees_count,
+        'total_income': total_income,
+        'total_expense': total_expense,
+        'transaction_types': transaction_types,
+        'statuses': statuses,
+        'current_type': transaction_type,
+        'current_status': status_filter,
+        'search_query': search_query,
     }
     
-    return render(request, 'history.html', context)
+    return render(request, 'transactions.html', context)
+
+@login_required
+def operator_transactions_view(request):
+    """Страница просмотра транзакций для операторов"""
+    # Проверяем, что пользователь является оператором
+    try:
+        operator = Operator.objects.get(user=request.user)
+    except Operator.DoesNotExist:
+        messages.error(request, 'Доступ запрещен. Требуются права оператора.')
+        return redirect('home')
+    
+    # Получаем все транзакции (операторы видят все транзакции)
+    # Используем prefetch_related для оптимизации запросов
+    transactions = Transaction.objects.select_related(
+        'from_card', 'to_card', 'from_card__client', 'to_card__client'
+    ).order_by('-created_at')
+    
+    # Фильтрация по клиенту
+    client_id = request.GET.get('client_id', '').strip()
+    if client_id:
+        try:
+            client = Client.objects.get(id=int(client_id))
+            # Фильтруем транзакции, где клиент является отправителем или получателем
+            # Учитываем случаи, когда from_card или to_card могут быть None
+            transactions = transactions.filter(
+                models.Q(from_card__client=client) | models.Q(to_card__client=client)
+            )
+        except (Client.DoesNotExist, ValueError, TypeError):
+            # Если клиент не найден или неверный ID, показываем все транзакции
+            messages.warning(request, f'Клиент с ID {client_id} не найден')
+    
+    # Фильтрация по типу транзакции
+    transaction_type = request.GET.get('type', '').strip()
+    if transaction_type:
+        transactions = transactions.filter(transaction_type=transaction_type)
+    
+    # Фильтрация по статусу
+    status_filter = request.GET.get('status', '').strip()
+    if status_filter:
+        transactions = transactions.filter(status=status_filter)
+    
+    # Поиск по описанию, номеру карты или имени клиента
+    search_query = request.GET.get('search', '').strip()
+    if search_query:
+        search_q = models.Q(description__icontains=search_query)
+        # Поиск по номеру карты (если карта существует)
+        search_q |= models.Q(from_card__card_number__icontains=search_query)
+        search_q |= models.Q(to_card__card_number__icontains=search_query)
+        # Поиск по имени клиента (если карта и клиент существуют)
+        search_q |= models.Q(from_card__client__full_name__icontains=search_query)
+        search_q |= models.Q(to_card__client__full_name__icontains=search_query)
+        search_q |= models.Q(from_card__client__client_id__icontains=search_query)
+        search_q |= models.Q(to_card__client__client_id__icontains=search_query)
+        transactions = transactions.filter(search_q)
+    
+    # Применяем distinct() для избежания дубликатов при использовании нескольких фильтров
+    transactions = transactions.distinct()
+    
+    # Пагинация - показываем по 50 транзакций на страницу
+    # Это предотвращает отображение всех транзакций сразу
+    paginator = Paginator(transactions, 50)
+    try:
+        page_number = int(request.GET.get('page', 1))
+    except (ValueError, TypeError):
+        page_number = 1
+    page_obj = paginator.get_page(page_number)
+    
+    # Статистика
+    all_transactions = Transaction.objects.all()
+    total_transactions = all_transactions.count()
+    completed_transactions = all_transactions.filter(status='completed').count()
+    pending_transactions = all_transactions.filter(status='pending').count()
+    failed_transactions = all_transactions.filter(status='failed').count()
+    
+    # Статистика по типам
+    transfers_count = all_transactions.filter(transaction_type='transfer').count()
+    payments_count = all_transactions.filter(transaction_type='payment').count()
+    deposits_count = all_transactions.filter(transaction_type='deposit').count()
+    withdrawals_count = all_transactions.filter(transaction_type='withdrawal').count()
+    fees_count = all_transactions.filter(transaction_type='fee').count()
+    
+    # Общая сумма всех транзакций
+    total_amount = all_transactions.filter(status='completed').aggregate(
+        total=models.Sum('amount')
+    )['total'] or 0
+    
+    # Получаем список всех клиентов для фильтра
+    clients = Client.objects.filter(is_active=True).order_by('full_name')
+    
+    # Типы транзакций для фильтра
+    transaction_types = [
+        ('', 'Все типы'),
+        ('transfer', 'Переводы'),
+        ('payment', 'Платежи'),
+        ('deposit', 'Пополнения'),
+        ('withdrawal', 'Снятия'),
+        ('fee', 'Комиссии'),
+    ]
+    
+    # Статусы для фильтра
+    statuses = [
+        ('', 'Все статусы'),
+        ('completed', 'Завершена'),
+        ('pending', 'Ожидает'),
+        ('failed', 'Отклонена'),
+        ('cancelled', 'Отменена'),
+    ]
+    
+    # Подсчитываем количество отфильтрованных транзакций для отладки
+    filtered_count = transactions.count()
+    
+    context = {
+        'operator': operator,
+        'page_obj': page_obj,
+        'transactions': page_obj,
+        'total_transactions': total_transactions,
+        'filtered_transactions_count': filtered_count,
+        'completed_transactions': completed_transactions,
+        'pending_transactions': pending_transactions,
+        'failed_transactions': failed_transactions,
+        'transfers_count': transfers_count,
+        'payments_count': payments_count,
+        'deposits_count': deposits_count,
+        'withdrawals_count': withdrawals_count,
+        'fees_count': fees_count,
+        'total_amount': total_amount,
+        'clients': clients,
+        'transaction_types': transaction_types,
+        'statuses': statuses,
+        'current_client_id': client_id,
+        'current_type': transaction_type,
+        'current_status': status_filter,
+        'search_query': search_query,
+    }
+    
+    return render(request, 'operator_transactions.html', context)
+
+@login_required
+def history_view(request):
+    """Страница истории операций - единое представление всех операций"""
+    return transactions_view(request)
 
 @login_required
 @require_http_methods(["GET"])
@@ -2167,23 +2387,6 @@ def transfers_service(request):
         messages.error(request, 'Клиент не найден')
         return redirect('home')
     
-    # Обработка AJAX запросов для проверки существования пользователей
-    if request.method == 'POST':
-        # Проверка существования пользователя по номеру телефона
-        if 'check_phone' in request.POST:
-            phone = request.POST.get('check_phone')
-            print(f"DEBUG AJAX: Получен номер: '{phone}'")
-            
-            # Нормализуем номер телефона (оставляем только цифры)
-            normalized_phone = ''.join(filter(str.isdigit, phone))
-            print(f"DEBUG AJAX: Нормализованный номер: '{normalized_phone}'")
-            
-            # Ищем клиента по точному совпадению нормализованного номера телефона
-            exists = Client.objects.filter(phone=normalized_phone).exists()
-            print(f"DEBUG AJAX: Найден клиент: {exists}")
-            
-            return JsonResponse({'exists': exists})
-    
     # Получаем счета клиента
     cards = BankCard.objects.filter(client=client, is_active=True)
     print(f"DEBUG: Найдено карт для клиента {client.full_name}: {cards.count()}")
@@ -2293,9 +2496,11 @@ def transfers_service(request):
                     from_card=from_card,
                     to_card=recipient_card,
                     amount=amount,
+                    currency='RUB',
                     transaction_type='transfer',
+                    description=f"Перевод по номеру телефона {recipient_phone}: {description}",
                     status='completed',
-                    description=f"Перевод по номеру телефона {recipient_phone}: {description}"
+                    completed_at=timezone.now()
                 )
 
                 messages.success(request, f'Перевод на сумму {amount} ₽ успешно выполнен на номер {recipient_phone}')

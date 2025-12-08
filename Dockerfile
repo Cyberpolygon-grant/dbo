@@ -18,10 +18,16 @@ EXPOSE 8000
 # 4) инициализируем демо-данные (в т.ч. новости для бегущей строки)
 # 5) стартуем Gunicorn
 CMD sh -c "\
+  echo 'Waiting for PostgreSQL...' && \
   while ! nc -z db 5432; do sleep 1; done && \
+  echo 'PostgreSQL is ready!' && \
+  echo 'Running migrations...' && \
   python manage.py migrate --noinput && \
+  echo 'Collecting static files...' && \
   python manage.py collectstatic --noinput && \
-  python init_data.py || true && \
+  echo 'Checking if demo data needs initialization...' && \
+  python -c \"from dbo.models import Client; import sys; sys.exit(0 if Client.objects.exists() else 1)\" || (echo 'Initializing demo data (users, news, activities)...' && python init_data.py) && \
+  echo 'Starting Gunicorn...' && \
   gunicorn cyberpolygon.wsgi:application --bind 0.0.0.0:8000 --workers 4"
 
 

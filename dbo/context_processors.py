@@ -15,17 +15,31 @@ def news_ticker(request):
     is_dbo_client = False
     is_operator = False
     
-    # Определяем красивое имя для шапки
+    # Пропускаем тяжелые запросы для страницы входа и других публичных страниц
+    path = request.path
+    if path in ['/login', '/logout', '/']:
+        # Для публичных страниц возвращаем минимальный контекст без запросов к БД
+        return {
+            'news_ticker': News.objects.none(),
+            'user_display_name': None,
+            'user_display_initial': None,
+            'is_dbo_client': False,
+            'is_operator': False,
+        }
+    
+    # Определяем красивое имя для шапки (оптимизировано)
     try:
         if request.user.is_authenticated:
+            # Используем только() для получения только нужных полей
             try:
-                client = Client.objects.get(user=request.user)
+                client = Client.objects.only('full_name').get(user=request.user)
                 user_display_name = client.full_name
                 is_dbo_client = True
             except Client.DoesNotExist:
                 # Для оператора или обычного пользователя
                 full_name = f"{request.user.first_name} {request.user.last_name}".strip()
                 user_display_name = full_name or request.user.username
+                # Используем exists() вместо get() для быстрой проверки
                 is_operator = Operator.objects.filter(user=request.user).exists()
 
             if user_display_name:
@@ -33,15 +47,10 @@ def news_ticker(request):
     except Exception as e:
         logger.warning(f"Ошибка при определении user_display_name: {e}", exc_info=True)
 
-    # Получаем новости для бегущей строки
+    # Получаем новости для бегущей строки (только для авторизованных пользователей)
+    # Ограничиваем количество и используем только необходимые поля
     try:
-        news = News.objects.filter(is_active=True).order_by('-priority', '-created_at')
-        news_count = news.count()
-        
-        # Логируем только при первом запросе или если есть изменения (для отладки)
-        if not hasattr(news_ticker, '_last_logged_count'):
-            logger.info(f"Context processor executed. Active news count: {news_count}")
-            news_ticker._last_logged_count = news_count
+        news = News.objects.filter(is_active=True).order_by('-priority', '-created_at')[:20]  # Уменьшили до 20
         
         return {
             'news_ticker': news,
