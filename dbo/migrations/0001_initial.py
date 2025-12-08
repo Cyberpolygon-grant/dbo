@@ -73,25 +73,11 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.CreateModel(
-            name='PhishingEmail',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('recipient_email', models.EmailField(max_length=254)),
-                ('subject', models.CharField(max_length=200)),
-                ('content', models.TextField()),
-                ('attachment_name', models.CharField(max_length=100)),
-                ('sent_at', models.DateTimeField(auto_now_add=True)),
-                ('is_opened', models.BooleanField(default=False)),
-                ('opened_at', models.DateTimeField(blank=True, null=True)),
-            ],
-        ),
-        migrations.CreateModel(
             name='ServiceCategory',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=100)),
                 ('description', models.TextField(blank=True)),
-                ('is_public', models.BooleanField(default=True)),
             ],
         ),
         migrations.CreateModel(
@@ -182,8 +168,6 @@ class Migration(migrations.Migration):
                 ('description', models.TextField()),
                 ('price', models.DecimalField(decimal_places=2, default=0, max_digits=10)),
                 ('is_active', models.BooleanField(default=True)),
-                ('is_public', models.BooleanField(default=True)),
-                ('is_privileged', models.BooleanField(default=False)),
                 ('rating', models.DecimalField(decimal_places=2, default=0, max_digits=3)),
                 ('rating_count', models.PositiveIntegerField(default=0)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),

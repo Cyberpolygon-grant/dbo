@@ -35,7 +35,6 @@ class ServiceCategory(models.Model):
     """Категории услуг"""
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
-    is_public = models.BooleanField(default=True)  # Публичные или скрытые услуги
 
     def __str__(self):
         return self.name
@@ -47,8 +46,6 @@ class Service(models.Model):
     category = models.ForeignKey(ServiceCategory, on_delete=models.CASCADE)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     is_active = models.BooleanField(default=True)
-    is_public = models.BooleanField(default=True)  # Публичные или скрытые услуги
-    is_privileged = models.BooleanField(default=False)  # Привилегированные услуги
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0)  # Средняя оценка 0-5
     rating_count = models.PositiveIntegerField(default=0)  # Количество голосов
     created_at = models.DateTimeField(auto_now_add=True)
@@ -102,38 +99,6 @@ class ClientService(models.Model):
 
     def __str__(self):
         return f"{self.client.full_name} - {self.service.name} ({self.get_status_display()})"
-
-class PhishingEmail(models.Model):
-    """Фишинговые письма для симуляции"""
-    recipient_email = models.EmailField()
-    subject = models.CharField(max_length=200)
-    content = models.TextField()
-    attachment_name = models.CharField(max_length=100)
-    sent_at = models.DateTimeField(auto_now_add=True)
-    is_opened = models.BooleanField(default=False)
-    opened_at = models.DateTimeField(null=True, blank=True)
-
-    def __str__(self):
-        return f"Фишинг: {self.subject} -> {self.recipient_email}"
-
-class AttackLog(models.Model):
-    """Лог атак для демонстрации"""
-    ATTACK_TYPE_CHOICES = [
-        ('phishing', 'Фишинг'),
-        ('xss', 'XSS атака'),
-        ('sqli', 'SQL инъекция'),
-        ('privilege_escalation', 'Повышение привилегий'),
-    ]
-    
-    attack_type = models.CharField(max_length=50, choices=ATTACK_TYPE_CHOICES)
-    description = models.TextField()
-    attacker_ip = models.GenericIPAddressField()
-    target_user = models.CharField(max_length=100)
-    success = models.BooleanField(default=False)
-    timestamp = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.get_attack_type_display()} - {self.target_user} ({self.timestamp})"
 
 class BankCard(models.Model):
     """Банковская карта"""

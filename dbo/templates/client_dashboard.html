@@ -96,7 +96,7 @@
                     </svg>
                 </div>
                 <div>
-                    <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_credit_amount|floatformat:0 }} ₽</div>
+                    <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_credit_amount|default:0|floatformat:0 }} ₽</div>
                     <div class="text-sm text-gray-600 dark:text-gray-300">Кредиты</div>
                 </div>
             </div>

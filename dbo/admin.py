@@ -7,7 +7,6 @@ from .models import (
     Service,
     ServiceRequest,
     ClientService,
-    PhishingEmail,
     BankCard,
     Transaction,
     Deposit,
@@ -41,15 +40,15 @@ class ClientAdmin(admin.ModelAdmin):
 
 @admin.register(ServiceCategory)
 class ServiceCategoryAdmin(admin.ModelAdmin):
-    list_display = ('name', 'is_public')
-    list_filter = ('is_public',)
-    search_fields = ('name',)
+    list_display = ('name', 'description')
+    list_filter = ()
+    search_fields = ('name', 'description')
 
 
 @admin.register(Service)
 class ServiceAdmin(admin.ModelAdmin):
-    list_display = ('name', 'category', 'price', 'is_public', 'is_active', 'is_privileged', 'created_at')
-    list_filter = ('is_public', 'is_active', 'is_privileged', 'category')
+    list_display = ('name', 'category', 'price', 'is_active', 'rating', 'rating_count', 'created_at')
+    list_filter = ('is_active', 'category')
     search_fields = ('name', 'description')
 
 
@@ -65,13 +64,6 @@ class ClientServiceAdmin(admin.ModelAdmin):
     list_display = ('client', 'service', 'status', 'is_active', 'connected_at')
     list_filter = ('status', 'is_active', 'service__category')
     search_fields = ('client__full_name', 'service__name')
-
-
-@admin.register(PhishingEmail)
-class PhishingEmailAdmin(admin.ModelAdmin):
-    list_display = ('recipient_email', 'subject', 'sent_at', 'is_opened')
-    list_filter = ('is_opened',)
-    search_fields = ('recipient_email', 'subject')
 
 
 @admin.register(BankCard)

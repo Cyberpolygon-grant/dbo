@@ -33,20 +33,28 @@
         </div>
     </div>
 
-    <div class="container mx-auto px-4 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Фильтры и поиск (серверная фильтрация через GET) -->
-        <div class="card bg-base-100 shadow-xl mb-8">
-            <div class="card-body">
-                <form method="get" class="flex flex-col lg:flex-row gap-4 items-center w-full">
+        <div class="card bg-base-100 shadow-xl mb-8 border border-base-300">
+            <div class="card-body p-6">
+                <form method="get" action="{% url 'banking_services' %}" class="space-y-4">
                     <!-- Сохраняем выбранную категорию при отправке формы -->
                     {% if category_active %}
                     <input type="hidden" name="category" value="{{ category_active }}">
                     {% endif %}
 
                     <!-- Поиск -->
-                    <div class="form-control flex-1 w-full">
-                        <div class="input-group w-full">
-                            <input type="text" name="q" value="{{ q }}" placeholder="Поиск услуг..." class="input input-bordered flex-1 w-full">
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text font-semibold">Поиск услуг</span>
+                        </label>
+                        <div class="input-group">
+                            <input type="text" 
+                                   name="q" 
+                                   value="{{ q }}" 
+                                   placeholder="Поиск услуг..." 
+                                   class="input input-bordered flex-1"
+                                   id="searchInput">
                             <button type="submit" class="btn btn-square">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -55,117 +63,151 @@
                         </div>
                     </div>
 
-                    <!-- Фильтр по цене -->
-                    <div class="form-control">
-                        <select name="price" class="select select-bordered" onchange="this.form.submit()">
-                            <option value="all" {% if price == 'all' %}selected{% endif %}>Любая цена</option>
-                            <option value="free" {% if price == 'free' %}selected{% endif %}>Бесплатно</option>
-                            <option value="low" {% if price == 'low' %}selected{% endif %}>До 1000 ₽</option>
-                            <option value="medium" {% if price == 'medium' %}selected{% endif %}>1000-5000 ₽</option>
-                            <option value="high" {% if price == 'high' %}selected{% endif %}>Свыше 5000 ₽</option>
-                        </select>
+                    <!-- Фильтры в одну строку -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Фильтр по цене -->
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text font-semibold">Цена</span>
+                            </label>
+                            <select name="price" class="select select-bordered w-full">
+                                <option value="all" {% if price == 'all' %}selected{% endif %}>💰 Любая цена</option>
+                                <option value="free" {% if price == 'free' %}selected{% endif %}>🆓 Бесплатно</option>
+                                <option value="low" {% if price == 'low' %}selected{% endif %}>💵 До 1000 ₽</option>
+                                <option value="medium" {% if price == 'medium' %}selected{% endif %}>💶 1000-5000 ₽</option>
+                                <option value="high" {% if price == 'high' %}selected{% endif %}>💷 Свыше 5000 ₽</option>
+                            </select>
+                        </div>
+
+                        <!-- Сортировка -->
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text font-semibold">Сортировка</span>
+                            </label>
+                            <select name="sort" class="select select-bordered w-full">
+                                <option value="name" {% if sort == 'name' %}selected{% endif %}>📝 По названию</option>
+                                <option value="price-low" {% if sort == 'price-low' %}selected{% endif %}>⬆️ Цена: по возрастанию</option>
+                                <option value="price-high" {% if sort == 'price-high' %}selected{% endif %}>⬇️ Цена: по убыванию</option>
+                                <option value="popular" {% if sort == 'popular' %}selected{% endif %}>⭐ Популярные</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <!-- Сортировка -->
-                    <div class="form-control">
-                        <select name="sort" class="select select-bordered" onchange="this.form.submit()">
-                            <option value="name" {% if sort == 'name' %}selected{% endif %}>По названию</option>
-                            <option value="price-low" {% if sort == 'price-low' %}selected{% endif %}>Цена: по возрастанию</option>
-                            <option value="price-high" {% if sort == 'price-high' %}selected{% endif %}>Цена: по убыванию</option>
-                            <option value="popular" {% if sort == 'popular' %}selected{% endif %}>Популярные</option>
-                        </select>
+                    <!-- Кнопка поиска -->
+                    <div class="flex justify-end">
+                        <button type="submit" class="btn btn-primary">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            Найти услуги
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
 
         <!-- Навигация по категориям -->
-        <div id="categoryButtons" class="flex flex-wrap gap-2 mb-8 justify-center">
-            {% for category in categories %}
-            <a href="?category={{ category.name|urlencode }}{% if q %}&q={{ q|urlencode }}{% endif %}{% if price %}&price={{ price }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}"
-               class="btn btn-sm {% if category_active == category.name %}btn-primary{% else %}btn-ghost{% endif %}">
-                {{ category.name }}
-            </a>
-            {% endfor %}
+        <div class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-base-content">Категории услуг</h2>
+                {% if category_active or q or price != 'all' or sort != 'name' %}
+                <a href="{% url 'banking_services' %}" class="btn btn-sm btn-ghost">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    Сбросить фильтры
+                </a>
+                {% endif %}
+            </div>
+            <div id="categoryButtons" class="flex flex-wrap gap-3">
+                {% for category in categories %}
+                <a href="?category={{ category.name|urlencode }}{% if q %}&q={{ q|urlencode }}{% endif %}{% if price %}&price={{ price }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}"
+                   class="btn {% if category_active == category.name %}btn-primary shadow-lg scale-105{% else %}btn-outline hover:btn-primary{% endif %} transition-all duration-200">
+                    {{ category.name }}
+                </a>
+                {% endfor %}
+            </div>
         </div>
 
         <!-- Услуги по категориям -->
         {% for category_name, services in services_by_category.items %}
         <div class="category-section mb-12" data-category="{{ category_name }}">
-            <div class="flex items-center mb-8">
+            <div class="flex items-center mb-6">
                 <div class="divider divider-primary flex-1"></div>
-                <h2 class="text-3xl font-bold text-base-content mx-4">{{ category_name }}</h2>
+                <h2 class="text-2xl font-bold text-base-content mx-4">{{ category_name }}</h2>
                 <div class="divider divider-primary flex-1"></div>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {% for service in services %}
-                <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 group">
+                <div class="card bg-base-100 shadow-lg hover:shadow-xl border border-base-300 hover:border-primary transition-all duration-300 hover:-translate-y-1 group">
                     <!-- Иконка-эмодзи по названию/категории услуги -->
-                    <figure class="px-6 pt-6">
-                        <div class="w-full h-48 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                    <figure class="px-4 pt-4">
+                        <div class="w-full h-40 bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg flex items-center justify-center group-hover:from-primary/10 group-hover:to-secondary/10 transition-all duration-300">
                             {% with name=service.name|lower cat=category_name|lower %}
-                                <span class="text-6xl select-none">
+                                <span class="text-5xl select-none">
                                     {% if 'инвест' in name or 'инвест' in cat %}📈{% elif 'кредит' in name or 'ипотек' in name or 'кредит' in cat %}💳{% elif 'депозит' in name or 'вклад' in name or 'депозит' in cat %}💰{% elif 'карта' in name or 'карта' in cat %}💳{% elif 'перевод' in name or 'платеж' in name or 'платёж' in name or 'перевод' in cat or 'плат' in cat %}🔁{% elif 'страх' in name or 'страх' in cat %}🛡️{% elif 'счет' in name or 'счёт' in name or 'рко' in name or 'счет' in cat %}🏦{% elif 'интернет' in name or 'мобил' in name or 'онлайн' in name %}📱{% elif 'vip' in name or 'премиум' in name %}⭐{% elif 'поддерж' in name or 'консьерж' in name %}👩‍💼{% else %}🧩{% endif %}
                                 </span>
                             {% endwith %}
                         </div>
                     </figure>
                     
-                    <div class="card-body p-6">
+                    <div class="card-body p-5">
                         <!-- Заголовок и цена -->
-                        <div class="flex items-start justify-between mb-3">
-                            <h3 class="card-title text-lg leading-tight">{{ service.name }}</h3>
+                        <div class="flex items-start justify-between mb-2">
+                            <h3 class="card-title text-base leading-tight flex-1 pr-2">{{ service.name }}</h3>
                             {% if service.price > 0 %}
-                            <div class="badge badge-primary font-bold whitespace-nowrap text-sm px-3">{{ service.price|floatformat:0 }} ₽</div>
+                            <div class="badge badge-primary font-bold whitespace-nowrap text-xs px-2 py-1">{{ service.price|floatformat:0 }} ₽</div>
                             {% else %}
-                            <div class="badge badge-success font-bold whitespace-nowrap text-sm px-3">Бесплатно</div>
+                            <div class="badge badge-success font-bold whitespace-nowrap text-xs px-2 py-1">Бесплатно</div>
                             {% endif %}
                         </div>
                         
                         <!-- Описание -->
-                            <p class="text-base-content/70 mb-4 line-clamp-3">{{ service.description|truncatewords:15 }}</p>
+                        <p class="text-sm text-base-content/70 mb-3 line-clamp-2">{{ service.description|truncatewords:12 }}</p>
                         
                         <!-- Рейтинг и отзывы -->
-                        <div class="flex items-center mb-4">
-                            <div class="rating rating-sm">
-                                <input type="radio" class="mask mask-star-2 bg-orange-400" disabled checked>
-                                <input type="radio" class="mask mask-star-2 bg-orange-400" disabled checked>
-                                <input type="radio" class="mask mask-star-2 bg-orange-400" disabled checked>
-                                <input type="radio" class="mask mask-star-2 bg-orange-400" disabled checked>
-                                <input type="radio" class="mask mask-star-2 bg-orange-400" disabled>
+                        <div class="flex items-center mb-3">
+                            <div class="rating rating-xs">
+                                {% with rating=service.rating|default:0 %}
+                                <input type="radio" class="mask mask-star-2 {% if rating >= 1 %}bg-yellow-400{% else %}bg-gray-300{% endif %}" disabled>
+                                <input type="radio" class="mask mask-star-2 {% if rating >= 2 %}bg-yellow-400{% else %}bg-gray-300{% endif %}" disabled>
+                                <input type="radio" class="mask mask-star-2 {% if rating >= 3 %}bg-yellow-400{% else %}bg-gray-300{% endif %}" disabled>
+                                <input type="radio" class="mask mask-star-2 {% if rating >= 4 %}bg-yellow-400{% else %}bg-gray-300{% endif %}" disabled>
+                                <input type="radio" class="mask mask-star-2 {% if rating >= 5 %}bg-yellow-400{% else %}bg-gray-300{% endif %}" disabled>
+                                {% endwith %}
                             </div>
-                            <span class="text-sm text-base-content/60 ml-2">4.2 (127 отзывов)</span>
+                            <span class="text-xs text-base-content/60 ml-2">{{ service.rating|floatformat:1|default:"0.0" }} ({{ service.rating_count|default:0 }})</span>
                         </div>
                         
                         <!-- Статус подключения -->
                         {% if service.id in connected_services %}
-                        <div class="alert alert-success mb-4">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="alert alert-success py-2 mb-3">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
-                            <span class="font-semibold">Услуга подключена</span>
+                            <span class="text-xs font-semibold">Подключено</span>
                         </div>
                         {% endif %}
                         
                         <!-- Действия -->
-                        <div class="card-actions justify-between">
-                            <a href="{% url 'service_detail' service.id %}" class="btn btn-ghost btn-sm flex-1">
-                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="card-actions gap-2 mt-auto">
+                            <a href="{% url 'service_detail' service.id %}" class="btn btn-ghost btn-xs flex-1 text-xs">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                                 Подробнее
                             </a>
                             {% if service.id in connected_services %}
-                            <button class="btn btn-error btn-sm flex-1" onclick="disconnectService({{ service.id }}, '{{ service.name }}')">
-                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <button class="btn btn-error btn-xs flex-1 text-xs" onclick="disconnectService({{ service.id }}, '{{ service.name }}')">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
                                 Отключить
                             </button>
                             {% else %}
-                            <button class="btn btn-primary btn-sm flex-1" onclick="connectService({{ service.id }}, '{{ service.name }}')">
-                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <button class="btn btn-primary btn-xs flex-1 text-xs" onclick="connectService({{ service.id }}, '{{ service.name }}')">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                                 </svg>
                                 Подключить
@@ -236,135 +278,46 @@
 
 <script>
 let currentServiceId = null;
-let allServices = [];
 
-// Инициализация
-document.addEventListener('DOMContentLoaded', function() {
-    // Собираем все услуги для фильтрации
-    document.querySelectorAll('.card').forEach(card => {
-        const serviceName = card.querySelector('.card-title').textContent;
-        const priceElement = card.querySelector('.badge');
-        const price = priceElement.textContent.includes('Бесплатно') ? 0 : parseFloat(priceElement.textContent.replace(/[^\d]/g, ''));
-        
-        allServices.push({
-            element: card,
-            name: serviceName,
-            price: price,
-            category: card.closest('.category-section').dataset.category
-        });
-    });
-});
-
-function showAllServices(buttonEl) {
-    document.querySelectorAll('.category-section').forEach(section => {
-        section.style.display = 'block';
-    });
-    
-    // Обновляем активную кнопку категории
-    document.querySelectorAll('#categoryButtons .btn').forEach(btn => {
-        btn.classList.remove('btn-primary');
-        btn.classList.add('btn-ghost');
-    });
-    const activeBtn = buttonEl || document.querySelector('#categoryButtons .active-category');
-    if (activeBtn) {
-        activeBtn.classList.remove('btn-ghost');
-        activeBtn.classList.add('btn-primary');
-    }
-}
-
-function showCategory(categoryName, buttonEl) {
-    document.querySelectorAll('.category-section').forEach(section => {
-        if (section.dataset.category === categoryName) {
-            section.style.display = 'block';
-        } else {
-            section.style.display = 'none';
-        }
-    });
-    
-    // Обновляем активную кнопку категории
-    document.querySelectorAll('#categoryButtons .btn').forEach(btn => {
-        btn.classList.remove('btn-primary');
-        btn.classList.add('btn-ghost');
-    });
-    if (buttonEl) {
-        buttonEl.classList.remove('btn-ghost');
-        buttonEl.classList.add('btn-primary');
-    }
-}
-
+// Поиск услуг (клиентская фильтрация как на странице "Мои услуги")
 function searchServices() {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
     
-    document.querySelectorAll('.card').forEach(card => {
-        const serviceName = card.querySelector('.card-title').textContent.toLowerCase();
-        const description = card.querySelector('p').textContent.toLowerCase();
+    document.querySelectorAll('.category-section .card').forEach(card => {
+        const serviceName = card.querySelector('.card-title') ? card.querySelector('.card-title').textContent.toLowerCase() : '';
+        const description = card.querySelector('p') ? card.querySelector('p').textContent.toLowerCase() : '';
         
-        if (serviceName.includes(searchTerm) || description.includes(searchTerm)) {
+        if (!searchTerm || serviceName.includes(searchTerm) || description.includes(searchTerm)) {
             card.style.display = 'block';
         } else {
             card.style.display = 'none';
         }
     });
-}
-
-function filterByPrice() {
-    const priceFilter = document.getElementById('priceFilter').value;
     
-    document.querySelectorAll('.card').forEach(card => {
-        const priceElement = card.querySelector('.badge');
-        const price = priceElement.textContent.includes('Бесплатно') ? 0 : parseFloat(priceElement.textContent.replace(/[^\d]/g, ''));
-        
-        let show = true;
-        
-        switch(priceFilter) {
-            case 'free':
-                show = price === 0;
-                break;
-            case 'low':
-                show = price > 0 && price <= 1000;
-                break;
-            case 'medium':
-                show = price > 1000 && price <= 5000;
-                break;
-            case 'high':
-                show = price > 5000;
-                break;
-        }
-        
-        card.style.display = show ? 'block' : 'none';
-    });
-}
-
-function sortServices() {
-    const sortBy = document.getElementById('sortBy').value;
-    
+    // Показываем/скрываем секции категорий в зависимости от наличия видимых услуг
     document.querySelectorAll('.category-section').forEach(section => {
-        const cards = Array.from(section.querySelectorAll('.card'));
-        
-        cards.sort((a, b) => {
-            const nameA = a.querySelector('.card-title').textContent;
-            const nameB = b.querySelector('.card-title').textContent;
-            const priceA = a.querySelector('.badge').textContent.includes('Бесплатно') ? 0 : parseFloat(a.querySelector('.badge').textContent.replace(/[^\d]/g, ''));
-            const priceB = b.querySelector('.badge').textContent.includes('Бесплатно') ? 0 : parseFloat(b.querySelector('.badge').textContent.replace(/[^\d]/g, ''));
-            
-            switch(sortBy) {
-                case 'name':
-                    return nameA.localeCompare(nameB);
-                case 'price-low':
-                    return priceA - priceB;
-                case 'price-high':
-                    return priceB - priceA;
-                case 'popular':
-                    return Math.random() - 0.5; // Случайная сортировка для "популярности"
-                default:
-                    return 0;
+        const cards = section.querySelectorAll('.card');
+        let hasVisible = false;
+        cards.forEach(card => {
+            const display = card.style.display || '';
+            if (display === '' || display === 'block') {
+                hasVisible = true;
             }
         });
         
-        cards.forEach(card => card.remove());
-        cards.forEach(card => section.querySelector('.grid').appendChild(card));
+        section.style.display = hasVisible ? 'block' : 'none';
     });
 }
+
+// Поиск при вводе (автоматический как на странице "Мои услуги")
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            searchServices();
+        });
+    }
+});
 
 // Удалено модальное окно деталей услуги; теперь используем отдельную страницу
 

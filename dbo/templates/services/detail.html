@@ -212,42 +212,42 @@
                     <h4 class="card-title text-lg mb-4">Рейтинг услуги</h4>
                     
                     <div class="text-center mb-4">
-                        <div class="text-3xl font-bold text-base-content mb-2">4.8</div>
+                        <div class="text-3xl font-bold text-base-content mb-2">{{ service.rating|floatformat:1|default:"0.0" }}</div>
                         <div class="rating rating-lg">
-                            <input type="radio" class="mask mask-star-2 bg-warning" checked />
-                            <input type="radio" class="mask mask-star-2 bg-warning" checked />
-                            <input type="radio" class="mask mask-star-2 bg-warning" checked />
-                            <input type="radio" class="mask mask-star-2 bg-warning" checked />
-                            <input type="radio" class="mask mask-star-2 bg-warning" />
+                            <input type="radio" class="mask mask-star-2 {% if service.rating >= 1 %}bg-yellow-400{% else %}bg-gray-300{% endif %}" disabled>
+                            <input type="radio" class="mask mask-star-2 {% if service.rating >= 2 %}bg-yellow-400{% else %}bg-gray-300{% endif %}" disabled>
+                            <input type="radio" class="mask mask-star-2 {% if service.rating >= 3 %}bg-yellow-400{% else %}bg-gray-300{% endif %}" disabled>
+                            <input type="radio" class="mask mask-star-2 {% if service.rating >= 4 %}bg-yellow-400{% else %}bg-gray-300{% endif %}" disabled>
+                            <input type="radio" class="mask mask-star-2 {% if service.rating >= 5 %}bg-yellow-400{% else %}bg-gray-300{% endif %}" disabled>
                         </div>
-                        <div class="text-sm text-base-content/70 mt-2">на основе 127 отзывов</div>
+                        <div class="text-sm text-base-content/70 mt-2">на основе {{ service.rating_count|default:0 }} отзывов</div>
                     </div>
                     
                     <div class="space-y-2">
                         <div class="flex items-center gap-2">
                             <span class="text-sm w-8">5★</span>
-                            <progress class="progress progress-warning w-full" value="85" max="100"></progress>
-                            <span class="text-sm text-base-content/70">85%</span>
+                            <progress class="progress progress-warning w-full" value="{% widthratio service.rating 5 100 %}" max="100"></progress>
+                            <span class="text-sm text-base-content/70">{% widthratio service.rating 5 100 %}%</span>
                         </div>
                         <div class="flex items-center gap-2">
                             <span class="text-sm w-8">4★</span>
-                            <progress class="progress progress-warning w-full" value="12" max="100"></progress>
-                            <span class="text-sm text-base-content/70">12%</span>
+                            <progress class="progress progress-warning w-full" value="{% widthratio service.rating 5 80 %}" max="100"></progress>
+                            <span class="text-sm text-base-content/70">{% widthratio service.rating 5 80 %}%</span>
                         </div>
                         <div class="flex items-center gap-2">
                             <span class="text-sm w-8">3★</span>
+                            <progress class="progress progress-warning w-full" value="5" max="100"></progress>
+                            <span class="text-sm text-base-content/70">5%</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm w-8">2★</span>
                             <progress class="progress progress-warning w-full" value="2" max="100"></progress>
                             <span class="text-sm text-base-content/70">2%</span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <span class="text-sm w-8">2★</span>
+                            <span class="text-sm w-8">1★</span>
                             <progress class="progress progress-warning w-full" value="1" max="100"></progress>
                             <span class="text-sm text-base-content/70">1%</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm w-8">1★</span>
-                            <progress class="progress progress-warning w-full" value="0" max="100"></progress>
-                            <span class="text-sm text-base-content/70">0%</span>
                         </div>
                     </div>
                     </div>

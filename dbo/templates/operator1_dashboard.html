@@ -31,21 +31,7 @@
     </div>
 
     <!-- Статистика -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-            <div class="flex items-center">
-                <div class="w-12 h-12 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl flex items-center justify-center mr-4">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                    </svg>
-                </div>
-                <div>
-                    <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ phishing_emails|length }}</div>
-                    <div class="text-sm text-gray-600 dark:text-gray-300">Входящих писем</div>
-                </div>
-            </div>
-        </div>
-
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
             <div class="flex items-center">
                 <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mr-4">
@@ -54,7 +40,7 @@
                     </svg>
                 </div>
                 <div>
-                    <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ pending_clients|length }}</div>
+                    <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ pending_requests }}</div>
                     <div class="text-sm text-gray-600 dark:text-gray-300">Заявок на регистрацию</div>
                 </div>
             </div>
@@ -76,60 +62,7 @@
     </div>
 
     <!-- Основной контент -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <!-- Фишинговые письма -->
-        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white">Входящие письма</h2>
-                <span class="px-3 py-1 bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 text-sm rounded-full font-medium">
-                    {{ phishing_emails|length }} новых
-                </span>
-            </div>
-            
-            {% if phishing_emails %}
-                <div class="space-y-4">
-                    {% for email in phishing_emails %}
-                        <div class="p-4 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200">
-                            <div class="flex items-start justify-between">
-                                <div class="flex-1">
-                                    <h3 class="font-semibold text-gray-900 dark:text-white mb-2">{{ email.subject }}</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">{{ email.content|truncatechars:80 }}</p>
-                                    <div class="flex items-center space-x-2">
-                                        <span class="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 text-xs rounded-lg font-medium">
-                                            {{ email.attachment_name }}
-                                        </span>
-                                        {% if email.is_opened %}
-                                            <span class="px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 text-xs rounded-lg font-medium">
-                                                Прочитано
-                                            </span>
-                                        {% else %}
-                                            <span class="px-2 py-1 bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 text-xs rounded-lg font-medium">
-                                                Новое
-                                            </span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <div class="text-right ml-4">
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ email.sent_at|date:"d.m H:i" }}</p>
-                                    <a href="{% url 'phishing_email' email.id %}" class="btn btn-sm btn-modern">
-                                        {% if email.is_opened %}Перечитать{% else %}Открыть{% endif %}
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="text-center py-12 text-gray-500 dark:text-gray-400">
-                    <svg class="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                    </svg>
-                    <p class="text-lg font-medium">Нет новых писем</p>
-                    <p class="text-sm mt-2">Все письма обработаны</p>
-                </div>
-            {% endif %}
-        </div>
-
+    <div class="grid grid-cols-1 lg:grid-cols-1 gap-8">
         <!-- Заявки на регистрацию -->
         <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
             <div class="flex items-center justify-between mb-6">
@@ -181,17 +114,68 @@
         </div>
     </div>
 
-    <!-- Действия -->
+    <!-- Меню создания пользователей -->
     <div class="mt-8">
-        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Доступные действия</h2>
-            <div class="flex flex-wrap gap-4">
-                <a href="{% url 'create_client' %}" class="btn btn-modern">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        <div class="card-hover bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20 rounded-2xl p-8 shadow-lg border border-blue-200 dark:border-blue-800">
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
                     </svg>
-                    Создать нового клиента
+                </div>
+                <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Управление клиентами</h2>
+                <p class="text-gray-600 dark:text-gray-300">Создание и управление учетными записями клиентов</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Создать нового клиента -->
+                <a href="{% url 'create_client' %}" class="group relative bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600">
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Создать клиента</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Регистрация нового клиента в системе ДБО</p>
+                    </div>
+                    <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </div>
                 </a>
+
+                <!-- Просмотр транзакций -->
+                <a href="{% url 'operator_transactions' %}" class="group relative bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700 hover:border-green-400 dark:hover:border-green-600">
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">Транзакции</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Просмотр всех транзакций клиентов</p>
+                    </div>
+                    <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </div>
+                </a>
+
+                <!-- Статистика -->
+                <div class="group relative bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-4 shadow-lg">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Статистика</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Заявок: {{ pending_requests }}</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -207,9 +191,8 @@
                     <h3 class="text-lg font-bold text-blue-900 dark:text-blue-100 mb-2">Роль: Оператор ДБО #1</h3>
                     <p class="text-blue-800 dark:text-blue-200 mb-3">Отдел клиентского обслуживания</p>
                     <div class="text-sm text-blue-700 dark:text-blue-300 space-y-2">
-                        <p><strong>Обязанности:</strong> Работа с почтой, обработка заявок на регистрацию клиентов, создание учетных записей клиентов.</p>
-                        <p><strong>Права:</strong> Создание новых клиентов, просмотр входящих писем.</p>
-                        <p><strong>Уязвимость:</strong> Фишинг через почту с вредоносными вложениями.</p>
+                        <p><strong>Обязанности:</strong> Обработка заявок на регистрацию клиентов, создание учетных записей клиентов, просмотр транзакций.</p>
+                        <p><strong>Права:</strong> Создание новых клиентов, просмотр транзакций клиентов.</p>
                     </div>
                 </div>
             </div>

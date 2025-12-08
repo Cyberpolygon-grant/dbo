@@ -11,6 +11,7 @@ sudo docker compose build
 echo "🚀 Запуск контейнеров..."
 sudo docker compose up -d
 
+
 echo "⏳ Ожидание готовности базы данных и приложения..."
 # Ждем, пока база данных будет готова
 echo "   - Ожидание PostgreSQL..."
@@ -26,6 +27,15 @@ while ! sudo docker compose exec -T db pg_isready -U appuser -d appdb >/dev/null
 done
 echo "   ✓ PostgreSQL готов"
 
+# Полная очистка базы данных
+echo ""
+echo "🗑️  Полная очистка базы данных..."
+sudo docker compose exec -T db psql -U appuser -d appdb -c "DROP SCHEMA public CASCADE;" 2>/dev/null || true
+sudo docker compose exec -T db psql -U appuser -d appdb -c "CREATE SCHEMA public;" 2>/dev/null || true
+sudo docker compose exec -T db psql -U appuser -d appdb -c "GRANT ALL ON SCHEMA public TO appuser;" 2>/dev/null || true
+sudo docker compose exec -T db psql -U appuser -d appdb -c "GRANT ALL ON SCHEMA public TO public;" 2>/dev/null || true
+echo "✅ База данных полностью очищена!"
+
 # Ждем, пока контейнер app будет готов
 echo "   - Ожидание готовности приложения..."
 counter=0
@@ -37,6 +47,12 @@ while ! sudo docker compose exec -T app nc -z localhost 8000 >/dev/null 2>&1; do
         break
     fi
 done
+
+# Применяем миграции после очистки базы данных
+echo ""
+echo "📦 Применение миграций..."
+sudo docker compose exec -T app python manage.py migrate --noinput
+echo "✅ Миграции применены!"
 
 # Явно пересоздаем транзакции для всех клиентов
 echo ""

@@ -15,7 +15,7 @@ from decimal import Decimal
 import json
 import logging
 
-from .models import Operator, Client, Service, ClientService, ServiceCategory, PhishingEmail, BankCard, Transaction, Deposit, Credit, InvestmentProduct, ClientInvestment, ServiceRequest, News, AttackLog
+from .models import Operator, Client, Service, ClientService, ServiceCategory, BankCard, Transaction, Deposit, Credit, InvestmentProduct, ClientInvestment, ServiceRequest, News
 from django.contrib.auth.models import User
 
 logger = logging.getLogger(__name__)
@@ -33,134 +33,69 @@ def home(request):
     """Главная страница системы ДБО"""
     return render(request, 'index.html')
 def banking_services(request):
-    """Каталог банковских услуг с уязвимостью SQL-инъекции"""
-    # Параметры фильтрации/сортировки (GET)
-    q = (request.GET.get('q') or '')
-    price_filter = (request.GET.get('price') or 'all').strip()  # all|free|low|medium|high
-    sort_by = (request.GET.get('sort') or 'name').strip()       # name|price-low|price-high|popular
-    category_name = (request.GET.get('category') or '').strip()
+    """Каталог банковских услуг (SQL-инъекция)"""
+    q = request.GET.get('q', '')
+    price_filter = request.GET.get('price', 'all').strip()
+    sort_by = request.GET.get('sort', 'name').strip()
+    category_name = request.GET.get('category', '').strip()
 
-    # Дебаг в консоль
-    print(f"\n" + "="*80)
-    print("🔍 DEBUG: banking_services - начало")
-    print(f"📝 Параметры: q='{q}', price='{price_filter}', sort='{sort_by}', category='{category_name}'")
-    print("="*80)
+    categories = ServiceCategory.objects.exclude(name__icontains='Служебные').prefetch_related('service_set')
+    if not category_name and categories.exists():
+        category_name = categories.first().name
 
-    # Категории для навигации - показываем все категории всем пользователям
-    categories = ServiceCategory.objects.all().prefetch_related('service_set')
-    # Показываем все активные услуги всем пользователям (без фильтрации по is_public или is_privileged)
-    where_clauses = ["(s.is_active = true)"]
-    
-    # Уязвимое место: прямой конкатенация в LIKE
-    if q:
-        # ОПАСНО: Прямая подстановка без параметризации
-        where_clauses.append(f"(s.name LIKE '%{q}%' OR s.description LIKE '%{q}%')")
-        print(f"🚨 УЯЗВИМЫЙ SQL: Прямая конкатенация в LIKE с: '{q}'")
-
-    # Уязвимое место: прямой конкатенация в ORDER BY
-    # Исправление неоднозначности: всегда квалифицируем колонку name как s.name
-    order_by = "s.name"
-    if sort_by == 'name':
-        order_by = "s.name"
-    elif sort_by == 'price-low':
-        order_by = "s.price ASC, s.name ASC"
-    elif sort_by == 'price-high':
-        order_by = "s.price DESC, s.name ASC"
-    elif sort_by == 'popular':
-        order_by = "s.rating_count DESC, s.rating DESC, s.name ASC"
-    else:
-        # Фолбэк на безопасное поле при неизвестном значении
-        order_by = "s.name"
-
-    # Уязвимое место: прямой конкатенация в WHERE для категории
+    where_clauses = ["s.is_active = true"]
     if category_name:
-        # ОПАСНО: Прямая подстановка без параметризации
         where_clauses.append(f"c.name = '{category_name}'")
-       # print(f"🚨 УЯЗВИМЫЙ SQL: Прямая конкатенация категории с: '{category_name}'")
+    if q:
+        where_clauses.append(f"(s.name LIKE '%{q}%' OR s.description LIKE '%{q}%')")
+    if price_filter == 'free':
+        where_clauses.append("s.price = 0")
+    elif price_filter == 'low':
+        where_clauses.append("s.price > 0 AND s.price <= 1000")
+    elif price_filter == 'medium':
+        where_clauses.append("s.price > 1000 AND s.price <= 5000")
+    elif price_filter == 'high':
+        where_clauses.append("s.price > 5000")
 
-    # Собираем финальный SQL с прямой конкатенацией
-    where_expr = " AND ".join(where_clauses) if where_clauses else "1=1"
-    sql = f"""
-        SELECT s.id, s.name, s.description, s.price, s.is_public, s.is_active, s.is_privileged,
-               s.rating, s.rating_count, c.name as category_name
-        FROM dbo_service s
-        JOIN dbo_servicecategory c ON s.category_id = c.id
-        WHERE {where_expr}--
-    
-    """
-    #print(f"🔍 Сгенерированный SQL:")
-    print(sql)
-    #print("🚨 ВНИМАНИЕ: Код уязвим к SQL-инъекциям!")
+    order_map = {'name': 's.name', 'price-low': 's.price ASC', 'price-high': 's.price DESC', 'popular': 's.rating_count DESC'}
+    order_by = order_map.get(sort_by, 's.name')
 
-    # Проверяем на SQL-инъекции
-    suspicious_keywords = ['UNION', 'SELECT', 'DROP', 'INSERT', 'UPDATE', 'DELETE', 'OR', 'AND', '--', ';', '/*', '*/', 'EXEC', 'XP_']
-    for param_name, param_value in [('q', q), ('sort', sort_by), ('category', category_name)]:
-        if param_value and any(kw in param_value.upper() for kw in suspicious_keywords):
-            found_keywords = [kw for kw in suspicious_keywords if kw in param_value.upper()]
-          #  print(f"🚨 ОБНАРУЖЕНЫ SQL-ключевые слова в {param_name}: {', '.join(found_keywords)}")
+    sql = f"""SELECT s.id, s.name, s.description, s.price, s.is_active, s.rating, s.rating_count, c.name as category_name
+              FROM dbo_service s JOIN dbo_servicecategory c ON s.category_id = c.id
+              WHERE {' AND '.join(where_clauses)} ORDER BY {order_by}"""
 
     services_rows = []
     try:
         with connection.cursor() as cursor:
-            # ОПАСНО: Выполняем SQL без параметров
             cursor.execute(sql)
             columns = [col[0] for col in cursor.description]
             services_rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
-         #   print(f"✅ Запрос выполнен успешно! Найдено услуг: {len(services_rows)}")
-    except Exception as e:
-       # print(f"💥 Ошибка выполнения SQL: {str(e)}")
-        # В случае ошибки используем безопасный запрос как fallback
+    except:
         with connection.cursor() as cursor:
-            cursor.execute("""
-                SELECT s.id, s.name, s.description, s.price, s.is_public, s.is_active, s.is_privileged,
-                       s.rating, s.rating_count, c.name as category_name
-                FROM dbo_service s
-                JOIN dbo_servicecategory c ON s.category_id = c.id
-                WHERE s.is_active = true
-                ORDER BY s.name
-            """)
+            cursor.execute("SELECT s.id, s.name, s.description, s.price, s.is_active, s.rating, s.rating_count, c.name as category_name FROM dbo_service s JOIN dbo_servicecategory c ON s.category_id = c.id WHERE s.is_active = true ORDER BY s.name")
             columns = [col[0] for col in cursor.description]
             services_rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-   # print(f"🎯 Итог: возвращено {len(services_rows)} услуг")
-   # print("="*80)
-
-    # Получаем подключенные услуги клиента (если он авторизован)
     connected_services = set()
     if request.user.is_authenticated:
         try:
             client = Client.objects.get(user=request.user)
-            connected_services = set(ClientService.objects.filter(
-                client=client,
-                status='active'
-            ).values_list('service_id', flat=True))
+            connected_services = set(ClientService.objects.filter(client=client, status='active').values_list('service_id', flat=True))
         except Client.DoesNotExist:
             pass
 
-    # Группируем услуги по категориям
     services_by_category = {}
     for service in services_rows:
-        cat = service.get('category_name') or 'Без категории'
-        services_by_category.setdefault(cat, []).append(service)
+        services_by_category.setdefault(service.get('category_name', 'Без категории'), []).append(service)
 
-    # Статистика по текущей выборке
-    total_services = len(services_rows)
-    free_services = sum(1 for s in services_rows if (s.get('price') == 0 or float(s.get('price', 0)) == 0.0))
-
-    context = {
+    return render(request, 'banking_services.html', {
         'categories': categories,
         'services_by_category': services_by_category,
         'connected_services': connected_services,
-        'total_services': total_services,
-        'free_services': free_services,
-        # Текущие параметры фильтрации/сортировки для UI
-        'q': q,
-        'price': price_filter,
-        'sort': sort_by,
-        'category_active': category_name,
-    }
-
-    return render(request, 'banking_services.html', context)
+        'total_services': len(services_rows),
+        'free_services': sum(1 for s in services_rows if float(s.get('price', 0)) == 0),
+        'q': q, 'price': price_filter, 'sort': sort_by, 'category_active': category_name,
+    })
 
 
 
@@ -179,7 +114,7 @@ def search_services(request):
         # ОПАСНО: Прямая конкатенация строк - уязвимость SQL-инъекции
         with connection.cursor() as cursor:
             # Создаем SQL запрос прямой конкатенацией
-            sql = "SELECT s.id, s.name, s.description, s.price, c.name as category_name, s.is_public, s.is_privileged " + \
+            sql = "SELECT s.id, s.name, s.description, s.price, c.name as category_name " + \
                   "FROM dbo_service s " + \
                   "JOIN dbo_servicecategory c ON s.category_id = c.id " + \
                   "WHERE s.name LIKE '%" + query + "%' OR s.description LIKE '%" + query + "%' " + \
@@ -248,7 +183,7 @@ def search_services(request):
 def service_detail(request, service_id):
     """Детальная информация об услуге"""
     try:
-        service = Service.objects.get(id=service_id, is_public=True, is_active=True)
+        service = Service.objects.get(id=service_id, is_active=True)
     except Service.DoesNotExist:
         messages.error(request, 'Услуга не найдена')
         return redirect('banking_services')
@@ -300,8 +235,6 @@ def get_service_details(request, service_id):
         'category': service.category.name if service.category else 'Без категории',
         'category_description': service.category.description if service.category else '',
         'is_connected': is_connected,
-        'is_public': service.is_public,
-        'is_privileged': service.is_privileged,
         'created_at': service.created_at.strftime('%d.%m.%Y'),
         'total_connections': total_connections,
         'active_connections': active_connections,
@@ -760,6 +693,72 @@ def create_deposit(request):
         return JsonResponse({'success': False, 'error': str(e)})
 
 @login_required
+@require_http_methods(["POST"])
+def create_deposit_request(request):
+    """Создание заявки на депозит"""
+    try:
+        # Поддержка как JSON, так и form-data
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+        else:
+            data = request.POST.dict()
+        
+        # Получаем клиента
+        try:
+            client = Client.objects.get(user=request.user)
+        except Client.DoesNotExist:
+            if request.content_type == 'application/json':
+                return JsonResponse({'success': False, 'error': 'Клиент не найден'})
+            messages.error(request, 'Клиент не найден')
+            return redirect('deposits_service')
+        
+        # Извлекаем данные
+        tariff = data.get('tariff', '')
+        amount = data.get('amount', 0) or data.get('uAmount', 0)
+        card_id = data.get('card', '')
+        
+        # Парсим тариф (например, t6_70 означает 6 месяцев, 7.0%)
+        tariff_parts = tariff.split('_')
+        term_months = 6
+        interest_rate = 7.0
+        
+        if len(tariff_parts) >= 2:
+            term_str = tariff_parts[0].replace('t', '').replace('r', '')
+            rate_str = tariff_parts[1]
+            try:
+                term_months = int(term_str)
+                interest_rate = float(rate_str) / 10.0
+            except:
+                pass
+        
+        # Создаем заявку на депозит (используем существующую модель ServiceRequest)
+        deposit_request = ServiceRequest.objects.create(
+            client=client,
+            service_name=f"Заявка на депозит: Тариф {tariff}",
+            service_description=f"""
+Тариф: {tariff}
+Сумма: {amount} ₽
+Срок: {term_months} месяцев
+Процентная ставка: {interest_rate}%
+Карта: {card_id}
+            """.strip(),
+            price=float(amount) if amount else 0
+        )
+        
+        if request.content_type == 'application/json':
+            return JsonResponse({'success': True, 'request_id': deposit_request.id})
+        
+        messages.success(request, 'Спасибо! Наш менеджер свяжется с вами для подтверждения заявки на депозит.')
+        return redirect('deposits_service')
+        
+    except Exception as e:
+        logger.error(f"Error creating deposit request: {e}")
+        if request.content_type == 'application/json':
+            return JsonResponse({'success': False, 'error': str(e)})
+        messages.error(request, f'Ошибка при создании заявки: {str(e)}')
+        return redirect('deposits_service')
+
+@login_required
 def credits_view(request):
     """Страница кредитных продуктов"""
     try:
@@ -1174,47 +1173,6 @@ def unblock_card(request, card_id):
     # Разблокировка карт автоматически НЕ производится (требует явного управления картой)
     return JsonResponse({'success': True})
 
-@login_required
-def services_management(request):
-    """Страница управления услугами клиента"""
-    try:
-        client = Client.objects.get(user=request.user)
-    except Client.DoesNotExist:
-        messages.error(request, 'Клиент не найден')
-        return redirect('home')
-    
-    # Получаем подключенные услуги
-    connected_services = ClientService.objects.filter(
-        client=client, 
-        is_active=True,
-        status='active'
-    ).select_related('service')
-    
-    # Получаем заявки клиента
-    service_requests = ServiceRequest.objects.filter(client=client).order_by('-created_at')
-    
-    # Получаем все доступные услуги для подключения (без фильтрации по is_public или is_privileged)
-    available_services = Service.objects.filter(is_active=True).exclude(
-        id__in=connected_services.values_list('service_id', flat=True)
-    ).select_related('category')
-    
-    # Группируем услуги по категориям
-    services_by_category = {}
-    for service in available_services:
-        category_name = service.category.name
-        if category_name not in services_by_category:
-            services_by_category[category_name] = []
-        services_by_category[category_name].append(service)
-    
-    context = {
-        'connected_services': connected_services,
-        'service_requests': service_requests,
-        'services_by_category': services_by_category,
-        'client': client
-    }
-    
-    return render(request, 'services_management.html', context)
-
 def login_page(request):
     """Страница входа в систему (вход по email и паролю)"""
     if request.method == 'POST':
@@ -1382,6 +1340,10 @@ def client_dashboard(request):
     # Общий баланс
     total_balance = cards.aggregate(total=models.Sum('balance'))['total'] or 0
     
+    # Сумма кредитов
+    total_credit_debt = sum(credit.remaining_amount for credit in credits)
+    total_credit_amount = total_credit_debt if total_credit_debt > 0 else 0
+    
     context = {
         'client': client,
         'cards': cards,
@@ -1391,6 +1353,7 @@ def client_dashboard(request):
         'deposits': deposits,
         'credits': credits,
         'total_balance': total_balance,
+        'total_credit_amount': total_credit_amount,
     }
     
     return render(request, 'client_dashboard.html', context)
@@ -1496,25 +1459,17 @@ def operator1_dashboard(request):
         messages.error(request, 'Доступ запрещен. Требуются права оператора ДБО #1.')
         return redirect('home')
     
-    # Получаем фишинговые письма для демонстрации атаки
-    phishing_emails = PhishingEmail.objects.all().order_by('-sent_at')
-    
     # Получаем заявки на создание клиентов
     client_requests = ServiceRequest.objects.filter(
         service_name__icontains='регистрация'
     ).order_by('-created_at')
     
     # Статистика
-    total_emails = phishing_emails.count()
-    unread_emails = phishing_emails.filter(is_opened=False).count()
     pending_requests = client_requests.filter(status='pending').count()
     
     context = {
         'operator': operator,
-        'phishing_emails': phishing_emails[:10],  # Последние 10 писем
         'client_requests': client_requests[:10],  # Последние 10 заявок
-        'total_emails': total_emails,
-        'unread_emails': unread_emails,
         'pending_requests': pending_requests,
     }
     
@@ -1633,34 +1588,6 @@ def create_client(request):
     
     return render(request, 'create_client.html')
 
-@login_required
-def phishing_email_view(request, email_id):
-    """Просмотр фишингового письма (уязвимость для демонстрации атаки)"""
-    try:
-        operator = Operator.objects.get(user=request.user, operator_type='client_service')
-    except Operator.DoesNotExist:
-        messages.error(request, 'Доступ запрещен. Требуются права оператора ДБО #1.')
-        return redirect('home')
-    
-    try:
-        email = PhishingEmail.objects.get(id=email_id)
-    except PhishingEmail.DoesNotExist:
-        messages.error(request, 'Письмо не найдено')
-        return redirect('operator1_dashboard')
-    
-    # Отмечаем письмо как прочитанное
-    email.is_opened = True
-    email.opened_at = timezone.now()
-    email.save()
-    
-    # Логирование атак отключено
-    
-    context = {
-        'email': email,
-        'operator': operator,
-    }
-    
-    return render(request, 'phishing_email.html', context)
 
 @login_required
 def review_service_request(request, request_id):
@@ -1719,7 +1646,6 @@ def approve_service_request(request, request_id):
         description=service_request.service_description,
         price=service_request.price,
         category=category,
-        is_public=True,
         is_active=True,
     )
     
@@ -2357,6 +2283,7 @@ def client_dashboard(request):
     # Статистика
     total_balance = sum(card.balance for card in cards)
     total_credit_debt = sum(credit.remaining_amount for credit in credits if credit.status == 'active')
+    total_credit_amount = total_credit_debt if total_credit_debt > 0 else 0  # Гарантируем, что всегда будет число
     total_deposit_amount = sum(deposit.amount for deposit in deposits)
     total_investment_value = sum(investment.current_value for investment in investments if investment.status == 'active')
     
@@ -2371,6 +2298,7 @@ def client_dashboard(request):
         'total_cost': total_cost,
         'total_balance': total_balance,
         'total_credit_debt': total_credit_debt,
+        'total_credit_amount': total_credit_amount,
         'total_deposit_amount': total_deposit_amount,
         'total_investment_value': total_investment_value,
     }
@@ -2533,6 +2461,52 @@ def transfers_service(request):
     }
     
     return render(request, 'transfers.html', context)
+
+
+@login_required
+def check_recipient_phone(request):
+    """API endpoint для проверки существования пользователя по номеру телефона"""
+    phone = request.GET.get('phone', '').strip()
+    
+    if not phone:
+        return JsonResponse({
+            'exists': False,
+            'error': 'Номер телефона не указан'
+        }, status=400)
+    
+    # Нормализуем номер телефона (оставляем только цифры)
+    normalized_phone = ''.join(filter(str.isdigit, phone))
+    
+    if not normalized_phone:
+        return JsonResponse({
+            'exists': False,
+            'error': 'Неверный формат номера телефона'
+        }, status=400)
+    
+    try:
+        recipient_client = Client.objects.get(phone=normalized_phone)
+        # Проверяем, что у получателя есть активные карты
+        has_active_cards = BankCard.objects.filter(
+            client=recipient_client, 
+            is_active=True
+        ).exists()
+        
+        return JsonResponse({
+            'exists': True,
+            'has_active_cards': has_active_cards,
+            'recipient_name': recipient_client.full_name,
+            'message': f'Получатель найден: {recipient_client.full_name}' if has_active_cards else 'Получатель найден, но у него нет активных карт'
+        })
+    except Client.DoesNotExist:
+        return JsonResponse({
+            'exists': False,
+            'message': 'Пользователь с таким номером телефона не найден'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'exists': False,
+            'error': f'Ошибка при проверке: {str(e)}'
+        }, status=500)
 
 
 @login_required

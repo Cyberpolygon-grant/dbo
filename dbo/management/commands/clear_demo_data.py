@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 from dbo.models import (
-    Operator, Client, ServiceCategory, Service, ServiceRequest, News, PhishingEmail,
+    Operator, Client, ServiceCategory, Service, ServiceRequest, News,
     ClientService, BankCard, Transaction,
     Deposit, Credit, InvestmentProduct, ClientInvestment
 )
@@ -35,10 +35,7 @@ class Command(BaseCommand):
             'services': Service.objects.count(),
             'service_requests': ServiceRequest.objects.count(),
             'news': News.objects.count(),
-            'phishing_emails': PhishingEmail.objects.count(),
             'client_services': ClientService.objects.count(),
-            # attack_logs отключены
-            'attack_logs': 0,
             'bank_cards': BankCard.objects.count(),
             'transactions': Transaction.objects.count(),
             'deposits': Deposit.objects.count(),
@@ -63,9 +60,6 @@ class Command(BaseCommand):
         
         self.stdout.write('Удаление заявок на услуги...')
         ServiceRequest.objects.all().delete()
-
-        self.stdout.write('Удаление фишинговых писем...')
-        PhishingEmail.objects.all().delete()
         
         self.stdout.write('Удаление новостей...')
         News.objects.all().delete()
@@ -94,9 +88,7 @@ class Command(BaseCommand):
             'services': Service.objects.count(),
             'service_requests': ServiceRequest.objects.count(),
             'news': News.objects.count(),
-            'phishing_emails': PhishingEmail.objects.count(),
             'client_services': ClientService.objects.count(),
-            'attack_logs': 0,
             'bank_cards': BankCard.objects.count(),
             'transactions': Transaction.objects.count(),
             'deposits': Deposit.objects.count(),

@@ -29,7 +29,6 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
     path("banking-services/", views.banking_services, name="banking_services"),
     path("create-service-request/", views.create_service_request, name="create_service_request"),
-    path("services-management/", views.services_management, name="services_management"),
     path("connect-service/<int:service_id>/", views.connect_service, name="connect_service"),
     path("disconnect-service/<int:service_id>/", views.disconnect_service, name="disconnect_service"),
     path("my-services/", views.my_services, name="my_services"),
@@ -45,7 +44,6 @@ urlpatterns = [
     
     # Функционал оператора ДБО #1
     path("create-client/", views.create_client, name="create_client"),
-    path("phishing-email/<int:email_id>/", views.phishing_email_view, name="phishing_email"),
     path("operator/transactions/", views.operator_transactions_view, name="operator_transactions"),
     
     # Функционал оператора ДБО #2
@@ -74,6 +72,7 @@ urlpatterns = [
     path("investments/", views.investments_view, name="investments"),
     path("cards/", views.cards_view, name="cards"),
     path("create-deposit/", views.create_deposit, name="create_deposit"),
+    path("create-deposit-request/", views.create_deposit_request, name="create_deposit_request"),
     # кредиты вырезаны
     path("create-investment-request/", views.create_investment_request, name="create_investment_request"),
     path("create-card-request/", views.create_card_request, name="create_card_request"),
@@ -90,6 +89,7 @@ urlpatterns = [
     path("service/transfers/", views.transfers_service, name="transfers_service"),
     path("service/cards/", views.cards_service, name="cards_service"),
     path("service/investments/", views.investments_service, name="investments_service"),
+    path("api/check-recipient-phone/", views.check_recipient_phone, name="check_recipient_phone"),
     
     
     # Старые маршруты для совместимости

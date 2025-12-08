@@ -20,7 +20,8 @@
     <div class="card bg-base-100 shadow-xl mb-8">
         <div class="card-body">
             <h2 class="card-title text-2xl mb-4">Оформление вклада</h2>
-            <form id="unifiedDepositForm">
+            <form id="unifiedDepositForm" method="POST">
+                {% csrf_token %}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <div class="form-control mb-5">
@@ -543,15 +544,58 @@ document.querySelectorAll('input[name="term"]').forEach(r => {
 // Обработка единой формы депозитов
 document.getElementById('unifiedDepositForm').addEventListener('submit', function(e) {
     e.preventDefault();
-    showAlert('Спасибо! Модератор свяжется с вами для подтверждения заявки по депозиту.', 'info');
-    this.reset();
-    // Сброс к первому тарифу
-    const firstTariff = document.querySelector('input[name="tariff"]');
-    if (firstTariff) firstTariff.checked = true;
-    // Пересчет предпросмотра
-    if (typeof updateUnifiedPreview === 'function') {
-        updateUnifiedPreview();
+    
+    // Получаем данные формы
+    const formData = new FormData(this);
+    const tariff = formData.get('tariff') || document.getElementById('selectedTariff')?.value || 't6_70';
+    const amount = document.getElementById('uAmount')?.value || formData.get('amount') || '100000';
+    const card = formData.get('card') || formData.get('uCard');
+    
+    // Валидация
+    if (!card) {
+        showAlert('Пожалуйста, выберите карту для списания', 'error');
+        return;
     }
+    
+    // Получаем CSRF токен
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                      document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+    
+    // Отправляем заявку на сервер
+    fetch('{% url "create_deposit_request" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+            tariff: tariff,
+            amount: amount,
+            card: card
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Спасибо! Наш менеджер свяжется с вами для подтверждения заявки на депозит.', 'success');
+            this.reset();
+            // Сброс к первому тарифу
+            const firstTariff = document.querySelector('input[name="tariff"]');
+            if (firstTariff) firstTariff.checked = true;
+            // Пересчет предпросмотра
+            if (typeof updateUnifiedPreview === 'function') {
+                updateUnifiedPreview();
+            }
+        } else {
+            showAlert(data.error || 'Ошибка при отправке заявки', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('Ошибка при отправке заявки. Попробуйте еще раз.', 'error');
+    });
 });
 
 // Интеллектуальная визуализация итогов формы депозита

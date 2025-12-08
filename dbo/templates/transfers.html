@@ -60,6 +60,7 @@
                         <span class="label">Номер телефона получателя</span>
                     </label>
                     <input type="tel" name="recipient_phone" id="recipientPhone" placeholder="+7 (999) 456-78-90" class="input input-bordered w-full" oninput="formatPhoneInput(this)" required>
+                    <div id="phoneValidationMessage" class="mt-2"></div>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Средства поступят на основную карточку получателя</p>
                 </div>
 
@@ -214,6 +215,9 @@
 </div>
 
 <script>
+// URL для проверки номера телефона
+const checkPhoneUrl = '{% url "check_recipient_phone" %}';
+
 // Функция форматирования номера телефона для отображения
 function formatPhone(phone) {
     const digits = phone.replace(/\D/g, '');
@@ -248,13 +252,101 @@ function formatPhoneInput(input) {
     }
 }
 
+// Проверка существования пользователя по номеру телефона
+let phoneCheckTimeout;
+const phoneInput = document.getElementById('recipientPhone');
+const validationMessage = document.getElementById('phoneValidationMessage');
+
+function checkPhoneExists(phone) {
+    // Очищаем предыдущее сообщение
+    validationMessage.innerHTML = '';
+    
+    // Нормализуем номер телефона
+    const normalizedPhone = normalizePhone(phone);
+    
+    // Проверяем, что номер достаточно длинный для проверки
+    if (normalizedPhone.length < 10) {
+        return;
+    }
+    
+    // Отправляем запрос на сервер
+    fetch(`${checkPhoneUrl}?phone=${encodeURIComponent(normalizedPhone)}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.exists) {
+            if (data.has_active_cards) {
+                validationMessage.innerHTML = `
+                    <div class="alert alert-success py-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span class="text-sm">${data.message || 'Получатель найден'}</span>
+                    </div>
+                `;
+            } else {
+                validationMessage.innerHTML = `
+                    <div class="alert alert-warning py-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        <span class="text-sm">${data.message || 'У получателя нет активных карт'}</span>
+                    </div>
+                `;
+            }
+        } else {
+            validationMessage.innerHTML = `
+                <div class="alert alert-error py-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    <span class="text-sm">${data.message || 'Пользователь с таким номером телефона не найден'}</span>
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка при проверке номера телефона:', error);
+        validationMessage.innerHTML = `
+            <div class="alert alert-error py-2">
+                <span class="text-sm">Ошибка при проверке номера телефона</span>
+            </div>
+        `;
+    });
+}
+
+// Обработчик ввода номера телефона с задержкой (debounce)
+phoneInput.addEventListener('input', function() {
+    // Очищаем предыдущий таймаут
+    clearTimeout(phoneCheckTimeout);
+    
+    const phone = this.value;
+    const normalizedPhone = normalizePhone(phone);
+    
+    // Проверяем только если номер достаточно длинный
+    if (normalizedPhone.length >= 10) {
+        // Устанавливаем задержку 500мс перед проверкой
+        phoneCheckTimeout = setTimeout(() => {
+            checkPhoneExists(phone);
+        }, 500);
+    } else {
+        // Очищаем сообщение, если номер слишком короткий
+        validationMessage.innerHTML = '';
+    }
+});
+
 // Валидация формы
 document.getElementById('transferForm').addEventListener('submit', function(e) {
-    const phoneInput = document.querySelector('input[name="recipient_phone"]');
+    e.preventDefault(); // Всегда предотвращаем отправку сначала
+    
     const phone = phoneInput.value;
 
     if (!phone) {
-        e.preventDefault();
         alert('Введите номер телефона получателя');
         return;
     }
@@ -262,6 +354,40 @@ document.getElementById('transferForm').addEventListener('submit', function(e) {
     // Нормализуем номер телефона перед отправкой
     const normalizedPhone = normalizePhone(phone);
     phoneInput.value = normalizedPhone;
+    
+    // Проверяем существование пользователя перед отправкой
+    const normalizedPhoneForCheck = normalizePhone(phone);
+    if (normalizedPhoneForCheck.length >= 10) {
+        // Выполняем проверку перед отправкой
+        fetch(`${checkPhoneUrl}?phone=${encodeURIComponent(normalizedPhoneForCheck)}`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.exists) {
+                alert('Пользователь с таким номером телефона не найден. Пожалуйста, проверьте номер и попробуйте снова.');
+                return;
+            }
+            if (!data.has_active_cards) {
+                alert('У получателя нет активных карт. Перевод невозможен.');
+                return;
+            }
+            // Если все проверки пройдены, отправляем форму
+            document.getElementById('transferForm').submit();
+        })
+        .catch(error => {
+            console.error('Ошибка при проверке номера телефона:', error);
+            // В случае ошибки разрешаем отправку формы (серверная проверка все равно выполнится)
+            document.getElementById('transferForm').submit();
+        });
+    } else {
+        // Если номер слишком короткий, все равно отправляем (серверная проверка выполнится)
+        document.getElementById('transferForm').submit();
+    }
 });
 </script>
 {% endblock %}
