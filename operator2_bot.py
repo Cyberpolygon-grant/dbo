@@ -24,11 +24,19 @@ class Operator2Bot:
         try:
             # Получаем CSRF токен
             resp = self.session.get(f'{BASE_URL}/login/', timeout=10)
+            if resp.status_code != 200:
+                print(f'❌ Ошибка получения страницы логина: статус {resp.status_code}')
+                return False
+            
             soup = BeautifulSoup(resp.text, 'html.parser')
             csrf_input = soup.find('input', {'name': 'csrfmiddlewaretoken'})
             csrf_token = csrf_input['value'] if csrf_input else ''
             
-            # Логинимся
+            if not csrf_token:
+                print(f'❌ Не удалось получить CSRF токен')
+                return False
+            
+            # Логинимся (allow_redirects=True для следования редиректам)
             login_data = {
                 'csrfmiddlewaretoken': csrf_token,
                 'email': USERNAME,
@@ -38,18 +46,51 @@ class Operator2Bot:
                 f'{BASE_URL}/login/',
                 data=login_data,
                 headers={'Referer': f'{BASE_URL}/login/'},
-                timeout=10
+                timeout=10,
+                allow_redirects=True
             )
             
-            if 'operator2' in resp.url or resp.status_code == 200:
+            # Проверяем успешность авторизации:
+            # 1. Проверяем финальный URL после всех редиректов
+            final_url = resp.url
+            # 2. Проверяем содержимое страницы на наличие признаков дашборда оператора
+            page_content = resp.text.lower()
+            
+            # Успешная авторизация если:
+            # - URL содержит /operator2/ (редирект на дашборд)
+            # - ИЛИ страница содержит признаки дашборда оператора
+            # - И статус код 200
+            is_success = (
+                resp.status_code == 200 and
+                ('/operator2/' in final_url or 
+                 'operator2' in final_url or
+                 'operator2_dashboard' in page_content or
+                 'заявки на создание услуг' in page_content or
+                 'review-request' in page_content)
+            )
+            
+            if is_success:
                 self.logged_in = True
                 print(f'✅ Авторизован как {USERNAME}')
                 return True
             else:
-                print(f'❌ Ошибка авторизации')
+                # Дополнительная диагностика
+                if '/login/' in final_url:
+                    print(f'❌ Ошибка авторизации: остались на странице логина')
+                    # Проверяем наличие сообщений об ошибке
+                    if 'неверные' in page_content or 'ошибка' in page_content:
+                        print(f'   Причина: неверные учетные данные')
+                else:
+                    print(f'❌ Ошибка авторизации: неожиданный URL {final_url[:100]}')
+                print(f'   Статус: {resp.status_code}, URL: {final_url}')
                 return False
+        except requests.exceptions.RequestException as e:
+            print(f'❌ Ошибка сети при авторизации: {e}')
+            return False
         except Exception as e:
-            print(f'❌ Ошибка: {e}')
+            print(f'❌ Ошибка авторизации: {e}')
+            import traceback
+            traceback.print_exc()
             return False
     
     def get_pending_requests(self):
@@ -92,16 +133,24 @@ class Operator2Bot:
         """Один цикл проверки заявок"""
         if not self.logged_in:
             if not self.login():
+                print('⏸️ Пропуск цикла из-за ошибки авторизации')
                 return
         
-        request_ids = self.get_pending_requests()
-        if request_ids:
-            print(f'📋 Найдено заявок: {len(request_ids)}')
-            for req_id in request_ids:
-                self.view_request(req_id)
-                time.sleep(1)  # пауза между просмотрами
-        else:
-            print('📭 Нет новых заявок')
+        try:
+            request_ids = self.get_pending_requests()
+            if request_ids:
+                print(f'📋 Найдено заявок: {len(request_ids)}')
+                for req_id in request_ids:
+                    self.view_request(req_id)
+                    time.sleep(1)  # пауза между просмотрами
+            else:
+                print('📭 Нет новых заявок')
+        except requests.exceptions.RequestException as e:
+            print(f'❌ Ошибка сети при получении заявок: {e}')
+            self.logged_in = False  # Требуем переавторизацию
+        except Exception as e:
+            print(f'❌ Ошибка в цикле проверки: {e}')
+            self.logged_in = False  # Требуем переавторизацию
     
     def run(self):
         """Запуск бота в бесконечном цикле"""
@@ -111,21 +160,37 @@ class Operator2Bot:
         
         # Ждём пока приложение запустится
         print('⏳ Ожидание готовности приложения...')
-        for _ in range(30):
+        app_ready = False
+        for attempt in range(30):
             try:
                 resp = requests.get(f'{BASE_URL}/', timeout=5)
                 if resp.status_code == 200:
+                    print('✅ Приложение готово')
+                    app_ready = True
                     break
-            except:
-                pass
+            except Exception as e:
+                if attempt % 5 == 0:  # Показываем прогресс каждые 5 попыток
+                    print(f'   Попытка {attempt + 1}/30...')
             time.sleep(2)
+        
+        if not app_ready:
+            print('⚠️ Приложение не готово после ожидания, продолжаем попытки...')
+        
+        # Дополнительная пауза для полной инициализации
+        time.sleep(3)
         
         while True:
             try:
                 self.run_cycle()
+            except KeyboardInterrupt:
+                print('\n🛑 Остановка бота...')
+                break
             except Exception as e:
-                print(f'❌ Ошибка цикла: {e}')
+                print(f'❌ Критическая ошибка цикла: {e}')
+                import traceback
+                traceback.print_exc()
                 self.logged_in = False  # переавторизация при ошибке
+                time.sleep(5)  # Пауза перед следующей попыткой
             
             time.sleep(INTERVAL)
 
