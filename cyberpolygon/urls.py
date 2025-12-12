@@ -33,8 +33,6 @@ urlpatterns = [
     path("disconnect-service/<uuid:service_uuid>/", views.disconnect_service, name="disconnect_service"),
     path("my-services/", views.my_services, name="my_services"),
     path("my-requests/", views.my_requests, name="my_requests"),
-    path("xss-success/", views.xss_success, name="xss_success"),
-    path("first-login-password/", views.first_login_password, name="first_login_password"),
     
     # Дашборды
     path("operator1/", views.operator1_dashboard, name="operator1_dashboard"),
@@ -45,7 +43,6 @@ urlpatterns = [
     # Функционал оператора ДБО #1
     path("create-client/", views.create_client, name="create_client"),
     path("operator1/logs/", views.operator1_logs, name="operator1_logs"),
-    path("operator/transactions/", views.operator_transactions_view, name="operator_transactions"),
     
     # Функционал оператора ДБО #2
     path("review-request/<int:request_id>/", views.review_service_request, name="review_service_request"),
@@ -53,11 +50,8 @@ urlpatterns = [
     path("reject-request/<int:request_id>/", views.reject_service_request, name="reject_service_request"),
     
     # Функционал клиента
-    path("create-service-request/", views.create_service_request, name="create_service_request"),
     # Публичный каталог услуг
     path("services/<uuid:service_uuid>/", views.service_detail, name="service_detail"),
-    path("api/service-details/<uuid:service_uuid>/", views.get_service_details, name="get_service_details"),
-    path("admin-dashboard/", views.admin_dashboard, name="admin_dashboard"),
     
     # Банковские функции для клиентов
     path("client/transfers/", views.transfers_view, name="transfers"),  # Отдельная страница переводов
@@ -67,7 +61,6 @@ urlpatterns = [
     # кредиты вырезаны
     
     # Банковские услуги
-    path("deposits/", views.deposits_view, name="deposits"),
     # кредиты вырезаны
     path("investments/", views.investments_view, name="investments"),
     path("cards/", views.cards_view, name="cards"),
@@ -81,7 +74,6 @@ urlpatterns = [
     path("card/<int:card_id>/unblock/", views.unblock_card, name="unblock_card"),
     path("card/<int:card_id>/pin/", views.change_card_pin, name="change_card_pin"),
     path("card/<int:card_id>/set-primary/", views.set_primary_card, name="set_primary_card"),
-    path("card/unset-primary/", views.unset_primary_card, name="unset_primary_card"),
     
     # Новые банковские сервисы
     # кредиты вырезаны
@@ -90,6 +82,7 @@ urlpatterns = [
     path("service/cards/", views.cards_service, name="cards_service"),
     path("service/investments/", views.investments_service, name="investments_service"),
     path("api/check-recipient-phone/", views.check_recipient_phone, name="check_recipient_phone"),
+    path("api/login/", views.api_login, name="api_login"),
     
     
     # Старые маршруты для совместимости

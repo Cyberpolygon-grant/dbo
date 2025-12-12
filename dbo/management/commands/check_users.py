@@ -13,7 +13,7 @@ class Command(BaseCommand):
             {
                 'username': 'operator1',
                 'password': 'password123',
-                'email': 'operator1@bank.ru',
+                'email': 'operator1@financepro.ru',
                 'first_name': 'Анна',
                 'last_name': 'Петрова',
                 'type': 'operator',
@@ -22,7 +22,7 @@ class Command(BaseCommand):
             {
                 'username': 'operator2',
                 'password': 'password123',
-                'email': 'operator2@bank.ru',
+                'email': 'operator2@financepro.ru',
                 'first_name': 'Иван',
                 'last_name': 'Сидоров',
                 'type': 'operator',
@@ -31,7 +31,7 @@ class Command(BaseCommand):
             {
                 'username': 'client1',
                 'password': 'password123',
-                'email': 'client1@example.com',
+                'email': 'client1@financepro.ru',
                 'first_name': 'Петр',
                 'last_name': 'Иванов',
                 'type': 'client'

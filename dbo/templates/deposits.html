@@ -10,7 +10,7 @@
             <div class="max-w-md">
                 <h1 class="text-4xl font-bold mb-4">Депозитные программы</h1>
                 <p class="text-lg opacity-90">Выгодные депозиты с высокими процентными ставками и гибкими условиями</p>
-                <div class="badge badge-lg badge-accent mt-4">До 8% годовых</div>
+                <div class="badge badge-lg badge-accent mt-4">До 8.5% годовых</div>
                 <div class="mt-4 text-sm opacity-90" id="pageQuote">Инвестируйте регулярно — сложные проценты делают своё дело.</div>
             </div>
         </div>
@@ -20,7 +20,7 @@
     <div class="card bg-base-100 shadow-xl mb-8">
         <div class="card-body">
             <h2 class="card-title text-2xl mb-4">Оформление вклада</h2>
-            <form id="unifiedDepositForm" method="POST">
+            <form id="unifiedDepositForm" method="POST" action="{% url 'create_deposit_request' %}">
                 {% csrf_token %}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
@@ -72,22 +72,13 @@
                             <label class="label"><span class="label-text">Сумма вклада</span></label>
                             <div class="relative">
                                 <input id="uAmount" type="range" min="10000" max="5000000" step="10000" value="100000" class="range range-primary w-full">
+                                <input type="hidden" name="amount" id="uAmountHidden" value="100000">
                                 <div class="flex justify-between text-sm px-2 mt-2">
                                     <span class="text-gray-500">10 000 ₽</span>
                                     <span class="font-bold text-primary text-lg" id="uAmountOut">100 000 ₽</span>
                                     <span class="text-gray-500">5 000 000 ₽</span>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="form-control mb-5">
-                            <label class="label"><span class="label-text">Карта для списания</span></label>
-                            <select class="select select-bordered" name="card" id="uCard" required>
-                                <option value="">Выберите карту</option>
-                                {% for card in cards %}
-                                    <option value="{{ card.id }}">{{ card.card_number }} ({{ card.balance|floatformat:0 }} ₽)</option>
-                                {% endfor %}
-                            </select>
                         </div>
                     </div>
 
@@ -129,7 +120,7 @@
                 <div class="text-center">
                     <div class="text-3xl mb-2">💰</div>
                     <h3 class="font-semibold mb-1">Высокие ставки</h3>
-                    <p class="text-sm text-base-content/70">До 8% годовых</p>
+                    <p class="text-sm text-base-content/70">До 8.5% годовых</p>
                 </div>
                 <div class="text-center">
                     <div class="text-3xl mb-2">🔒</div>
@@ -181,15 +172,6 @@
                         <input type="hidden" name="amount" id="depAmountHidden" value="100000">
                     </div>
 
-                    <div class="form-control mb-5">
-                        <label class="label"><span class="label-text">Карта для списания</span></label>
-                        <select class="select select-bordered" name="card" required>
-                            <option value="">Выберите карту</option>
-                            {% for card in cards %}
-                                <option value="{{ card.id }}">{{ card.card_number }} ({{ card.balance|floatformat:0 }} ₽)</option>
-                            {% endfor %}
-                        </select>
-                    </div>
                 </div>
 
                 <div>
@@ -338,6 +320,12 @@ function openDepositWithTariff(code) {
         // Обновляем отображение суммы
         if (amountOut) {
             amountOut.textContent = Math.round(amount).toLocaleString('ru-RU') + ' ₽';
+        }
+        
+        // Обновляем скрытое поле для отправки формы
+        const amountHidden = document.getElementById('uAmountHidden');
+        if (amountHidden) {
+            amountHidden.value = Math.round(amount);
         }
         
         // Рассчитываем доход
@@ -542,61 +530,7 @@ document.querySelectorAll('input[name="term"]').forEach(r => {
 });
 
 // Обработка единой формы депозитов
-document.getElementById('unifiedDepositForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    // Получаем данные формы
-    const formData = new FormData(this);
-    const tariff = formData.get('tariff') || document.getElementById('selectedTariff')?.value || 't6_70';
-    const amount = document.getElementById('uAmount')?.value || formData.get('amount') || '100000';
-    const card = formData.get('card') || formData.get('uCard');
-    
-    // Валидация
-    if (!card) {
-        showAlert('Пожалуйста, выберите карту для списания', 'error');
-        return;
-    }
-    
-    // Получаем CSRF токен
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
-                      document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
-    
-    // Отправляем заявку на сервер
-    fetch('{% url "create_deposit_request" %}', {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': csrfToken,
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-        },
-        credentials: 'same-origin',
-        body: JSON.stringify({
-            tariff: tariff,
-            amount: amount,
-            card: card
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showAlert('Спасибо! Наш менеджер свяжется с вами для подтверждения заявки на депозит.', 'success');
-            this.reset();
-            // Сброс к первому тарифу
-            const firstTariff = document.querySelector('input[name="tariff"]');
-            if (firstTariff) firstTariff.checked = true;
-            // Пересчет предпросмотра
-            if (typeof updateUnifiedPreview === 'function') {
-                updateUnifiedPreview();
-            }
-        } else {
-            showAlert(data.error || 'Ошибка при отправке заявки', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showAlert('Ошибка при отправке заявки. Попробуйте еще раз.', 'error');
-    });
-});
+// Форма отправляется обычным способом, Django messages обработаются автоматически
 
 // Интеллектуальная визуализация итогов формы депозита
 function updateDepositPreview() {

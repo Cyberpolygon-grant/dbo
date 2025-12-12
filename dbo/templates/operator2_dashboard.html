@@ -54,16 +54,16 @@
         <div class="card bg-white dark:bg-gray-800">
             <div class="card-body">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                    <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </div>
                     <div>
-                        <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ service_requests|length }} {{ service_requests|length|ru_pluralize:"Новая заявка,Новые заявки,Новых заявок" }}</div>
-                        <div class="text-xs text-gray-500">за последние 24 часа</div>
+                        <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ approved_today }}</div>
+                        <div class="text-xs text-gray-500">Одобрено сегодня</div>
                     </div>
                 </div>
-                {% with recent=service_requests|length %}
-                <progress class="progress progress-error w-full mt-3" value="{{ recent }}" max="25"></progress>
+                {% with recent=approved_today %}
+                <progress class="progress progress-success w-full mt-3" value="{{ recent }}" max="25"></progress>
                 {% endwith %}
             </div>
         </div>

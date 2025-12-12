@@ -148,6 +148,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 import os
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', '*').split(',') if h.strip()]
 
+# Настройки для работы за прокси/балансировщиком
+# Django будет доверять заголовкам X-Forwarded-For, X-Forwarded-Host и т.д.
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
+SECURE_PROXY_SSL_HEADER = None  # Установите ('HTTP_X_FORWARDED_PROTO', 'https') если используете HTTPS за прокси
+
 # Default password for newly created clients (operator flow)
 # Can be overridden via env var DEFAULT_NEW_CLIENT_PASSWORD
 DEFAULT_NEW_CLIENT_PASSWORD = os.environ.get('DEFAULT_NEW_CLIENT_PASSWORD', '1й2ц№У;К')

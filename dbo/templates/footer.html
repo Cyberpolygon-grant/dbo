@@ -1,45 +1,123 @@
 
 <footer class="bg-base-200 text-base-content border-t mt-16 mb-16">
-  <div class="w-full px-4 py-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
-    <div>
-      <p class="text-lg font-bold mb-4">ФинансПро</p>
-      <p class="text-sm">&copy; 2025 ФинансПро. Все права защищены.</p>
-    </div>
-    <div>
-      <h3 class="font-semibold mb-2">Быстрые ссылки</h3>
-      <ul class="space-y-1">
-        <li><a href="{% url 'client_dashboard' %}" class="link link-hover">Личный кабинет</a></li>
-        <li><a href="{% url 'transfers_service' %}" class="link link-hover">Переводы</a></li>
-        <li><a href="{% url 'cards_service' %}" class="link link-hover">Карты</a></li>
-        <li><a href="{% url 'deposits_service' %}" class="link link-hover">Депозиты</a></li>
-        <li><a href="{% url 'investments_service' %}" class="link link-hover">Инвестиции</a></li>
-      </ul>
-    </div>
-    <div>
-      <h3 class="font-semibold mb-2">Услуги</h3>
-      <ul class="space-y-1">
-        <li><a href="{% url 'banking_services' %}" class="link link-hover">Каталог услуг</a></li>
-        <li><a href="{% url 'my_services' %}" class="link link-hover">Мои услуги</a></li>
-        <li><a href="{% url 'my_requests' %}" class="link link-hover">Мои заявки</a></li>
-        <li><a href="{% url 'create_service_request' %}" class="link link-hover">Создать заявку</a></li>
-      </ul>
-    </div>
-    <div>
-      <h3 class="font-semibold mb-2">Поддержка</h3>
-      <ul class="space-y-1">
-        <li><a href="{% url 'banking_services' %}" class="link link-hover">Поиск услуг</a></li>
-        <li><a href="{% url 'login' %}" class="link link-hover">Вход</a></li>
-        <li><a href="{% url 'logout' %}" class="link link-hover">Выход</a></li>
-      </ul>
-    </div>
-    <div>
-      <h3 class="font-semibold mb-2">Компания</h3>
-      <ul class="space-y-1">
-        <li><a href="{% url 'home' %}" class="link link-hover">Главная</a></li>
-        <li><a href="#" class="link link-hover">О компании</a></li>
-        <li><a href="#" class="link link-hover">Вакансии</a></li>
-        <li><a href="#" class="link link-hover">Контакты</a></li>
-      </ul>
-    </div>
+  <div class="w-full px-4 py-8">
+    {% if request.user.is_authenticated %}
+      {% if is_dbo_client or 'client' in user.username %}
+        <!-- Footer для клиентов -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
+          <div>
+            <p class="text-lg font-bold mb-4">ФинансПро</p>
+            <p class="text-sm">&copy; 2025 ФинансПро. Все права защищены.</p>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-2">Быстрые ссылки</h3>
+            <ul class="space-y-1">
+              <li><a href="{% url 'client_dashboard' %}" class="link link-hover">Личный кабинет</a></li>
+              <li><a href="{% url 'transfers' %}" class="link link-hover">Переводы</a></li>
+              <li><a href="{% url 'cards' %}" class="link link-hover">Карты</a></li>
+              <li><a href="{% url 'deposits' %}" class="link link-hover">Депозиты</a></li>
+              <li><a href="{% url 'investments' %}" class="link link-hover">Инвестиции</a></li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-2">Услуги</h3>
+            <ul class="space-y-1">
+              <li><a href="{% url 'banking_services' %}" class="link link-hover">Каталог услуг</a></li>
+              <li><a href="{% url 'my_services' %}" class="link link-hover">Подключенные услуги</a></li>
+              <li><a href="{% url 'my_requests' %}" class="link link-hover">Мои заявки</a></li>
+              <li><a href="{% url 'create_service_request' %}" class="link link-hover">Создать заявку</a></li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-2">История</h3>
+            <ul class="space-y-1">
+              <li><a href="{% url 'transactions' %}" class="link link-hover">История транзакций</a></li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-2">Компания</h3>
+            <ul class="space-y-1">
+              <li><a href="{% url 'home' %}" class="link link-hover">Главная</a></li>
+              <li><a href="{% url 'logout' %}" class="link link-hover">Выход</a></li>
+            </ul>
+          </div>
+        </div>
+      {% elif is_operator or 'operator1' in user.username or 'operator2' in user.username %}
+        <!-- Footer для операторов -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div>
+            <p class="text-lg font-bold mb-4">ФинансПро</p>
+            <p class="text-sm">&copy; 2025 ФинансПро. Все права защищены.</p>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-2">Рабочий кабинет</h3>
+            <ul class="space-y-1">
+              {% if 'operator1' in user.username %}
+                <li><a href="{% url 'operator1_dashboard' %}" class="link link-hover">Дашборд оператора</a></li>
+                <li><a href="{% url 'operator1_logs' %}" class="link link-hover">Логи</a></li>
+                <li><a href="{% url 'create_client' %}" class="link link-hover">Создать клиента</a></li>
+              {% elif 'operator2' in user.username %}
+                <li><a href="{% url 'operator2_dashboard' %}" class="link link-hover">Дашборд оператора</a></li>
+              {% endif %}
+            </ul>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-2">Услуги</h3>
+            <ul class="space-y-1">
+              <li><a href="{% url 'banking_services' %}" class="link link-hover">Каталог услуг</a></li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-2">Компания</h3>
+            <ul class="space-y-1">
+              <li><a href="{% url 'home' %}" class="link link-hover">Главная</a></li>
+              <li><a href="{% url 'logout' %}" class="link link-hover">Выход</a></li>
+            </ul>
+          </div>
+        </div>
+      {% else %}
+        <!-- Footer для авторизованных пользователей без роли -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div>
+            <p class="text-lg font-bold mb-4">ФинансПро</p>
+            <p class="text-sm">&copy; 2025 ФинансПро. Все права защищены.</p>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-2">Услуги</h3>
+            <ul class="space-y-1">
+              <li><a href="{% url 'banking_services' %}" class="link link-hover">Каталог услуг</a></li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-2">Компания</h3>
+            <ul class="space-y-1">
+              <li><a href="{% url 'home' %}" class="link link-hover">Главная</a></li>
+              <li><a href="{% url 'logout' %}" class="link link-hover">Выход</a></li>
+            </ul>
+          </div>
+        </div>
+      {% endif %}
+    {% else %}
+      <!-- Footer для неавторизованных пользователей -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div>
+          <p class="text-lg font-bold mb-4">ФинансПро</p>
+          <p class="text-sm">&copy; 2025 ФинансПро. Все права защищены.</p>
+        </div>
+        <div>
+          <h3 class="font-semibold mb-2">Услуги</h3>
+          <ul class="space-y-1">
+            <li><a href="{% url 'banking_services' %}" class="link link-hover">Каталог услуг</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-semibold mb-2">Вход</h3>
+          <ul class="space-y-1">
+            <li><a href="{% url 'home' %}" class="link link-hover">Главная</a></li>
+            <li><a href="{% url 'login' %}" class="link link-hover">Вход</a></li>
+          </ul>
+        </div>
+      </div>
+    {% endif %}
   </div>
 </footer>

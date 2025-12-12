@@ -40,7 +40,7 @@
             
             <li class="menu-title"><span>Банковские продукты</span></li>
             {% if is_dbo_client %}
-            <li><a href="{% url 'my_services' %}">Мои услуги</a></li>
+            <li><a href="{% url 'my_services' %}">Подключенные услуги</a></li>
             {% endif %}
             <li><a href="{% url 'my_requests' %}">Мои заявки</a></li>
             <li><a href="{% url 'create_service_request' %}">Создать заявку</a></li>

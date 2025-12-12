@@ -205,12 +205,9 @@
                         <a href="{% if 'operator1' in user.username %}{% url 'operator1_dashboard' %}{% elif 'operator2' in user.username %}{% url 'operator2_dashboard' %}{% elif 'client' in user.username %}{% url 'client_dashboard' %}{% else %}/client/{% endif %}">👤 Личный кабинет</a>
                     </li>
                     {% if 'client' in user.username %}
-                    <li><a href="{% url 'my_services' %}">📋 Мои услуги</a></li>
+                    <li><a href="{% url 'my_services' %}">📋 Подключенные услуги</a></li>
                     <li><a href="{% url 'create_service_request' %}">📝 Создать заявку на услугу</a></li>
                     {% endif %}
-                    {% endif %}
-                    {% if request.user.is_authenticated and request.user.is_staff %}
-                    <li><a href="{% url 'admin_dashboard' %}">⚙️ Админ-панель</a></li>
                     {% endif %}
                     <li><a href="{% url 'deposits' %}">💰 Депозиты</a></li>
                     <li><a href="{% url 'investments' %}">📈 Инвестиции</a></li>
@@ -236,7 +233,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-bold text-base-content">Банк "ФинансПро"</h1>
-                    <p class="text-xs text-base-content/70">ДБО Система • Киберполигон</p>
+                    <p class="text-xs text-base-content/70">ДБО Система</p>
                 </div>
             </div>
         </div>
@@ -261,7 +258,7 @@
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
-                    Мои услуги
+                    Подключенные услуги
                 </a></li>
                 {% endif %}
             </ul>
@@ -292,21 +289,12 @@
                             <li>
                                 <a href="{% if 'operator1' in user.username %}{% url 'operator1_dashboard' %}{% elif 'operator2' in user.username %}{% url 'operator2_dashboard' %}{% elif 'client' in user.username %}{% url 'client_dashboard' %}{% else %}/client/{% endif %}">👤 Личный кабинет</a>
                             </li>
-                            {% if 'operator1' in user.username or 'operator2' in user.username %}
-                                <li class="menu-title"><span class="opacity-60">Операции</span></li>
-                                <li>
-                                    <a href="{% url 'operator_transactions' %}">
-                                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                                        </svg>
-                                        Просмотр транзакций
-                                    </a>
-                                </li>
+                            {% if 'operator1' in user.username %}
                                 <li><a href="{% url 'create_client' %}">➕ Создать клиента</a></li>
                             {% endif %}
                             {% if 'client' in user.username %}
                                 <li><a href="{% url 'create_service_request' %}">📝 Создать заявку на услугу</a></li>
-                                <li><a href="{% url 'my_services' %}">📋 Мои услуги</a></li>
+                                <li><a href="{% url 'my_services' %}">📋 Подключенные услуги</a></li>
                                 <li><a href="{% url 'my_requests' %}">📄 Мои заявки</a></li>
                                 <li class="menu-title"><span class="opacity-60">Банковские продукты</span></li>
                                 <li><a href="{% url 'deposits' %}">💰 Депозиты</a></li>
@@ -314,11 +302,6 @@
                                 <li><a href="{% url 'cards' %}">💳 Карты</a></li>
                                 <li><a href="{% url 'transfers' %}">🔁 Переводы</a></li>
                                 <li><a href="{% url 'transactions' %}">📊 История транзакций</a></li>
-                            {% endif %}
-                            {% if request.user.is_staff %}
-                                <li class="menu-title"><span class="opacity-60">Администрирование</span></li>
-                                <li><a href="{% url 'admin_dashboard' %}">⚙️ Админ-панель</a></li>
-                            
                             {% endif %}
                             <li class="mt-2"><a href="/logout" class="text-error">Выйти</a></li>
                         </ul>

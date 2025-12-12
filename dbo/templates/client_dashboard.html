@@ -591,51 +591,6 @@
         </div>
     </div>
 
-    <!-- Банковские сервисы -->
-    <div class="mt-8">
-        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Банковские сервисы</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <a href="{% url 'cards_service' %}" class="btn btn-modern">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                    </svg>
-                    Банковские карты
-                </a>
-                
-                
-                
-                <a href="{% url 'deposits_service' %}" class="btn btn-modern">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                    </svg>
-                    Депозитные программы
-                </a>
-                
-                <a href="{% url 'transfers_service' %}" class="btn btn-modern">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
-                    </svg>
-                    Переводы и платежи
-                </a>
-                
-                <a href="{% url 'cards_service' %}" class="btn btn-modern">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                    </svg>
-                    Банковские карты
-                </a>
-                
-                <a href="{% url 'investments_service' %}" class="btn btn-modern">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-                    </svg>
-                    Инвестиционные продукты
-                </a>
-            </div>
-        </div>
-    </div>
-
     <!-- Информация о роли -->
     <div class="mt-8">
         <div class="card-hover bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 rounded-2xl p-6 border border-green-200 dark:border-green-800">
@@ -648,7 +603,6 @@
                     <p class="text-green-800 dark:text-green-200 mb-3">Пользователь системы дистанционного банковского обслуживания</p>
                     <div class="text-sm text-green-700 dark:text-green-300 space-y-2">
                         <p><strong>Возможности:</strong> Создание заявок на услуги, поиск и подключение услуг, просмотр подключенных услуг.</p>
-                        <p><strong>Уязвимость:</strong> SQL-инъекция в поиске услуг позволяет получить доступ к скрытым привилегированным услугам.</p>
                     </div>
                 </div>
             </div>

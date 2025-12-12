@@ -78,7 +78,7 @@ services:
         condition: service_healthy
     environment:
       - APP_URL=http://app:8000
-      - BOT_USERNAME=operator2@bank.ru
+      - BOT_USERNAME=operator2@financepro.ru
       - BOT_PASSWORD=password123
       - CHECK_INTERVAL=30
     restart: unless-stopped

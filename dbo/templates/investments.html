@@ -432,16 +432,6 @@
                 </div>
 
                 <div>
-                    <div class="form-control mb-5">
-                        <label class="label"><span class="label-text">Счет для списания</span></label>
-                        <select class="select select-bordered" name="account" required>
-                            <option value="">Выберите счет</option>
-                            {% for account in accounts %}
-                                <option value="{{ account.id }}">{{ account.account_number }} ({{ account.balance|floatformat:0 }} ₽)</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
                     <div class="card bg-base-100 shadow">
                         <div class="card-body">
                             <h4 class="card-title text-base">Предварительный расчет</h4>

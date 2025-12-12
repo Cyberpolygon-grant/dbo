@@ -109,7 +109,6 @@ class BankCard(models.Model):
     card_type = models.CharField(max_length=20, choices=[
         ('debit', 'Дебетовая'),
         ('credit', 'Кредитная'),
-        ('prepaid', 'Предоплаченная'),
     ])
     balance = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     currency = models.CharField(max_length=3, default='RUB')
@@ -254,21 +253,6 @@ class DBOLog(models.Model):
         ('login', 'Вход в систему'),
         ('logout', 'Выход из системы'),
         ('client_created', 'Создание клиента'),
-        ('client_updated', 'Обновление данных клиента'),
-        ('transaction_created', 'Создание транзакции'),
-        ('transaction_completed', 'Завершение транзакции'),
-        ('service_connected', 'Подключение услуги'),
-        ('service_disconnected', 'Отключение услуги'),
-        ('service_request_created', 'Создание заявки на услугу'),
-        ('service_request_approved', 'Одобрение заявки на услугу'),
-        ('service_request_rejected', 'Отклонение заявки на услугу'),
-        ('card_created', 'Создание карты'),
-        ('card_pin_changed', 'Изменение PIN карты'),
-        ('deposit_created', 'Создание депозита'),
-        ('credit_created', 'Создание кредита'),
-        ('investment_created', 'Создание инвестиции'),
-        ('page_viewed', 'Просмотр страницы'),
-        ('data_exported', 'Экспорт данных'),
         ('other', 'Прочее'),
     ]
     

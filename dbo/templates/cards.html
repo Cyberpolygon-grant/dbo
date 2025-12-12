@@ -161,13 +161,7 @@
                                         Назначить основной
                                     </button>
                                 {% elif card == primary_card %}
-                                    <button
-                                        class="btn btn-sm btn-warning"
-                                        onclick="unsetPrimaryCard()"
-                                        title="Убрать статус основной карты"
-                                    >
-                                        Убрать основную
-                                    </button>
+                                    <span class="badge badge-success badge-lg">Основная карта</span>
                                 {% endif %}
                                 <button 
                                     class="btn btn-sm btn-primary"
@@ -749,33 +743,6 @@ async function setPrimaryCard(cardId) {
         }
     } catch (error) {
         showAlert('Ошибка сети при установке основной карты', 'error');
-    }
-}
-
-// Функция для снятия основной карты
-async function unsetPrimaryCard() {
-    try {
-        const response = await fetch('/card/unset-primary/', {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-                'Content-Type': 'application/json',
-            },
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showAlert(data.message, 'success');
-            // Перезагружаем страницу для обновления интерфейса
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
-        } else {
-            showAlert(data.error || 'Ошибка при снятии основной карты', 'error');
-        }
-    } catch (error) {
-        showAlert('Ошибка сети при снятии основной карты', 'error');
     }
 }
 

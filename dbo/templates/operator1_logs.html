@@ -27,7 +27,7 @@
     </div>
 
     <!-- Статистика -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
             <div class="flex items-center">
                 <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mr-4">
@@ -56,19 +56,6 @@
             </div>
         </div>
 
-        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-            <div class="flex items-center">
-                <div class="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center mr-4">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                    </svg>
-                </div>
-                <div>
-                    <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ card_created_count }}</div>
-                    <div class="text-sm text-gray-600 dark:text-gray-300">Создано карт</div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Фильтры -->
@@ -114,7 +101,7 @@
     <!-- Таблица логов -->
     <div class="card bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="table table-zebra w-full">
+            <table class="table table-zebra w-full" style="table-layout: auto;">
                 <thead>
                     <tr>
                         <th>Дата и время</th>
@@ -138,12 +125,15 @@
                         <td>
                             <span class="badge 
                                 {% if log.event_type == 'client_created' %}badge-success
-                                {% elif log.event_type == 'card_created' %}badge-warning
+                                {% elif log.event_type == 'login' %}badge-primary
+                                {% elif log.event_type == 'logout' %}badge-ghost
                                 {% else %}badge-info{% endif %}">
                                 {{ log.get_event_type_display }}
                             </span>
                         </td>
-                        <td>{{ log.description }}</td>
+                        <td style="max-width: 400px; word-wrap: break-word; word-break: break-word;">
+                            <div class="break-words whitespace-normal text-sm">{{ log.description }}</div>
+                        </td>
                         <td>
                             {% if log.client %}
                             <div class="flex items-center">

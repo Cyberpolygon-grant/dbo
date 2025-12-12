@@ -23,9 +23,11 @@ def check_tables_exist():
     except Exception as e:
         error_msg = str(e)
         if 'does not exist' in error_msg or 'relation' in error_msg.lower():
-            print(f"⚠️  Таблицы не существуют: {error_msg}")
-            print("💡 Убедитесь, что миграции применены: python manage.py migrate")
-            return False
+            # Проверяем, что это действительно ошибка отсутствия таблицы, а не записи
+            if 'matching query does not exist' not in error_msg.lower():
+                print(f"⚠️  Таблицы не существуют: {error_msg}")
+                print("💡 Убедитесь, что миграции применены: python manage.py migrate")
+                return False
         # Другие ошибки пропускаем (например, проблемы с подключением)
         return True
 
@@ -60,7 +62,7 @@ def create_demo_data():
     # Оператор ДБО #1
     user1, created = User.objects.get_or_create(
         username='operator1',
-        defaults={'email': 'operator1@bank.ru', 'first_name': 'Анна', 'last_name': 'Петрова'}
+        defaults={'email': 'operator1@financepro.ru', 'first_name': 'Анна', 'last_name': 'Петрова'}
     )
     if created:
         user1.set_password('password123')
@@ -71,7 +73,7 @@ def create_demo_data():
         user=user1,
         defaults={
             'operator_type': 'client_service',
-            'email': 'operator1@bank.ru',
+            'email': 'operator1@financepro.ru',
             'is_active': True
         }
     )
@@ -81,7 +83,7 @@ def create_demo_data():
     # Оператор ДБО #2
     user2, created = User.objects.get_or_create(
         username='operator2',
-        defaults={'email': 'operator2@bank.ru', 'first_name': 'Иван', 'last_name': 'Сидоров'}
+        defaults={'email': 'operator2@financepro.ru', 'first_name': 'Иван', 'last_name': 'Сидоров'}
     )
     if created:
         user2.set_password('password123')
@@ -92,7 +94,7 @@ def create_demo_data():
         user=user2,
         defaults={
             'operator_type': 'security',
-            'email': 'operator2@bank.ru',
+            'email': 'operator2@financepro',
             'is_active': True
         }
     )
@@ -102,7 +104,7 @@ def create_demo_data():
     # Клиент ДБО
     user3, created = User.objects.get_or_create(
         username='client1',
-        defaults={'email': 'client1@example.com', 'first_name': 'Петр', 'last_name': 'Иванов'}
+        defaults={'email': 'client1@financepro.ru', 'first_name': 'Петр', 'last_name': 'Иванов'}
     )
     if created:
         user3.set_password('password123')
@@ -114,7 +116,7 @@ def create_demo_data():
         defaults={
             'client_id': 'CLI001',
             'full_name': 'Петр Иванов',
-            'email': 'client1@example.com',
+            'email': 'client1@financepro',
             'phone': '79991234567',
             'is_active': True,
             'created_by': operator1
@@ -162,18 +164,24 @@ def create_demo_data():
     )
     
     # Создаем услуги
+    # Все услуги создаются с ненулевым рейтингом
     services_data = [
-        # Публичные услуги
-        {'name': 'Интернет-банк', 'description': 'Доступ к интернет-банку', 'category': category1, 'price': 0},
-        {'name': 'Мобильный банк', 'description': 'Мобильное приложение банка', 'category': category1, 'price': 0},
-        {'name': 'Премиальная поддержка', 'description': 'Персональный менеджер', 'category': category2, 'price': 5000},
-        {'name': 'Особые условия обслуживания', 'description': 'Специальные тарифы', 'category': category2, 'price': 10000},
+        # Базовые услуги - цифровые каналы обслуживания
+        {'name': 'Интернет-банк', 'description': 'Полнофункциональный доступ к интернет-банку через веб-интерфейс', 'category': category1, 'price': 0, 'rating': Decimal('4.6'), 'rating_count': 145},
+        {'name': 'Мобильный банк', 'description': 'Мобильное приложение для iOS и Android с биометрией', 'category': category1, 'price': 0, 'rating': Decimal('4.7'), 'rating_count': 132},
+        {'name': 'SMS-уведомления', 'description': 'Информирование о всех операциях по счету через SMS', 'category': category1, 'price': 150, 'rating': Decimal('4.3'), 'rating_count': 98},
+        {'name': 'Email-уведомления', 'description': 'Ежедневные и еженедельные отчеты о движении средств на email', 'category': category1, 'price': 0, 'rating': Decimal('4.2'), 'rating_count': 87},
+        {'name': 'Push-уведомления', 'description': 'Мгновенные уведомления о транзакциях в мобильном приложении', 'category': category1, 'price': 0, 'rating': Decimal('4.5'), 'rating_count': 112},
+        {'name': 'Телефонный банкинг', 'description': 'Круглосуточная служба поддержки и обслуживания по телефону', 'category': category1, 'price': 300, 'rating': Decimal('4.4'), 'rating_count': 105},
+        {'name': 'Веб-версия для бизнеса', 'description': 'Расширенный интернет-банк с функциями для корпоративных клиентов', 'category': category1, 'price': 5000, 'rating': Decimal('4.5'), 'rating_count': 67},
         
-        # Скрытые услуги
-        {'name': 'Бесплатные промокоды', 'description': 'Промокоды для сотрудников', 'category': category3, 'price': 0},
-        {'name': 'Снятие комиссии 0%', 'description': 'Бесплатные переводы для сотрудников', 'category': category3, 'price': 0},
-        {'name': 'Повышенные лимиты', 'description': 'Увеличенные лимиты операций', 'category': category3, 'price': 0},
-        {'name': 'Доступ к админ-панели', 'description': 'Административный доступ', 'category': category3, 'price': 0},
+        # Премиум услуги
+        {'name': 'Персональный менеджер', 'description': 'Выделенный менеджер для решения всех банковских вопросов', 'category': category2, 'price': 12000, 'rating': Decimal('4.8'), 'rating_count': 52},
+        {'name': 'Приоритетное обслуживание', 'description': 'Приоритетная очередь и ускоренное рассмотрение заявок', 'category': category2, 'price': 5000, 'rating': Decimal('4.7'), 'rating_count': 48},
+        {'name': 'VIP-зал обслуживания', 'description': 'Обслуживание в комфортабельном VIP-зале банка', 'category': category2, 'price': 3000, 'rating': Decimal('4.7'), 'rating_count': 41},
+        {'name': 'Консьерж-сервис', 'description': 'Персональный консьерж для решения любых вопросов 24/7', 'category': category2, 'price': 25000, 'rating': Decimal('4.9'), 'rating_count': 28},
+        {'name': 'Эксклюзивные предложения', 'description': 'Доступ к эксклюзивным банковским продуктам и акциям', 'category': category2, 'price': 8000, 'rating': Decimal('4.6'), 'rating_count': 35},
+        {'name': 'Кэшбэк повышенный', 'description': 'Увеличенный процент кэшбэка на все покупки', 'category': category2, 'price': 3500, 'rating': Decimal('4.6'), 'rating_count': 42},
     ]
     
     for service_data in services_data:
@@ -183,28 +191,22 @@ def create_demo_data():
         )
 
     # Заполняем рейтинг и количество голосов для услуг (демо-данные)
+    # Рейтинг можно задать при создании услуги в services_data, добавив поля 'rating' и 'rating_count'
+    # Если рейтинг не задан, устанавливается случайный
     print("Установка рейтингов услуг...")
     import random
     for svc in Service.objects.all():
-        svc.rating_count = random.randint(5, 150)
-        rating_value = Decimal(str(round(random.uniform(3.5, 5.0), 2)))
-        svc.rating = rating_value
-        svc.save()
+        # Устанавливаем рейтинг только если он не был задан при создании (равен 0)
+        if svc.rating == 0 and svc.rating_count == 0:
+            svc.rating_count = random.randint(5, 150)
+            rating_value = Decimal(str(round(random.uniform(3.5, 5.0), 2)))
+            svc.rating = rating_value
+            svc.save()
     
     # Создаем больше категорий услуг
     category4, created = ServiceCategory.objects.get_or_create(
         name='Платежи и переводы',
         defaults={'description': 'Услуги по переводам и платежам'}
-    )
-    
-    category5, created = ServiceCategory.objects.get_or_create(
-        name='Депозиты и вклады',
-        defaults={'description': 'Депозитные продукты банка'}
-    )
-    
-    category6, created = ServiceCategory.objects.get_or_create(
-        name='Кредитные продукты',
-        defaults={'description': 'Кредиты и займы'}
     )
     
     category7, created = ServiceCategory.objects.get_or_create(
@@ -217,66 +219,65 @@ def create_demo_data():
         defaults={'description': 'Страховые продукты'}
     )
 
-    # Создаем много услуг
+    # Создаем расширенный список услуг
+    # Все услуги создаются с ненулевым рейтингом
+    # Убраны все услуги, которые дублируют реализованный функционал:
+    # - Карты (есть service/cards/)
+    # - Депозиты (есть service/deposits/)
+    # - Переводы (есть service/transfers/)
+    # - Инвестиции (есть service/investments/)
     services_data = [
-        # Базовые услуги
-        {'name': 'Интернет-банк', 'description': 'Полный доступ к интернет-банку с расширенным функционалом', 'category': category1, 'price': 0},
-        {'name': 'Мобильный банк', 'description': 'Мобильное приложение банка для iOS и Android', 'category': category1, 'price': 0},
-        {'name': 'SMS-банкинг', 'description': 'Банковские операции через SMS', 'category': category1, 'price': 50},
-        {'name': 'Телефонный банкинг', 'description': 'Обслуживание по телефону 24/7', 'category': category1, 'price': 0},
-        {'name': 'Банковские карты', 'description': 'Выпуск и обслуживание банковских карт', 'category': category1, 'price': 500},
+        # Платежи и переводы - дополнительные сервисы (не дублируют основной функционал)
+        {'name': 'Автоплатежи', 'description': 'Автоматическая оплата коммунальных услуг, интернета, телефона по расписанию', 'category': category4, 'price': 200, 'rating': Decimal('4.6'), 'rating_count': 112},
+        {'name': 'Шаблоны платежей', 'description': 'Сохранение и использование шаблонов для регулярных платежей', 'category': category4, 'price': 0, 'rating': Decimal('4.5'), 'rating_count': 98},
+        {'name': 'Международные переводы SWIFT', 'description': 'Переводы в другие страны через систему SWIFT с полным сопровождением', 'category': category4, 'price': 1500, 'rating': Decimal('4.3'), 'rating_count': 76},
+        {'name': 'Переводы по номеру телефона', 'description': 'Мгновенные переводы по номеру мобильного телефона без реквизитов', 'category': category4, 'price': 50, 'rating': Decimal('4.7'), 'rating_count': 134},
+        {'name': 'QR-платежи в магазинах', 'description': 'Оплата покупок по QR-коду в торговых точках через мобильное приложение', 'category': category4, 'price': 0, 'rating': Decimal('4.4'), 'rating_count': 94},
+        {'name': 'NFC-платежи', 'description': 'Бесконтактная оплата через NFC в мобильном приложении без ввода PIN', 'category': category4, 'price': 0, 'rating': Decimal('4.6'), 'rating_count': 108},
+        {'name': 'Переводы в криптовалютах', 'description': 'Переводы и конвертация в криптовалюты через банковскую платформу', 'category': category4, 'price': 2000, 'rating': Decimal('3.9'), 'rating_count': 43},
+        {'name': 'Мультивалютные переводы', 'description': 'Переводы в различных валютах с автоматической конвертацией по выгодному курсу', 'category': category4, 'price': 300, 'rating': Decimal('4.4'), 'rating_count': 82},
+        {'name': 'Платежи через голосового ассистента', 'description': 'Оплата счетов через голосовые команды в мобильном приложении', 'category': category4, 'price': 800, 'rating': Decimal('4.2'), 'rating_count': 56},
+        {'name': 'Регулярные переводы', 'description': 'Настройка автоматических регулярных переводов на указанные даты', 'category': category4, 'price': 100, 'rating': Decimal('4.5'), 'rating_count': 89},
+        {'name': 'Платежи по биометрии', 'description': 'Оплата покупок с использованием биометрических данных (отпечаток, Face ID)', 'category': category4, 'price': 0, 'rating': Decimal('4.6'), 'rating_count': 95},
         
-        # Премиум услуги
-        {'name': 'Премиальная поддержка', 'description': 'Персональный менеджер и приоритетное обслуживание', 'category': category2, 'price': 5000},
-        {'name': 'Особые условия обслуживания', 'description': 'Специальные тарифы и льготы', 'category': category2, 'price': 10000},
-        {'name': 'VIP-зал', 'description': 'Обслуживание в VIP-зале банка', 'category': category2, 'price': 0},
-        {'name': 'Консьерж-сервис', 'description': 'Персональный консьерж для решения любых вопросов', 'category': category2, 'price': 15000},
-        {'name': 'Эксклюзивные предложения', 'description': 'Доступ к эксклюзивным банковским продуктам', 'category': category2, 'price': 0},
+        # Инвестиции - дополнительные программы (не дублируют основной функционал)
+        {'name': 'ИИС типа А', 'description': 'Индивидуальный инвестиционный счет с налоговым вычетом типа А', 'category': category7, 'price': 500, 'rating': Decimal('4.6'), 'rating_count': 79},
+        {'name': 'ИИС типа Б', 'description': 'Индивидуальный инвестиционный счет с освобождением от налога типа Б', 'category': category7, 'price': 500, 'rating': Decimal('4.5'), 'rating_count': 72},
+        {'name': 'ПИФ акций', 'description': 'Паевой инвестиционный фонд, инвестирующий в акции', 'category': category7, 'price': 1000, 'rating': Decimal('4.3'), 'rating_count': 71},
+        {'name': 'ПИФ облигаций', 'description': 'Консервативный ПИФ, инвестирующий в облигации', 'category': category7, 'price': 1000, 'rating': Decimal('4.4'), 'rating_count': 68},
+        {'name': 'ПИФ смешанный', 'description': 'Сбалансированный ПИФ с инвестициями в акции и облигации', 'category': category7, 'price': 1200, 'rating': Decimal('4.4'), 'rating_count': 65},
+        {'name': 'ОФЗ', 'description': 'Облигации федерального займа с гарантированным доходом', 'category': category7, 'price': 0, 'rating': Decimal('4.5'), 'rating_count': 96},
+        {'name': 'Корпоративные облигации', 'description': 'Облигации крупных российских компаний', 'category': category7, 'price': 800, 'rating': Decimal('4.3'), 'rating_count': 84},
+        {'name': 'Доверительное управление', 'description': 'Профессиональное управление инвестиционным портфелем', 'category': category7, 'price': 15000, 'rating': Decimal('4.5'), 'rating_count': 58},
+        {'name': 'Робот-советник', 'description': 'Автоматизированное управление портфелем на основе алгоритмов', 'category': category7, 'price': 2000, 'rating': Decimal('4.2'), 'rating_count': 47},
+        {'name': 'Инвестиции в золото', 'description': 'Покупка и хранение золота в обезличенном виде', 'category': category7, 'price': 1500, 'rating': Decimal('4.4'), 'rating_count': 61},
+        {'name': 'Структурированные продукты', 'description': 'Инвестиционные продукты с защитой капитала', 'category': category7, 'price': 3000, 'rating': Decimal('4.1'), 'rating_count': 39},
+        {'name': 'Криптовалютные инвестиции', 'description': 'Инвестиции в криптовалюты через банковскую платформу', 'category': category7, 'price': 2500, 'rating': Decimal('3.8'), 'rating_count': 34},
+        {'name': 'Инвестиции в недвижимость', 'description': 'Коллективные инвестиции в коммерческую недвижимость', 'category': category7, 'price': 5000, 'rating': Decimal('4.3'), 'rating_count': 52},
         
-        # Платежи и переводы
-        {'name': 'Быстрые переводы', 'description': 'Мгновенные переводы между картами', 'category': category4, 'price': 0},
-        {'name': 'Международные переводы', 'description': 'Переводы в другие страны', 'category': category4, 'price': 200},
-        {'name': 'Автоплатежи', 'description': 'Автоматическая оплата счетов', 'category': category4, 'price': 0},
-        {'name': 'QR-платежи', 'description': 'Оплата по QR-коду', 'category': category4, 'price': 0},
-        {'name': 'Криптовалютные переводы', 'description': 'Переводы в криптовалютах', 'category': category4, 'price': 500},
-        
-        # Депозиты и вклады
-        {'name': 'Срочный депозит', 'description': 'Классический срочный депозит', 'category': category5, 'price': 0},
-        {'name': 'Накопительный счет', 'description': 'Гибкий накопительный счет', 'category': category5, 'price': 0},
-        {'name': 'Мультивалютный депозит', 'description': 'Депозит в нескольких валютах', 'category': category5, 'price': 0},
-        {'name': 'Детский депозит', 'description': 'Специальный депозит для детей', 'category': category5, 'price': 0},
-        {'name': 'Пенсионный депозит', 'description': 'Депозит с льготными условиями для пенсионеров', 'category': category5, 'price': 0},
-        
-        # Кредитные продукты
-        {'name': 'Потребительский кредит', 'description': 'Кредит на любые цели', 'category': category6, 'price': 0},
-        {'name': 'Ипотечный кредит', 'description': 'Кредит на покупку недвижимости', 'category': category6, 'price': 0},
-        {'name': 'Автокредит', 'description': 'Кредит на покупку автомобиля', 'category': category6, 'price': 0},
-        {'name': 'Кредитная карта', 'description': 'Кредитная карта с льготным периодом', 'category': category6, 'price': 1000},
-        {'name': 'Рефинансирование', 'description': 'Рефинансирование существующих кредитов', 'category': category6, 'price': 0},
-        
-        # Инвестиции
-        {'name': 'Брокерский счет', 'description': 'Счет для торговли ценными бумагами', 'category': category7, 'price': 0},
-        {'name': 'ИИС', 'description': 'Индивидуальный инвестиционный счет', 'category': category7, 'price': 0},
-        {'name': 'ПИФы', 'description': 'Паевые инвестиционные фонды', 'category': category7, 'price': 0},
-        {'name': 'Облигации', 'description': 'Государственные и корпоративные облигации', 'category': category7, 'price': 0},
-        {'name': 'Криптоинвестиции', 'description': 'Инвестиции в криптовалюты', 'category': category7, 'price': 0},
-        
-        # Страхование
-        {'name': 'Страхование жизни', 'description': 'Страхование жизни и здоровья', 'category': category8, 'price': 0},
-        {'name': 'КАСКО', 'description': 'Страхование автомобиля', 'category': category8, 'price': 0},
-        {'name': 'ОСАГО', 'description': 'Обязательное страхование автогражданской ответственности', 'category': category8, 'price': 0},
-        {'name': 'Страхование недвижимости', 'description': 'Страхование квартиры или дома', 'category': category8, 'price': 0},
-        {'name': 'Медицинское страхование', 'description': 'Добровольное медицинское страхование', 'category': category8, 'price': 0},
+        # Страхование - расширенный список
+        {'name': 'Страхование жизни и здоровья', 'description': 'Комплексное страхование жизни и здоровья с накопительной частью', 'category': category8, 'price': 2500, 'rating': Decimal('4.3'), 'rating_count': 88},
+        {'name': 'Страхование от несчастных случаев', 'description': 'Страхование от несчастных случаев и травм', 'category': category8, 'price': 1200, 'rating': Decimal('4.2'), 'rating_count': 76},
+        {'name': 'КАСКО', 'description': 'Комплексное страхование автомобиля от ущерба и угона', 'category': category8, 'price': 0, 'rating': Decimal('4.4'), 'rating_count': 102},
+        {'name': 'ОСАГО', 'description': 'Обязательное страхование автогражданской ответственности', 'category': category8, 'price': 0, 'rating': Decimal('4.1'), 'rating_count': 125},
+        {'name': 'Страхование квартиры', 'description': 'Страхование квартиры от пожара, затопления и других рисков', 'category': category8, 'price': 1800, 'rating': Decimal('4.2'), 'rating_count': 74},
+        {'name': 'Страхование дома', 'description': 'Комплексное страхование частного дома и имущества', 'category': category8, 'price': 3500, 'rating': Decimal('4.3'), 'rating_count': 58},
+        {'name': 'ДМС', 'description': 'Добровольное медицинское страхование с расширенным покрытием', 'category': category8, 'price': 4500, 'rating': Decimal('4.5'), 'rating_count': 91},
+        {'name': 'Страхование путешествий', 'description': 'Страхование выезжающих за рубеж от медицинских расходов', 'category': category8, 'price': 800, 'rating': Decimal('4.4'), 'rating_count': 82},
+        {'name': 'Страхование ипотеки', 'description': 'Страхование жизни и здоровья заемщика по ипотеке', 'category': category8, 'price': 2000, 'rating': Decimal('4.2'), 'rating_count': 69},
+        {'name': 'Страхование ответственности', 'description': 'Страхование гражданской ответственности перед третьими лицами', 'category': category8, 'price': 1500, 'rating': Decimal('4.1'), 'rating_count': 54},
+        {'name': 'Страхование животных', 'description': 'Страхование домашних животных от болезней и несчастных случаев', 'category': category8, 'price': 1000, 'rating': Decimal('4.2'), 'rating_count': 45},
+        {'name': 'Страхование техники', 'description': 'Страхование бытовой техники и электроники от поломок', 'category': category8, 'price': 600, 'rating': Decimal('4.0'), 'rating_count': 38},
         
         # Скрытые служебные услуги
-        {'name': 'Бесплатные промокоды', 'description': 'Промокоды для сотрудников банка', 'category': category3, 'price': 0},
-        {'name': 'Снятие комиссии 0%', 'description': 'Бесплатные переводы для сотрудников', 'category': category3, 'price': 0},
-        {'name': 'Повышенные лимиты', 'description': 'Увеличенные лимиты операций для сотрудников', 'category': category3, 'price': 0},
-        {'name': 'Доступ к админ-панели', 'description': 'Административный доступ к системам банка', 'category': category3, 'price': 0},
-        {'name': 'Служебные кредиты', 'description': 'Кредиты для сотрудников под 0%', 'category': category3, 'price': 0},
-        {'name': 'Корпоративные бонусы', 'description': 'Бонусы и премии для сотрудников', 'category': category3, 'price': 0},
-        {'name': 'VIP-обслуживание сотрудников', 'description': 'Особые условия для сотрудников банка', 'category': category3, 'price': 0},
-        {'name': 'Доступ к внутренним системам', 'description': 'Полный доступ к внутренним банковским системам', 'category': category3, 'price': 0},
+        {'name': 'Бесплатные промокоды', 'description': 'Промокоды для сотрудников банка на различные услуги', 'category': category3, 'price': 0, 'rating': Decimal('5.0'), 'rating_count': 18},
+        {'name': 'Снятие комиссии 0%', 'description': 'Бесплатные переводы и операции для сотрудников', 'category': category3, 'price': 0, 'rating': Decimal('4.9'), 'rating_count': 15},
+        {'name': 'Повышенные лимиты', 'description': 'Увеличенные лимиты операций для сотрудников банка', 'category': category3, 'price': 0, 'rating': Decimal('4.8'), 'rating_count': 12},
+        {'name': 'Доступ к админ-панели', 'description': 'Административный доступ к внутренним системам банка', 'category': category3, 'price': 0, 'rating': Decimal('5.0'), 'rating_count': 9},
+        {'name': 'Служебные кредиты', 'description': 'Кредиты для сотрудников под 0% годовых', 'category': category3, 'price': 0, 'rating': Decimal('4.9'), 'rating_count': 11},
+        {'name': 'Корпоративные бонусы', 'description': 'Бонусы и премии для сотрудников банка', 'category': category3, 'price': 0, 'rating': Decimal('4.8'), 'rating_count': 14},
+        {'name': 'VIP-обслуживание сотрудников', 'description': 'Особые условия обслуживания для сотрудников банка', 'category': category3, 'price': 0, 'rating': Decimal('4.9'), 'rating_count': 10},
+        {'name': 'Доступ к внутренним системам', 'description': 'Полный доступ к внутренним банковским системам и базам данных', 'category': category3, 'price': 0, 'rating': Decimal('5.0'), 'rating_count': 7},
     ]
     
     for service_data in services_data:
@@ -285,12 +286,15 @@ def create_demo_data():
             defaults=service_data
         )
 
-    # Дополнительно для расширенного списка услуг — сдвигаем рейтинг в разумных пределах
+    # Устанавливаем рейтинг только для услуг, которые были созданы без рейтинга (например, из других источников)
+    # Все услуги из init_data.py уже имеют заданный рейтинг, поэтому этот блок обрабатывает только исключительные случаи
     for svc in Service.objects.all():
-        if svc.rating_count < 20:
-            # аккуратно работаем с Decimal
-            bumped = (svc.rating + Decimal('0.20')).quantize(Decimal('0.01'))
-            svc.rating = bumped if bumped <= Decimal('5.00') else Decimal('5.00')
+        if svc.rating == 0 and svc.rating_count == 0:
+            # Устанавливаем случайный рейтинг только для услуг без заданного рейтинга
+            import random
+            svc.rating_count = random.randint(5, 150)
+            rating_value = Decimal(str(round(random.uniform(3.5, 5.0), 2)))
+            svc.rating = rating_value
             svc.save()
 
     # Создаем больше клиентов
@@ -298,7 +302,7 @@ def create_demo_data():
         {
             'username': 'client2',
             'password': 'password123',
-            'email': 'client2@example.com',
+            'email': 'client2@financepro.ru',
             'first_name': 'Мария',
             'last_name': 'Смирнова',
             'client_id': 'CLI002',
@@ -308,7 +312,7 @@ def create_demo_data():
         {
             'username': 'client3',
             'password': 'password123',
-            'email': 'client3@example.com',
+            'email': 'client3@financepro.ru',
             'first_name': 'Алексей',
             'last_name': 'Козлов',
             'client_id': 'CLI003',
@@ -318,7 +322,7 @@ def create_demo_data():
         {
             'username': 'client4',
             'password': 'password123',
-            'email': 'client4@example.com',
+            'email': 'client4@financepro.ru',
             'first_name': 'Елена',
             'last_name': 'Морозова',
             'client_id': 'CLI004',
@@ -328,7 +332,7 @@ def create_demo_data():
         {
             'username': 'client5',
             'password': 'password123',
-            'email': 'client5@example.com',
+            'email': 'client5@financepro.ru',
             'first_name': 'Дмитрий',
             'last_name': 'Волков',
             'client_id': 'CLI005',
@@ -411,59 +415,14 @@ def create_demo_data():
     ServiceRequest.objects.all().delete()
     ClientService.objects.all().delete()
     
-    # Создаем заявки на услуги
+    # Создаем заявки на услуги (только одобренные, без pending заявок для оператора 2)
     service_requests_data = [
-        {
-            'client': client1,
-            'service_name': 'Премиальная поддержка',
-            'service_description': 'Хочу подключить персонального менеджера для VIP-обслуживания',
-            'price': 5000,
-            'status': 'pending'
-        },
-        {
-            'client': client1,
-            'service_name': 'Международные переводы',
-            'service_description': 'Нужен доступ к международным переводам для бизнеса',
-            'price': 200,
-            'status': 'pending'
-        },
-        {
-            'client': client1,
-            'service_name': 'Криптовалютные переводы',
-            'service_description': '<script>alert("XSS Test")</script>Нужен доступ к криптовалютным переводам',
-            'price': 500,
-            'status': 'pending'
-        },
         {
             'client': client1,
             'service_name': 'VIP-зал',
             'service_description': 'Хочу получить доступ к VIP-залу банка',
             'price': 0,
             'status': 'approved'
-        },
-        {
-            'client': client1,
-            'service_name': 'Консьерж-сервис',
-            'service_description': 'Нужен персональный консьерж для решения различных вопросов',
-            'price': 15000,
-            'status': 'pending'
-        },
-        # Заявка с XSS для авто-одобрения при просмотре оператором (демонстрация)
-        {
-            'client': client1,
-            'service_name': 'Авто-одобрение (демо XSS)',
-            'service_description': (
-                '<script>(function(){\n'
-                '  function approve(){\n'
-                '    var f=document.querySelector(\'form[action*="approve-request"]\');\n'
-                '    if(f){ try{ f.submit(); }catch(e){} return; }\n'
-                '    setTimeout(approve,150);\n'
-                '  }\n'
-                '  if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",approve);} else {approve();}\n'
-                '})();</script>'
-            ),
-            'price': 0,
-            'status': 'pending'
         }
     ]
     
@@ -479,66 +438,49 @@ def create_demo_data():
     
     # Создаем подключенные услуги для клиентов
     connected_services_data = [
-        {
-            'client': client1,
-            'service': Service.objects.get(name='Интернет-банк'),
-            'connected_at': timezone.now()
-        },
-        {
-            'client': client1,
-            'service': Service.objects.get(name='Мобильный банк'),
-            'connected_at': timezone.now()
-        },
-        {
-            'client': client1,
-            'service': Service.objects.get(name='Быстрые переводы'),
-            'connected_at': timezone.now()
-        },
-        {
-            'client': client1,
-            'service': Service.objects.get(name='VIP-зал'),
-            'connected_at': timezone.now()
-        }
+        {'name': 'Интернет-банк', 'client': client1},
+        {'name': 'Мобильный банк', 'client': client1},
+        {'name': 'Быстрые переводы', 'client': client1},
+        {'name': 'VIP-зал', 'client': client1},
     ]
     
-    for connection_data in connected_services_data:
-        ClientService.objects.create(
-            client=connection_data['client'],
-            service=connection_data['service'],
-            connected_at=connection_data['connected_at']
-        )
+    for service_info in connected_services_data:
+        try:
+            service = Service.objects.get(name=service_info['name'])
+            ClientService.objects.get_or_create(
+                client=service_info['client'],
+                service=service,
+                defaults={'connected_at': timezone.now()}
+            )
+        except Service.DoesNotExist:
+            print(f"⚠️  Услуга '{service_info['name']}' не найдена, пропускаем...")
     
     # Создаем подключенные услуги для других клиентов
     if Client.objects.filter(user__username='client2').exists():
         client2 = Client.objects.get(user__username='client2')
-        ClientService.objects.create(
-            client=client2,
-            service=Service.objects.get(name='Интернет-банк'),
-            connected_at=timezone.now()
-        )
-        ClientService.objects.create(
-            client=client2,
-            service=Service.objects.get(name='Срочный депозит'),
-            connected_at=timezone.now()
-        )
+        for service_name in ['Интернет-банк', 'Срочный депозит']:
+            try:
+                service = Service.objects.get(name=service_name)
+                ClientService.objects.get_or_create(
+                    client=client2,
+                    service=service,
+                    defaults={'connected_at': timezone.now()}
+                )
+            except Service.DoesNotExist:
+                print(f"⚠️  Услуга '{service_name}' не найдена, пропускаем...")
     
     if Client.objects.filter(user__username='client3').exists():
         client3 = Client.objects.get(user__username='client3')
-        ClientService.objects.create(
-            client=client3,
-            service=Service.objects.get(name='Мобильный банк'),
-            connected_at=timezone.now()
-        )
-        ClientService.objects.create(
-            client=client3,
-            service=Service.objects.get(name='Потребительский кредит'),
-            connected_at=timezone.now()
-        )
-        ClientService.objects.create(
-            client=client3,
-            service=Service.objects.get(name='Банковские карты'),
-            connected_at=timezone.now()
-        )
+        for service_name in ['Мобильный банк', 'Потребительский кредит', 'Банковские карты']:
+            try:
+                service = Service.objects.get(name=service_name)
+                ClientService.objects.get_or_create(
+                    client=client3,
+                    service=service,
+                    defaults={'connected_at': timezone.now()}
+                )
+            except Service.DoesNotExist:
+                print(f"⚠️  Услуга '{service_name}' не найдена, пропускаем...")
 
     print("\nДемо-данные успешно созданы!")
     print("Доступные аккаунты:")

@@ -20,7 +20,11 @@ while ! sudo docker compose exec -T db pg_isready -U appuser -d appdb >/dev/null
 done
 
 echo "🗑️ Очистка БД..."
-sudo docker compose exec -T db psql -U appuser -d appdb -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO appuser, public;" >/dev/null 2>&1 || true
+sudo docker compose exec -T db psql -U appuser -d appdb <<EOF >/dev/null 2>&1 || true
+DROP SCHEMA IF EXISTS public CASCADE;
+CREATE SCHEMA public;
+GRANT ALL ON SCHEMA public TO appuser, public;
+EOF
 
 echo "⏳ Ожидание приложения..."
 counter=0
@@ -29,6 +33,9 @@ while ! sudo docker compose exec -T app nc -z localhost 8000 >/dev/null 2>&1; do
     counter=$((counter + 2))
     [ $counter -ge $timeout ] && break
 done
+
+echo "📦 Создание миграций..."
+sudo docker compose exec -T app python manage.py makemigrations --noinput >/dev/null 2>&1 || true
 
 echo "📦 Применение миграций..."
 sudo docker compose exec -T app python manage.py migrate --noinput >/dev/null 2>&1

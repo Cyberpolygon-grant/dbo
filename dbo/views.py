@@ -6,8 +6,10 @@ from django.http import JsonResponse, HttpResponse
 from django.db import connection, models
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.conf import settings
 from decimal import Decimal
 import json
 import logging
@@ -32,10 +34,6 @@ from django.contrib.auth.models import User
 from .logging_helper import log_from_request
 
 logger = logging.getLogger(__name__)
-
-def is_admin(user):
-    """Проверяет, является ли пользователь администратором"""
-    return user.is_superuser or user.is_staff
 
 def home(request):
     """Главная страница системы ДБО"""
@@ -119,66 +117,6 @@ def service_detail(request, service_uuid):
     except Client.DoesNotExist:
         pass
     return render(request, 'services/detail.html', {'service': service, 'is_connected': is_connected})
-
-@login_required
-def get_service_details(request, service_uuid):
-    """Получение детальной информации об услуге для модального окна"""
-    try:
-        service = Service.objects.get(uuid=service_uuid, is_active=True)
-    except Service.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Услуга не найдена'})
-    
-    # Проверяем, подключена ли услуга у клиента
-    client_service = None
-    is_connected = False
-    if request.user.is_authenticated:
-        try:
-            client = Client.objects.get(user=request.user)
-            client_service = ClientService.objects.filter(
-                client=client, 
-                service=service
-            ).first()
-            is_connected = client_service and client_service.status == 'active' and client_service.is_active
-        except Client.DoesNotExist:
-            pass
-    
-    # Получаем статистику по услуге
-    total_connections = ClientService.objects.filter(service=service, status='active').count()
-    active_connections = ClientService.objects.filter(service=service, status='active', is_active=True).count()
-    
-    service_data = {
-        'id': service.id,
-        'uuid': str(service.uuid),
-        'name': service.name,
-        'description': service.description,
-        'price': float(service.price),
-        'category': service.category.name if service.category else 'Без категории',
-        'category_description': service.category.description if service.category else '',
-        'is_connected': is_connected,
-        'created_at': service.created_at.strftime('%d.%m.%Y'),
-        'total_connections': total_connections,
-        'active_connections': active_connections,
-    }
-    
-    # Добавляем информацию о подключенной услуге, если она подключена
-    if client_service and is_connected:
-        service_data['client_service'] = {
-            'connected_at': client_service.connected_at.strftime('%d.%m.%Y %H:%M'),
-            'monthly_fee': float(client_service.monthly_fee),
-            'next_payment_date': client_service.next_payment_date.strftime('%d.%m.%Y') if client_service.next_payment_date else None,
-            'auto_renewal': client_service.auto_renewal,
-            'notes': client_service.notes,
-            'status': client_service.get_status_display(),
-        }
-    elif client_service:
-        # Услуга была подключена, но отключена
-        service_data['client_service'] = {
-            'connected_at': client_service.connected_at.strftime('%d.%m.%Y %H:%M'),
-            'cancelled_at': client_service.cancelled_at.strftime('%d.%m.%Y %H:%M') if client_service.cancelled_at else None,
-            'status': client_service.get_status_display(),
-        }
-    
-    return JsonResponse({'success': True, 'service': service_data})
 
 @login_required
 @require_http_methods(["POST", "GET"]) 
@@ -480,71 +418,54 @@ def deposits_view(request):
 @login_required
 @require_http_methods(["POST"])
 def create_deposit(request):
-    """Создание нового депозита"""
+    """Создание заявки на депозит (фикция - объект не создается)"""
     try:
-        data = json.loads(request.body)
+        # Поддержка как JSON, так и form-data
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+        else:
+            data = request.POST.dict()
         
         # Получаем клиента
         try:
             client = Client.objects.get(user=request.user)
         except Client.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Клиент не найден'})
+            if request.content_type == 'application/json':
+                return JsonResponse({'success': False, 'error': 'Клиент не найден'})
+            messages.error(request, 'Клиент не найден')
+            return redirect('deposits_service')
         
-        # Получаем или создаем депозитный счет
-        from datetime import date, timedelta
-        expiry_date = date.today() + timedelta(days=365*5)  # Карта действует 5 лет
+        # Извлекаем данные
+        amount = data.get('amount', 0) or data.get('uAmount', 0)
+        interest_rate = data.get('interest_rate', 0) or data.get('rate', 0)
+        term_months = data.get('term_months', 12) or data.get('term', 12)
+        program_name = data.get('program_name', 'Стандартный депозит')
         
-        deposit_card, created = BankCard.objects.get_or_create(
+        # Создаем заявку на депозит (используем существующую модель ServiceRequest)
+        deposit_request = ServiceRequest.objects.create(
             client=client,
-            card_type='debit',
-            defaults={
-                'card_number': f'DEP{client.client_id}{timezone.now().strftime("%Y%m%d%H%M%S")}',
-                'balance': Decimal('0.00'),
-                'currency': 'RUB',
-                'expiry_date': expiry_date,
-                'is_active': True
-            }
+            service_name=f"Заявка на депозит: {program_name}",
+            service_description=f"""
+Программа: {program_name}
+Сумма: {amount} ₽
+Срок: {term_months} месяцев
+Процентная ставка: {interest_rate}%
+            """.strip(),
+            price=float(amount) if amount else 0
         )
         
-        # Создаем депозит
-        amount = Decimal(str(data.get('amount', 0)))
-        interest_rate = Decimal(str(data.get('interest_rate', 0)))
-        term_months = int(data.get('term_months', 12))
+        if request.content_type == 'application/json':
+            return JsonResponse({'success': True, 'request_id': deposit_request.id, 'message': 'Заявка успешно оставлена'})
         
-        start_date = date.today()
-        end_date = start_date + timedelta(days=term_months * 30)
-        
-        deposit = Deposit.objects.create(
-            client=client,
-            card=deposit_card,
-            amount=amount,
-            interest_rate=interest_rate,
-            term_months=term_months,
-            start_date=start_date,
-            end_date=end_date
-        )
-        
-        # Пополняем счет
-        deposit_card.balance += amount
-        deposit_card.save()
-        
-        # Создаем транзакцию
-        Transaction.objects.create(
-            from_card=None,
-            to_card=deposit_card,
-            amount=amount,
-            currency='RUB',
-            transaction_type='deposit',
-            description=f'Открытие депозита "{data.get("program_name", "")}"',
-            status='completed',
-            completed_at=timezone.now()
-        )
-        
-        return JsonResponse({'success': True, 'deposit_id': deposit.id})
+        messages.success(request, 'Спасибо! Наш менеджер свяжется с вами для подтверждения заявки на депозит.')
+        return redirect('deposits_service')
         
     except Exception as e:
-        logger.error(f"Error creating deposit: {e}")
-        return JsonResponse({'success': False, 'error': str(e)})
+        logger.error(f"Error creating deposit request: {e}")
+        if request.content_type == 'application/json':
+            return JsonResponse({'success': False, 'error': str(e)})
+        messages.error(request, f'Ошибка при создании заявки: {str(e)}')
+        return redirect('deposits_service')
 
 @login_required
 @require_http_methods(["POST"])
@@ -569,7 +490,6 @@ def create_deposit_request(request):
         # Извлекаем данные
         tariff = data.get('tariff', '')
         amount = data.get('amount', 0) or data.get('uAmount', 0)
-        card_id = data.get('card', '')
         
         # Парсим тариф (например, t6_70 означает 6 месяцев, 7.0%)
         tariff_parts = tariff.split('_')
@@ -594,16 +514,16 @@ def create_deposit_request(request):
 Сумма: {amount} ₽
 Срок: {term_months} месяцев
 Процентная ставка: {interest_rate}%
-Карта: {card_id}
             """.strip(),
             price=float(amount) if amount else 0
         )
         
-        if request.content_type == 'application/json':
-            return JsonResponse({'success': True, 'request_id': deposit_request.id})
-        
         messages.success(request, 'Спасибо! Наш менеджер свяжется с вами для подтверждения заявки на депозит.')
-        return redirect('deposits_service')
+        
+        if request.content_type == 'application/json':
+            return JsonResponse({'success': True, 'request_id': deposit_request.id, 'redirect': '/client/deposits/'})
+        
+        return redirect('deposits')
         
     except Exception as e:
         logger.error(f"Error creating deposit request: {e}")
@@ -865,6 +785,17 @@ def login_page(request):
         if user:
             login(request, user)
 
+            # Отладочное логирование IP заголовков
+            ip_debug = {
+                'HTTP_X_FORWARDED_FOR': request.META.get('HTTP_X_FORWARDED_FOR'),
+                'HTTP_X_REAL_IP': request.META.get('HTTP_X_REAL_IP'),
+                'HTTP_X_FORWARDED': request.META.get('HTTP_X_FORWARDED'),
+                'HTTP_CF_CONNECTING_IP': request.META.get('HTTP_CF_CONNECTING_IP'),
+                'HTTP_TRUE_CLIENT_IP': request.META.get('HTTP_TRUE_CLIENT_IP'),
+                'REMOTE_ADDR': request.META.get('REMOTE_ADDR'),
+            }
+            logger.info(f"Login IP debug for {user.username}: {ip_debug}")
+
             # Логируем успешный вход
             log_from_request(
                 'login',
@@ -874,7 +805,7 @@ def login_page(request):
             )
 
             if user.is_superuser or user.is_staff:
-                return redirect('admin_dashboard')
+                return redirect('home')
             try:
                 op = Operator.objects.get(user=user)
                 return redirect('operator1_dashboard' if op.operator_type == 'client_service' else 'operator2_dashboard')
@@ -898,34 +829,6 @@ def login_page(request):
         messages.error(request, 'Неверные email или пароль')
     return render(request, 'login.html')
 
-@login_required
-def first_login_password(request):
-    """Смена пароля при первом входе"""
-    if request.method == 'POST':
-        new_password = (request.POST.get('new_password') or '').strip()
-        confirm_password = (request.POST.get('confirm_password') or '').strip()
-        if not new_password or not confirm_password:
-            messages.error(request, 'Заполните оба поля пароля')
-        elif new_password != confirm_password:
-            messages.error(request, 'Пароли не совпадают')
-        elif len(new_password) < 8:
-            messages.error(request, 'Пароль должен содержать не менее 8 символов')
-        else:
-            request.user.set_password(new_password)
-            request.user.save(update_fields=['password'])
-            update_session_auth_hash(request, request.user)
-            messages.success(request, 'Пароль успешно обновлён')
-            if request.user.is_superuser or request.user.is_staff:
-                return redirect('admin_dashboard')
-            if Operator.objects.filter(user=request.user).exists():
-                op = Operator.objects.get(user=request.user)
-                return redirect('operator1_dashboard' if op.operator_type == 'client_service' else 'operator2_dashboard')
-            if Client.objects.filter(user=request.user).exists():
-                return redirect('client_dashboard')
-            return redirect('home')
-        return redirect('first_login_password')
-    return render(request, 'first_login_password.html')
-
 def logout_view(request):
     # Логируем выход до завершения сессии
     if request.user.is_authenticated:
@@ -937,10 +840,6 @@ def logout_view(request):
         )
     logout(request)
     return redirect('home')
-
-def xss_success(request):
-    """XSS демонстрация"""
-    return render(request, 'xss_success.html', {'referrer': request.META.get('HTTP_REFERER', ''), 'ip': request.META.get('REMOTE_ADDR', ''), 'ua': request.META.get('HTTP_USER_AGENT', ''), 'tag': request.GET.get('tag', '')})
 
 @login_required
 def client_dashboard(request):
@@ -964,22 +863,6 @@ def client_dashboard(request):
     })
 
 @login_required
-def admin_dashboard(request):
-    """Админ-дашборд"""
-    if not is_admin(request.user):
-        messages.error(request, 'Доступ запрещен')
-        return redirect('home')
-    from datetime import timedelta
-    week_ago = timezone.now() - timedelta(days=7)
-    return render(request, 'admin/dashboard.html', {
-        'total_users': User.objects.count(), 'total_clients': Client.objects.count(),
-        'total_services': Service.objects.count(), 'total_transactions': Transaction.objects.count(),
-        'recent_attacks': [], 'attack_counts': {},
-        'weekly_transactions': Transaction.objects.filter(completed_at__gte=week_ago).count(),
-        'categories_stats': [{'name': c.name, 'count': Service.objects.filter(category=c).count()} for c in ServiceCategory.objects.all()],
-    })
-
-@login_required
 def operator1_dashboard(request):
     """Дашборд оператора ДБО #1"""
     try:
@@ -987,104 +870,23 @@ def operator1_dashboard(request):
     except Operator.DoesNotExist:
         messages.error(request, 'Доступ запрещен')
         return redirect('home')
-    reqs = ServiceRequest.objects.filter(service_name__icontains='регистрация').order_by('-created_at')
-    return render(request, 'operator1_dashboard.html', {'operator': operator, 'client_requests': reqs[:10], 'pending_requests': reqs.filter(status='pending').count()})
-
-@login_required
-def operator1_logs(request):
-    """Просмотр логов действий оператора ДБО #1"""
-    try:
-        operator = Operator.objects.get(user=request.user, operator_type='client_service')
-    except Operator.DoesNotExist:
-        messages.error(request, 'Доступ запрещен')
-        return redirect('home')
     
-    # Получаем логи, связанные с этим оператором
-    logs = DBOLog.objects.filter(operator=operator).order_by('-created_at')
-    
-    # Фильтрация по типу события
-    event_type = request.GET.get('event_type', '')
-    if event_type:
-        logs = logs.filter(event_type=event_type)
-    
-    # Фильтрация по дате
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
-    if date_from:
-        logs = logs.filter(created_at__gte=date_from)
-    if date_to:
-        logs = logs.filter(created_at__lte=date_to)
-    
-    # Пагинация
-    paginator = Paginator(logs, 50)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    # Статистика
-    total_logs = logs.count()
-    client_created_count = logs.filter(event_type='client_created').count()
-    card_created_count = logs.filter(event_type='card_created').count()
-    
-    context = {
-        'operator': operator,
-        'page_obj': page_obj,
-        'logs': page_obj,
-        'total_logs': total_logs,
-        'client_created_count': client_created_count,
-        'card_created_count': card_created_count,
-        'event_type': event_type,
-        'date_from': date_from,
-        'date_to': date_to,
-        'event_types': [
-            ('', 'Все события'),
-            ('client_created', 'Создание клиента'),
-            ('card_created', 'Создание карты'),
-            ('client_updated', 'Обновление клиента'),
-        ]
-    }
-    
-    return render(request, 'operator1_logs.html', context)
-
-@login_required
-def operator2_dashboard(request):
-    """Дашборд оператора ДБО #2"""
-    try:
-        operator = Operator.objects.get(user=request.user, operator_type='security')
-    except Operator.DoesNotExist:
-        messages.error(request, 'Доступ запрещен')
-        return redirect('home')
-    reqs = ServiceRequest.objects.filter(status='pending').exclude(service_name__icontains='регистрация').order_by('-created_at')
-    return render(request, 'operator2_dashboard.html', {
-        'operator': operator, 'service_requests': reqs,
-        'approved_requests': ServiceRequest.objects.filter(status='approved').order_by('-reviewed_at')[:10],
-        'pending_requests': reqs.count(),
-        'approved_today': ServiceRequest.objects.filter(status='approved', reviewed_at__date=timezone.now().date()).count(),
-    })
-
-@login_required
-def create_client(request):
-    """Создание нового клиента (функционал оператора ДБО #1)"""
-    try:
-        operator = Operator.objects.get(user=request.user, operator_type='client_service')
-    except Operator.DoesNotExist:
-        messages.error(request, 'Доступ запрещен. Требуются права оператора ДБО #1.')
-        return redirect('home')
-    
+    # Обработка создания клиента (POST запрос)
     if request.method == 'POST':
         try:
-            # Получаем данные из формы (в шаблоне нет username/password, генерируем при необходимости)
+            # Получаем данные из формы
             full_name = request.POST.get('full_name', '').strip()
             email = request.POST.get('email', '').strip()
             phone = request.POST.get('phone', '').strip()
 
             if not full_name or not email or not phone:
                 messages.error(request, 'Пожалуйста, заполните обязательные поля: имя, email, телефон')
-                return redirect('create_client')
+                return redirect('operator1_dashboard')
 
             # Username = email, проверяем уникальность
             if User.objects.filter(username=email).exists():
                 messages.error(request, 'Пользователь с таким email уже существует')
-                return redirect('create_client')
+                return redirect('operator1_dashboard')
 
             # Создаем пользователя Django и назначаем пароль по умолчанию
             user = User.objects.create(
@@ -1128,8 +930,83 @@ def create_client(request):
             
         except Exception as e:
             messages.error(request, f'Ошибка при создании клиента: {str(e)}')
+            return redirect('operator1_dashboard')
     
-    return render(request, 'create_client.html')
+    return render(request, 'operator1_dashboard.html', {'operator': operator})
+
+@login_required
+def operator1_logs(request):
+    """Просмотр логов действий оператора ДБО #1"""
+    try:
+        operator = Operator.objects.get(user=request.user, operator_type='client_service')
+    except Operator.DoesNotExist:
+        messages.error(request, 'Доступ запрещен')
+        return redirect('home')
+    
+    # Получаем логи, связанные с этим оператором
+    logs = DBOLog.objects.filter(operator=operator).order_by('-created_at')
+    
+    # Фильтрация по типу события
+    event_type = request.GET.get('event_type', '')
+    if event_type:
+        logs = logs.filter(event_type=event_type)
+    
+    # Фильтрация по дате
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    if date_from:
+        logs = logs.filter(created_at__gte=date_from)
+    if date_to:
+        logs = logs.filter(created_at__lte=date_to)
+    
+    # Пагинация
+    paginator = Paginator(logs, 50)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Статистика
+    total_logs = logs.count()
+    client_created_count = logs.filter(event_type='client_created').count()
+    
+    context = {
+        'operator': operator,
+        'page_obj': page_obj,
+        'logs': page_obj,
+        'total_logs': total_logs,
+        'client_created_count': client_created_count,
+        'event_type': event_type,
+        'date_from': date_from,
+        'date_to': date_to,
+        'event_types': [
+            ('', 'Все события'),
+            ('login', 'Вход в систему'),
+            ('logout', 'Выход из системы'),
+            ('client_created', 'Создание клиента'),
+        ]
+    }
+    
+    return render(request, 'operator1_logs.html', context)
+
+@login_required
+def operator2_dashboard(request):
+    """Дашборд оператора ДБО #2"""
+    try:
+        operator = Operator.objects.get(user=request.user, operator_type='security')
+    except Operator.DoesNotExist:
+        messages.error(request, 'Доступ запрещен')
+        return redirect('home')
+    reqs = ServiceRequest.objects.filter(status='pending').exclude(service_name__icontains='регистрация').order_by('-created_at')
+    return render(request, 'operator2_dashboard.html', {
+        'operator': operator, 'service_requests': reqs,
+        'approved_requests': ServiceRequest.objects.filter(status='approved').order_by('-reviewed_at')[:10],
+        'pending_requests': reqs.count(),
+        'approved_today': ServiceRequest.objects.filter(status='approved', reviewed_at__date=timezone.now().date()).count(),
+    })
+
+@login_required
+def create_client(request):
+    """Создание нового клиента - редирект на дашборд"""
+    return redirect('operator1_dashboard')
 
 
 @login_required
@@ -1158,7 +1035,6 @@ def review_service_request(request, request_id):
     return render(request, 'review_service_request.html', context)
 
 @login_required
-@require_http_methods(["POST"])
 def approve_service_request(request, request_id):
     """Одобрение заявки на услугу (функционал оператора ДБО #2)"""
     try:
@@ -1190,6 +1066,8 @@ def approve_service_request(request, request_id):
         price=service_request.price,
         category=category,
         is_active=True,
+        rating=Decimal('0.00'),  # Начальный рейтинг при создании
+        rating_count=0,  # Начальное количество оценок
     )
     
     # Логирование атак отключено
@@ -1393,142 +1271,6 @@ def transactions_view(request):
     }
     
     return render(request, 'transactions.html', context)
-
-@login_required
-def operator_transactions_view(request):
-    """Страница просмотра транзакций для операторов"""
-    # Проверяем, что пользователь является оператором
-    try:
-        operator = Operator.objects.get(user=request.user)
-    except Operator.DoesNotExist:
-        messages.error(request, 'Доступ запрещен. Требуются права оператора.')
-        return redirect('home')
-    
-    # Получаем все транзакции (операторы видят все транзакции)
-    # Используем prefetch_related для оптимизации запросов
-    transactions = Transaction.objects.select_related(
-        'from_card', 'to_card', 'from_card__client', 'to_card__client'
-    ).order_by('-created_at')
-    
-    # Фильтрация по клиенту
-    client_id = request.GET.get('client_id', '').strip()
-    if client_id:
-        try:
-            client = Client.objects.get(id=int(client_id))
-            # Фильтруем транзакции, где клиент является отправителем или получателем
-            # Учитываем случаи, когда from_card или to_card могут быть None
-            transactions = transactions.filter(
-                models.Q(from_card__client=client) | models.Q(to_card__client=client)
-            )
-        except (Client.DoesNotExist, ValueError, TypeError):
-            # Если клиент не найден или неверный ID, показываем все транзакции
-            messages.warning(request, f'Клиент с ID {client_id} не найден')
-    
-    # Фильтрация по типу транзакции
-    transaction_type = request.GET.get('type', '').strip()
-    if transaction_type:
-        transactions = transactions.filter(transaction_type=transaction_type)
-    
-    # Фильтрация по статусу
-    status_filter = request.GET.get('status', '').strip()
-    if status_filter:
-        transactions = transactions.filter(status=status_filter)
-    
-    # Поиск по описанию, номеру карты или имени клиента
-    search_query = request.GET.get('search', '').strip()
-    if search_query:
-        search_q = models.Q(description__icontains=search_query)
-        # Поиск по номеру карты (если карта существует)
-        search_q |= models.Q(from_card__card_number__icontains=search_query)
-        search_q |= models.Q(to_card__card_number__icontains=search_query)
-        # Поиск по имени клиента (если карта и клиент существуют)
-        search_q |= models.Q(from_card__client__full_name__icontains=search_query)
-        search_q |= models.Q(to_card__client__full_name__icontains=search_query)
-        search_q |= models.Q(from_card__client__client_id__icontains=search_query)
-        search_q |= models.Q(to_card__client__client_id__icontains=search_query)
-        transactions = transactions.filter(search_q)
-    
-    # Применяем distinct() для избежания дубликатов при использовании нескольких фильтров
-    transactions = transactions.distinct()
-    
-    # Пагинация - показываем по 50 транзакций на страницу
-    # Это предотвращает отображение всех транзакций сразу
-    paginator = Paginator(transactions, 50)
-    try:
-        page_number = int(request.GET.get('page', 1))
-    except (ValueError, TypeError):
-        page_number = 1
-    page_obj = paginator.get_page(page_number)
-    
-    # Статистика
-    all_transactions = Transaction.objects.all()
-    total_transactions = all_transactions.count()
-    completed_transactions = all_transactions.filter(status='completed').count()
-    pending_transactions = all_transactions.filter(status='pending').count()
-    failed_transactions = all_transactions.filter(status='failed').count()
-    
-    # Статистика по типам
-    transfers_count = all_transactions.filter(transaction_type='transfer').count()
-    payments_count = all_transactions.filter(transaction_type='payment').count()
-    deposits_count = all_transactions.filter(transaction_type='deposit').count()
-    withdrawals_count = all_transactions.filter(transaction_type='withdrawal').count()
-    fees_count = all_transactions.filter(transaction_type='fee').count()
-    
-    # Общая сумма всех транзакций
-    total_amount = all_transactions.filter(status='completed').aggregate(
-        total=models.Sum('amount')
-    )['total'] or 0
-    
-    # Получаем список всех клиентов для фильтра
-    clients = Client.objects.filter(is_active=True).order_by('full_name')
-    
-    # Типы транзакций для фильтра
-    transaction_types = [
-        ('', 'Все типы'),
-        ('transfer', 'Переводы'),
-        ('payment', 'Платежи'),
-        ('deposit', 'Пополнения'),
-        ('withdrawal', 'Снятия'),
-        ('fee', 'Комиссии'),
-    ]
-    
-    # Статусы для фильтра
-    statuses = [
-        ('', 'Все статусы'),
-        ('completed', 'Завершена'),
-        ('pending', 'Ожидает'),
-        ('failed', 'Отклонена'),
-        ('cancelled', 'Отменена'),
-    ]
-    
-    # Подсчитываем количество отфильтрованных транзакций для отладки
-    filtered_count = transactions.count()
-    
-    context = {
-        'operator': operator,
-        'page_obj': page_obj,
-        'transactions': page_obj,
-        'total_transactions': total_transactions,
-        'filtered_transactions_count': filtered_count,
-        'completed_transactions': completed_transactions,
-        'pending_transactions': pending_transactions,
-        'failed_transactions': failed_transactions,
-        'transfers_count': transfers_count,
-        'payments_count': payments_count,
-        'deposits_count': deposits_count,
-        'withdrawals_count': withdrawals_count,
-        'fees_count': fees_count,
-        'total_amount': total_amount,
-        'clients': clients,
-        'transaction_types': transaction_types,
-        'statuses': statuses,
-        'current_client_id': client_id,
-        'current_type': transaction_type,
-        'current_status': status_filter,
-        'search_query': search_query,
-    }
-    
-    return render(request, 'operator_transactions.html', context)
 
 @login_required
 def history_view(request):
@@ -1966,6 +1708,57 @@ def transfers_service(request):
     return render(request, 'transfers.html', context)
 
 
+@csrf_exempt
+def api_login(request):
+    """API endpoint для авторизации (для ботов)"""
+    if request.method != 'POST':
+        return JsonResponse({
+            'success': False,
+            'error': 'Только POST запросы'
+        }, status=405)
+    
+    try:
+        data = json.loads(request.body) if request.body else {}
+        email_input = data.get('email') or request.POST.get('email')
+        password = data.get('password') or request.POST.get('password')
+        
+        if not email_input or not password:
+            return JsonResponse({
+                'success': False,
+                'error': 'Email и пароль обязательны'
+            }, status=400)
+        
+        user_obj = (
+            User.objects.filter(email=email_input).first()
+            or User.objects.filter(username=email_input).first()
+            if email_input
+            else None
+        )
+        user = authenticate(request, username=user_obj.username, password=password) if user_obj else None
+        
+        if user:
+            login(request, user)
+            return JsonResponse({
+                'success': True,
+                'username': user.username,
+                'email': user.email,
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': 'Неверные email или пароль'
+            }, status=401)
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Неверный формат JSON'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
 @login_required
 def check_recipient_phone(request):
     """API endpoint для проверки существования пользователя по номеру телефона"""
@@ -2041,28 +1834,6 @@ def set_primary_card(request, card_id):
 
 
 @login_required
-@require_http_methods(["POST"])
-def unset_primary_card(request):
-    """Снятие основной карты у клиента"""
-    try:
-        client = Client.objects.get(user=request.user)
-    except Client.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Клиент не найден'}, status=400)
-
-    if not client.primary_card:
-        return JsonResponse({'success': False, 'error': 'Основная карта не установлена'}, status=400)
-
-    old_card_number = client.primary_card.card_number
-    client.primary_card = None
-    client.save()
-
-    return JsonResponse({
-        'success': True,
-        'message': f'Карта {old_card_number} больше не является основной'
-    })
-
-
-@login_required
 def cards_service(request):
     """Страница управления банковскими картами"""
     try:
@@ -2081,5 +1852,4 @@ def cards_service(request):
     }
 
     return render(request, 'cards.html', context)
-
 

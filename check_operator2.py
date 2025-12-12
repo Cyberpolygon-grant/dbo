@@ -41,7 +41,7 @@ except User.DoesNotExist:
     print(f"\nСоздаю пользователя operator2...")
     user = User.objects.create_user(
         username='operator2',
-        email='operator2@bank.ru',
+        email='operator2@financepro.ru',
         password='password123',
         first_name='Иван',
         last_name='Сидоров'
@@ -52,7 +52,7 @@ except User.DoesNotExist:
     operator = Operator.objects.create(
         user=user,
         operator_type='security',
-        email='operator2@bank.ru',
+        email='operator2@financepro.ru',
         is_active=True
     )
     print(f"✅ Оператор создан")

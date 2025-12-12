@@ -15,9 +15,9 @@ def news_ticker(request):
     is_dbo_client = False
     is_operator = False
     
-    # Пропускаем тяжелые запросы для страницы входа и других публичных страниц
+    # Пропускаем тяжелые запросы только для страницы входа и выхода
     path = request.path
-    if path in ['/login', '/logout', '/']:
+    if path in ['/login', '/logout']:
         # Для публичных страниц возвращаем минимальный контекст без запросов к БД
         return {
             'news_ticker': News.objects.none(),

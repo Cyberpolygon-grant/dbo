@@ -49,6 +49,8 @@ class ServiceAdmin(admin.ModelAdmin):
     list_display = ('name', 'category', 'price', 'is_active', 'rating', 'rating_count', 'created_at')
     list_filter = ('is_active', 'category')
     search_fields = ('name', 'description')
+    fields = ('name', 'description', 'category', 'price', 'is_active', 'rating', 'rating_count', 'created_at')
+    readonly_fields = ('created_at',)
 
 
 @admin.register(ServiceRequest)

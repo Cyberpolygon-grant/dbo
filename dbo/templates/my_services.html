@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Мои услуги - Интернет-банк "ФинансПро"{% endblock %}
+{% block title %}Подключенные услуги - Интернет-банк "ФинансПро"{% endblock %}
 
 {% block content %}
 {% csrf_token %}
@@ -9,7 +9,7 @@
     <div class="hero bg-gradient-to-r from-primary to-secondary text-primary-content py-16">
         <div class="hero-content text-center">
             <div class="max-w-4xl">
-                <h1 class="text-5xl font-bold mb-6">Мои услуги</h1>
+                <h1 class="text-5xl font-bold mb-6">Подключенные услуги</h1>
                 <p class="text-xl mb-8 opacity-90">
                     Управляйте подключенными банковскими услугами
                 </p>
@@ -37,47 +37,8 @@
             <ul>
                 <li><a href="{% url 'client_dashboard' %}">Дашборд</a></li>
                 <li><a href="{% url 'banking_services' %}">Банковские услуги</a></li>
-                <li>Мои услуги</li>
+                <li>Подключенные услуги</li>
             </ul>
-        </div>
-
-        <!-- Фильтры -->
-        <div class="card bg-base-100 shadow-xl mb-8">
-            <div class="card-body">
-                <div class="flex flex-col lg:flex-row gap-4 items-center">
-                    <div class="form-control">
-                        <select id="statusFilter" class="select select-bordered" onchange="filterByStatus()">
-                            <option value="all">Все статусы</option>
-                            <option value="active">Активные</option>
-                            <option value="suspended">Приостановленные</option>
-                            <option value="cancelled">Отмененные</option>
-                            <option value="expired">Истекшие</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-control">
-                        <select id="categoryFilter" class="select select-bordered" onchange="filterByCategory()">
-                            <option value="all">Все категории</option>
-                            {% for category in connected_services %}
-                                {% ifchanged category.service.category.name %}
-                                <option value="{{ category.service.category.name }}">{{ category.service.category.name }}</option>
-                                {% endifchanged %}
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div class="form-control flex-1">
-                        <div class="input-group">
-                            <input type="text" id="searchInput" placeholder="Поиск услуг..." class="input input-bordered flex-1">
-                            <button class="btn btn-square" onclick="searchServices()">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <!-- Услуги -->
@@ -189,51 +150,6 @@
 </div>
 
 <script>
-// Фильтрация по статусу
-function filterByStatus() {
-    const statusFilter = document.getElementById('statusFilter').value;
-    
-    document.querySelectorAll('.service-card').forEach(card => {
-        const cardStatus = card.dataset.status;
-        
-        if (statusFilter === 'all' || cardStatus === statusFilter) {
-            card.style.display = 'block';
-        } else {
-            card.style.display = 'none';
-        }
-    });
-}
-
-// Фильтрация по категории
-function filterByCategory() {
-    const categoryFilter = document.getElementById('categoryFilter').value;
-    
-    document.querySelectorAll('.service-card').forEach(card => {
-        const cardCategory = card.dataset.category;
-        
-        if (categoryFilter === 'all' || cardCategory === categoryFilter) {
-            card.style.display = 'block';
-        } else {
-            card.style.display = 'none';
-        }
-    });
-}
-
-// Поиск услуг
-function searchServices() {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    
-    document.querySelectorAll('.service-card').forEach(card => {
-        const serviceName = card.querySelector('.card-title').textContent.toLowerCase();
-        const description = card.querySelector('p').textContent.toLowerCase();
-        
-        if (serviceName.includes(searchTerm) || description.includes(searchTerm)) {
-            card.style.display = 'block';
-        } else {
-            card.style.display = 'none';
-        }
-    });
-}
 
 // Просмотр деталей услуги
 function viewServiceDetails(serviceUuid) {
@@ -329,9 +245,5 @@ function showToast(type, message) {
     }, 3000);
 }
 
-// Поиск при вводе
-document.getElementById('searchInput').addEventListener('input', function() {
-    searchServices();
-});
 </script>
 {% endblock %}
