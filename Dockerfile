@@ -39,7 +39,8 @@ CMD sh -c "\
   python manage.py collectstatic --noinput && \
   echo 'Checking if demo data needs initialization...' && \
   python -c \"from dbo.models import Client; import sys; sys.exit(0 if Client.objects.exists() else 1)\" || (echo 'Initializing demo data (users, news, activities)...' && python init_data.py) && \
+  mkdir -p /app/logs && \
   echo 'Starting Gunicorn...' && \
-  gunicorn cyberpolygon.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120 --keep-alive 5 --max-requests 1000 --max-requests-jitter 50 --access-logfile - --error-logfile - --log-level info"
+  gunicorn cyberpolygon.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120 --keep-alive 5 --max-requests 1000 --max-requests-jitter 50 --access-logfile /app/logs/gunicorn-access.log --error-logfile /app/logs/gunicorn-error.log --log-level info"
 
 

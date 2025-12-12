@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+import uuid
 
 class Operator(models.Model):
     """Операторы ДБО"""
@@ -25,6 +26,7 @@ class Client(models.Model):
     is_active = models.BooleanField(default=True)
     primary_card = models.ForeignKey('BankCard', on_delete=models.SET_NULL, null=True, blank=True, related_name='primary_for_client')
     created_by = models.ForeignKey(Operator, on_delete=models.SET_NULL, null=True, blank=True)
+    is_privileged = models.BooleanField(default=False, verbose_name='Служебный клиент', help_text='Может подключать служебные услуги')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -40,6 +42,7 @@ class ServiceCategory(models.Model):
 
 class Service(models.Model):
     """Услуги ДБО"""
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     name = models.CharField(max_length=200)
     description = models.TextField()
     category = models.ForeignKey(ServiceCategory, on_delete=models.CASCADE)
@@ -243,5 +246,62 @@ class News(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class DBOLog(models.Model):
+    """Логи высокоуровневых событий ДБО"""
+    EVENT_TYPES = [
+        ('login', 'Вход в систему'),
+        ('logout', 'Выход из системы'),
+        ('client_created', 'Создание клиента'),
+        ('client_updated', 'Обновление данных клиента'),
+        ('transaction_created', 'Создание транзакции'),
+        ('transaction_completed', 'Завершение транзакции'),
+        ('service_connected', 'Подключение услуги'),
+        ('service_disconnected', 'Отключение услуги'),
+        ('service_request_created', 'Создание заявки на услугу'),
+        ('service_request_approved', 'Одобрение заявки на услугу'),
+        ('service_request_rejected', 'Отклонение заявки на услугу'),
+        ('card_created', 'Создание карты'),
+        ('card_pin_changed', 'Изменение PIN карты'),
+        ('deposit_created', 'Создание депозита'),
+        ('credit_created', 'Создание кредита'),
+        ('investment_created', 'Создание инвестиции'),
+        ('page_viewed', 'Просмотр страницы'),
+        ('data_exported', 'Экспорт данных'),
+        ('other', 'Прочее'),
+    ]
+    
+    SEVERITY_LEVELS = [
+        ('info', 'Информация'),
+        ('warning', 'Предупреждение'),
+        ('error', 'Ошибка'),
+        ('critical', 'Критическая ошибка'),
+    ]
+    
+    event_type = models.CharField(max_length=50, choices=EVENT_TYPES, verbose_name='Тип события')
+    severity = models.CharField(max_length=20, choices=SEVERITY_LEVELS, default='info', verbose_name='Уровень важности')
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Пользователь')
+    client = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Клиент')
+    operator = models.ForeignKey(Operator, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Оператор')
+    description = models.TextField(verbose_name='Описание события')
+    ip_address = models.GenericIPAddressField(null=True, blank=True, verbose_name='IP адрес')
+    user_agent = models.CharField(max_length=500, blank=True, verbose_name='User Agent')
+    metadata = models.JSONField(default=dict, blank=True, verbose_name='Дополнительные данные')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Время события')
+    
+    class Meta:
+        verbose_name = 'Лог ДБО'
+        verbose_name_plural = 'Логи ДБО'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['-created_at']),
+            models.Index(fields=['event_type']),
+            models.Index(fields=['user']),
+            models.Index(fields=['client']),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_event_type_display()} - {self.created_at.strftime('%d.%m.%Y %H:%M:%S')}"
 
 

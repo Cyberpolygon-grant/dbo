@@ -29,8 +29,8 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
     path("banking-services/", views.banking_services, name="banking_services"),
     path("create-service-request/", views.create_service_request, name="create_service_request"),
-    path("connect-service/<int:service_id>/", views.connect_service, name="connect_service"),
-    path("disconnect-service/<int:service_id>/", views.disconnect_service, name="disconnect_service"),
+    path("connect-service/<uuid:service_uuid>/", views.connect_service, name="connect_service"),
+    path("disconnect-service/<uuid:service_uuid>/", views.disconnect_service, name="disconnect_service"),
     path("my-services/", views.my_services, name="my_services"),
     path("my-requests/", views.my_requests, name="my_requests"),
     path("xss-success/", views.xss_success, name="xss_success"),
@@ -44,6 +44,7 @@ urlpatterns = [
     
     # Функционал оператора ДБО #1
     path("create-client/", views.create_client, name="create_client"),
+    path("operator1/logs/", views.operator1_logs, name="operator1_logs"),
     path("operator/transactions/", views.operator_transactions_view, name="operator_transactions"),
     
     # Функционал оператора ДБО #2
@@ -53,10 +54,9 @@ urlpatterns = [
     
     # Функционал клиента
     path("create-service-request/", views.create_service_request, name="create_service_request"),
-    path("search-services/", views.search_services, name="search_services"),
     # Публичный каталог услуг
-    path("services/<int:service_id>/", views.service_detail, name="service_detail"),
-    path("api/service-details/<int:service_id>/", views.get_service_details, name="get_service_details"),
+    path("services/<uuid:service_uuid>/", views.service_detail, name="service_detail"),
+    path("api/service-details/<uuid:service_uuid>/", views.get_service_details, name="get_service_details"),
     path("admin-dashboard/", views.admin_dashboard, name="admin_dashboard"),
     
     # Банковские функции для клиентов
