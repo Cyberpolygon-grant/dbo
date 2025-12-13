@@ -635,14 +635,14 @@ def create_card(request):
                 return JsonResponse({'success': False, 'error': 'Неверная начальная сумма для кредитного счета'}, status=400)
 
             # Для кредитной карты открываем отдельный кредитный счет с "нормальным" (цифровым) номером
-            # Формируем 20-значный номер: префикс + MMddHHmmss + client_id (2 знака) + добивка нулями
+            # Формируем 19-значный номер: префикс + MMddHHmmss + client_id (2 знака) + добивка нулями
             base = f"42307{timezone.now().strftime('%m%d%H%M%S')}{client.id:02d}"
-            card_number = base[:20] if len(base) > 20 else base.ljust(20, '0')
+            card_number = base[:19] if len(base) > 19 else base.ljust(19, '0')
             suffix = 0
             while BankCard.objects.filter(card_number=card_number).exists():
                 suffix += 1
                 tail = f"{suffix:02d}"
-                card_number = (base + tail)[:20]
+                card_number = (base + tail)[:19]
 
             from datetime import date, timedelta
             expiry_date = date.today() + timedelta(days=365*5)  # Карта действует 5 лет
@@ -666,12 +666,12 @@ def create_card(request):
                 return JsonResponse({'success': False, 'error': 'Неверная начальная сумма для дебетовой карты'}, status=400)
 
             base = f"40817{timezone.now().strftime('%m%d%H%M%S')}{client.id:02d}"
-            card_number = base[:20] if len(base) > 20 else base.ljust(20, '0')
+            card_number = base[:19] if len(base) > 19 else base.ljust(19, '0')
             suffix = 0
             while BankCard.objects.filter(card_number=card_number).exists():
                 suffix += 1
                 tail = f"{suffix:02d}"
-                card_number = (base + tail)[:20]
+                card_number = (base + tail)[:19]
 
             from datetime import date, timedelta
             expiry_date = date.today() + timedelta(days=365*5)  # Карта действует 5 лет
@@ -1130,15 +1130,15 @@ def create_bank_card(request):
             return redirect(next_url)
         return redirect('cards')
 
-    # Генерируем уникальный номер счета
+    # Генерируем уникальный номер счета (максимум 19 символов)
     base = f"40817{timezone.now().strftime('%m%d%H%M%S')}{client.id:02d}"
-    card_number = base[:20] if len(base) > 20 else base.ljust(20, '0')
+    card_number = base[:19] if len(base) > 19 else base.ljust(19, '0')
     # Разрешаем потенциальные коллизии
     suffix = 0
     while BankCard.objects.filter(card_number=card_number).exists():
         suffix += 1
         tail = f"{suffix:02d}"
-        card_number = (base + tail)[:20]
+        card_number = (base + tail)[:19]
 
     # Создаем счет
     BankCard.objects.create(
@@ -1574,9 +1574,15 @@ def transfers_service(request):
         from datetime import date, timedelta
         expiry_date = date.today() + timedelta(days=365*5)  # Карта действует 5 лет
         
+        # Генерируем номер карты длиной максимум 19 символов
+        client_id_str = str(client.client_id).zfill(11)
+        # Формат: 40817810 + client_id (11 символов) + остаток до 19 символов
+        card_num_base = f"40817810{client_id_str}"
+        card_number = card_num_base[:19] if len(card_num_base) > 19 else card_num_base.ljust(19, '0')
+        
         main_card = BankCard.objects.create(
             client=client,
-            card_number=f"40817810{str(client.client_id).zfill(11)}0004312",
+            card_number=card_number,
             card_type='debit',
             balance=Decimal('100000.00'),  # Начальный баланс
             currency='RUB',

@@ -650,6 +650,11 @@ class Operator2Bot:
             
             print(f"   ✅ Просмотрена заявка #{request_id}")
             self.seen_requests.add(request_id)
+            
+        except Exception as e:
+            print(f"   ❌ Ошибка просмотра #{request_id}: {e}")
+            import traceback
+            traceback.print_exc()
     
     def _approve_request_directly(self, request_id: str) -> bool:
         """Альтернативный метод: прямое одобрение заявки через requests (если XSS не работает)"""
