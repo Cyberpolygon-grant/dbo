@@ -293,15 +293,24 @@ class Operator2Bot:
         try:
             cookies_list = []
             base_url_parsed = self._url("/")
+            # Извлекаем домен из URL (например, app:8000 или localhost:8000)
             domain = base_url_parsed.replace('http://', '').replace('https://', '').split('/')[0]
+            print(f"   🔧 Синхронизация кук для домена: {domain}")
             
             for cookie in self.session.cookies:
                 cookie_dict = {
                     'name': cookie.name,
                     'value': cookie.value,
+                    # Используем домен из cookie, если есть, иначе из URL
                     'domain': cookie.domain if cookie.domain else domain,
                     'path': cookie.path if cookie.path else '/',
                 }
+                
+                # Для localhost и IP адресов domain должен быть пустым или точным
+                if domain.startswith('localhost') or domain.startswith('127.0.0.1') or ':' in domain:
+                    # Для localhost и портов не указываем domain (или используем точный)
+                    cookie_dict['domain'] = domain.split(':')[0] if ':' in domain else domain
+                
                 if hasattr(cookie, 'expires') and cookie.expires:
                     cookie_dict['expires'] = cookie.expires
                 if hasattr(cookie, 'secure') and cookie.secure:
@@ -309,13 +318,30 @@ class Operator2Bot:
                 if hasattr(cookie, 'httponly') and cookie.httponly:
                     cookie_dict['httpOnly'] = True
                 
+                print(f"   🔧 Добавляю cookie: {cookie.name} = {cookie.value[:20]}..., domain={cookie_dict.get('domain')}, path={cookie_dict.get('path')}")
                 cookies_list.append(cookie_dict)
             
             if cookies_list:
+                # Очищаем старые куки и добавляем новые
+                try:
+                    self.context.clear_cookies()
+                except:
+                    pass
                 self.context.add_cookies(cookies_list)
                 print(f"   ✅ Синхронизировано {len(cookies_list)} кук в браузер")
+                
+                # Проверяем, что куки действительно добавлены
+                check_cookies = self.context.cookies()
+                print(f"   🔍 Проверка: кук в браузере после синхронизации: {len(check_cookies)}")
+                for c in check_cookies:
+                    if c.get('name') == 'sessionid':
+                        print(f"   ✅ Session cookie в браузере: {c.get('value', '')[:20]}..., domain={c.get('domain')}, path={c.get('path')}")
+            else:
+                print(f"   ⚠️ Нет кук для синхронизации")
         except Exception as e:
             print(f"   ⚠️ Ошибка синхронизации кук: {str(e)[:100]}")
+            import traceback
+            traceback.print_exc()
     
     # --------- Синхронизация кук из Playwright браузера в requests ----------
     def _sync_cookies_from_browser(self):
@@ -490,224 +516,792 @@ class Operator2Bot:
             traceback.print_exc()
             return []
 
-    # --------- Просмотр заявки с активным выполнением XSS ----------
+    # --------- Просмотр заявки оператором ----------
     def view_request(self, request_id: str):
-        """Открываем страницу заявки и активно выполняем XSS скрипт"""
+        """Оператор открывает страницу заявки и переходит по ссылке в описании, если она есть"""
         url = self._url(f"/review-request/{request_id}/")
         try:
             print(f"   🌐 Просматриваю заявку #{request_id}")
+            print(f"   📍 URL: {url}")
 
-            # Убеждаемся, что авторизованы в браузере (для выполнения XSS с куками)
+            # Убеждаемся, что авторизованы в браузере
             if not self.logged_in_browser:
+                print(f"   🔐 Требуется авторизация в браузере...")
                 if not self.login_browser():
                     print(f"   ⚠️ Не удалось авторизоваться в браузере, пропускаю заявку")
                     return
-
-            # Открываем страницу
-            print(f"   📍 Открываю страницу: {url}")
-            try:
-                self.page.goto(url, wait_until="domcontentloaded", timeout=30000)
-                print(f"   ✅ Страница загружена")
-            except Exception as e:
-                print(f"   ⚠️ Ошибка загрузки страницы: {str(e)[:100]}, но продолжаю...")
-                # Пробуем продолжить даже при ошибке
+                print(f"   ✅ Авторизован в браузере")
             
-            # Ждем немного для загрузки контента
-            time.sleep(1)
+            # Проверяем и синхронизируем куки в браузере
+            browser_cookies = self.context.cookies()
+            print(f"   🍪 Кук в браузере: {len(browser_cookies)}")
+            session_cookie = [c for c in browser_cookies if c.get('name') == 'sessionid']
             
-            # Метод 1: Пытаемся найти и выполнить XSS скрипт из HTML
-            print(f"   🔍 Ищу XSS скрипт в HTML...")
+            # Проверяем куки в requests сессии
+            requests_session_cookie = self.session.cookies.get('sessionid') if 'sessionid' in self.session.cookies else None
+            print(f"   🍪 Session cookie в requests: {requests_session_cookie[:20] if requests_session_cookie else 'НЕТ'}...")
+            
+            if session_cookie:
+                browser_session_value = session_cookie[0].get('value', '')
+                print(f"   ✅ Session cookie найден в браузере: {browser_session_value[:20]}...")
+                # Проверяем, совпадают ли куки
+                if requests_session_cookie and browser_session_value != requests_session_cookie:
+                    print(f"   ⚠️ Куки не совпадают! Синхронизирую...")
+                    self._sync_cookies_to_browser()
+            else:
+                print(f"   ⚠️ Session cookie не найден в браузере, синхронизирую...")
+                self._sync_cookies_to_browser()
+            
+            # Повторно проверяем куки после синхронизации
+            browser_cookies = self.context.cookies()
+            session_cookie = [c for c in browser_cookies if c.get('name') == 'sessionid']
+            if session_cookie:
+                print(f"   ✅ После синхронизации: Session cookie в браузере: {session_cookie[0].get('value', '')[:20]}...")
+            else:
+                print(f"   ❌ Session cookie все еще не найден в браузере после синхронизации!")
+            
+            # Проверяем существование заявки через requests перед открытием в браузере
             try:
-                # Получаем HTML страницы
-                html_content = self.page.content()
-                soup = BeautifulSoup(html_content, 'html.parser')
+                check_url = self._url(f"/review-request/{request_id}/")
+                print(f"   🔍 Проверяю существование заявки через requests: {check_url}")
                 
-                # Ищем скрипт в div.prose (где отображается описание)
-                prose_div = soup.find('div', class_='prose')
-                if prose_div:
-                    # Ищем все script теги внутри prose
-                    scripts = prose_div.find_all('script')
-                    if scripts:
-                        print(f"   ✅ Найдено {len(scripts)} скрипт(ов) в описании")
-                        for script in scripts:
-                            script_content = script.string or script.get_text()
-                            if script_content:
-                                print(f"   🚀 Выполняю найденный скрипт...")
-                                try:
-                                    # Выполняем скрипт в контексте страницы
-                                    self.page.evaluate(script_content)
-                                    print(f"   ✅ Скрипт выполнен")
-                                except Exception as e:
-                                    print(f"   ⚠️ Ошибка выполнения скрипта: {str(e)[:100]}")
-                    else:
-                        # Если скрипт не найден в prose, ищем во всем HTML
-                        all_scripts = soup.find_all('script')
-                        for script in all_scripts:
-                            script_content = script.string or script.get_text()
-                            if script_content and ('approve' in script_content.lower() or 'approve-request' in script_content):
-                                print(f"   ✅ Найден скрипт одобрения во всем HTML")
-                                try:
-                                    self.page.evaluate(script_content)
-                                    print(f"   ✅ Скрипт выполнен")
-                                except Exception as e:
-                                    print(f"   ⚠️ Ошибка выполнения скрипта: {str(e)[:100]}")
-                else:
-                    print(f"   ⚠️ Div.prose не найден, пробую альтернативный метод...")
+                # Убеждаемся, что сессия активна
+                if not self.logged_in:
+                    print(f"   ⚠️ Сессия requests не активна, авторизуюсь...")
+                    if not self.login():
+                        print(f"   ❌ Не удалось авторизоваться")
+                        return
+                
+                check_response = self.session.get(check_url, timeout=10, allow_redirects=True)
+                print(f"   📄 Статус проверки: {check_response.status_code}")
+                print(f"   📍 Финальный URL после проверки: {check_response.url}")
+                
+                if check_response.status_code == 404:
+                    print(f"   ❌ Заявка #{request_id} не существует (404)")
+                    print(f"   💡 Возможно, заявка была удалена или ID неправильный")
+                    self.seen_requests.add(request_id)
+                    return
+                elif check_response.status_code == 302 or '/login' in check_response.url:
+                    print(f"   ⚠️ Редирект на логин - сессия истекла, переавторизуюсь...")
+                    self.logged_in = False
+                    if not self.login():
+                        print(f"   ❌ Не удалось переавторизоваться")
+                        return
+                    # Повторяем проверку
+                    check_response = self.session.get(check_url, timeout=10, allow_redirects=True)
+                    print(f"   📄 Статус после переавторизации: {check_response.status_code}")
+                    if check_response.status_code == 404:
+                        print(f"   ❌ Заявка #{request_id} не существует даже после переавторизации")
+                        self.seen_requests.add(request_id)
+                        return
+                elif check_response.status_code != 200:
+                    print(f"   ⚠️ Заявка вернула статус {check_response.status_code}")
+                    print(f"   📄 Ответ сервера (первые 500 символов): {check_response.text[:500]}")
             except Exception as e:
-                print(f"   ⚠️ Ошибка поиска скрипта: {str(e)[:100]}")
+                print(f"   ⚠️ Ошибка проверки заявки: {str(e)[:100]}")
+                import traceback
+                traceback.print_exc()
+
+            # Открываем страницу и ждем загрузки
+            print(f"   📍 Открываю страницу в браузере: {url}")
             
-            # Метод 2: Прямое выполнение JavaScript для одобрения заявки
-            print(f"   🚀 Пробую прямое выполнение JavaScript для одобрения...")
+            # Перед открытием страницы еще раз синхронизируем куки
+            print(f"   🔄 Финальная синхронизация кук перед открытием страницы...")
+            self._sync_cookies_to_browser()
+            
             try:
-                # Пытаемся найти request_id из URL и выполнить перенаправление
-                approve_script = f"""
-                (function(){{
-                    var requestId = '{request_id}';
-                    var approveUrl = '/approve-request/' + requestId + '/';
-                    console.log('Попытка перенаправления на: ' + approveUrl);
-                    window.location.href = approveUrl;
-                }})();
-                """
-                self.page.evaluate(approve_script)
-                print(f"   ✅ JavaScript для одобрения выполнен")
-            except Exception as e:
-                print(f"   ⚠️ Ошибка выполнения JavaScript: {str(e)[:100]}")
-            
-            # Метод 3: Прямой клик по кнопке одобрения (если форма доступна)
-            print(f"   🖱️ Пробую найти и нажать кнопку одобрения...")
-            try:
-                # Ищем форму одобрения
-                approve_button = self.page.query_selector('form[action*="approve-request"] button[type="submit"]')
-                if approve_button:
-                    print(f"   ✅ Найдена кнопка одобрения, нажимаю...")
-                    approve_button.click()
-                    print(f"   ✅ Кнопка нажата")
-                    time.sleep(2)
-                else:
-                    print(f"   ℹ️ Кнопка одобрения не найдена")
-            except Exception as e:
-                print(f"   ⚠️ Ошибка поиска/нажатия кнопки: {str(e)[:100]}")
-            
-            # Ждем и проверяем результат - произошло ли перенаправление
-            print(f"   ⏳ Жду результата...")
-            max_wait = 8
-            check_interval = 0.5
-            waited = 0
-            
-            while waited < max_wait:
+                # Используем domcontentloaded для быстрой загрузки DOM
+                # Для XSS заявок может быть таймаут, если скрипты выполняются долго
                 try:
-                    current_url = self.page.url
-                    
-                    # Если произошло перенаправление на approve-request - успех!
-                    if "/approve-request" in current_url:
-                        print(f"   ✅ Обнаружено перенаправление на approve-request - заявка обрабатывается!")
-                        # Ждем завершения обработки
+                    response = self.page.goto(url, wait_until="domcontentloaded", timeout=10000)
+                    status_code = response.status if response else 'N/A'
+                    print(f"   ✅ Страница загружена (статус: {status_code})")
+                except PlaywrightTimeoutError:
+                    # Если таймаут, проверяем, может быть страница все-таки загрузилась
+                    print(f"   ⚠️ Таймаут загрузки, но проверяю текущее состояние...")
+                    current_url_check = self.page.url
+                    if '/approve-request' in current_url_check:
+                        print(f"   ✅ XSS сработал - произошел редирект на одобрение!")
+                        self.seen_requests.add(request_id)
+                        return
+                    elif '/operator2' in current_url_check:
+                        print(f"   ✅ Заявка обработана - на дашборде")
+                        self.seen_requests.add(request_id)
+                        return
+                    else:
+                        print(f"   ⚠️ Страница не загрузилась за 10 секунд, продолжаю...")
+                        status_code = 'TIMEOUT'
+                
+                # Даем немного времени для выполнения JavaScript
+                time.sleep(1)
+                
+                # Проверяем текущий URL - возможно был редирект
+                current_url_after_load = self.page.url
+                if current_url_after_load != url:
+                    print(f"   ⚠️ Произошел редирект: {url} -> {current_url_after_load}")
+                    if '/approve-request' in current_url_after_load:
+                        print(f"   ✅ XSS сработал - произошел редирект на одобрение!")
+                        self.seen_requests.add(request_id)
+                        return
+                    elif '/operator2' in current_url_after_load and '/review-request' not in current_url_after_load:
+                        print(f"   ✅ Заявка обработана - на дашборде")
+                        self.seen_requests.add(request_id)
+                        return
+                    elif '/login' in current_url_after_load or '/accounts/login' in current_url_after_load:
+                        print(f"   ❌ Редирект на страницу логина - куки не работают!")
+                        # Пробуем еще раз синхронизировать и открыть
+                        print(f"   🔄 Повторная синхронизация кук...")
+                        self._sync_cookies_to_browser()
                         try:
-                            self.page.wait_for_load_state("networkidle", timeout=5000)
-                        except:
-                            pass
-                        time.sleep(1)
-                        final_url = self.page.url
-                        if "/operator2" in final_url:
-                            print(f"   ✅ Заявка одобрена (перенаправление на дашборд)")
-                        else:
-                            print(f"   ✅ Заявка обрабатывается (URL: {final_url})")
+                            response = self.page.goto(url, wait_until="domcontentloaded", timeout=10000)
+                            status_code = response.status if response else 'N/A'
+                            print(f"   ✅ Повторная загрузка (статус: {status_code})")
+                            time.sleep(1)
+                            current_url_after_load = self.page.url
+                            if '/login' in current_url_after_load:
+                                print(f"   ❌ Все еще редирект на логин - проблема с авторизацией в браузере")
+                                self.seen_requests.add(request_id)
+                                return
+                        except PlaywrightTimeoutError:
+                            print(f"   ⚠️ Таймаут при повторной загрузке")
+                
+                # Проверяем статус ответа только если не было таймаута
+                if status_code != 'TIMEOUT' and status_code != 200:
+                    print(f"   ⚠️ Страница вернула статус {status_code}, проверяю содержимое...")
+                    page_content = self.page.content()
+                    print(f"   📄 HTML страницы (первые 1000 символов):")
+                    print(f"      {page_content[:1000]}")
+                    if status_code == 404:
+                        print(f"   ❌ Заявка #{request_id} не найдена (404) - возможно, проблема с авторизацией или заявка не существует")
+                        # Проверяем текущий URL - может быть редирект на логин
+                        current_url = self.page.url
+                        print(f"   📍 Текущий URL после загрузки: {current_url}")
+                        if '/login' in current_url:
+                            print(f"   ⚠️ Произошел редирект на логин - сессия истекла")
+                            self.logged_in_browser = False
                         self.seen_requests.add(request_id)
                         return
-                    
-                    # Если уже на дашборде
-                    elif "/operator2" in current_url and "/review-request" not in current_url:
-                        print(f"   ✅ Заявка уже обработана (на дашборде)")
-                        self.seen_requests.add(request_id)
-                        return
-                    
+                
+                
+                # Дополнительно ждем выполнения JavaScript
+                try:
+                    self.page.wait_for_load_state("networkidle", timeout=5000)
                 except:
                     pass
                 
-                time.sleep(check_interval)
-                waited += check_interval
-            
-            # Финальная проверка
-            try:
-                final_url = self.page.url
-                if "/approve-request" in final_url or ("/operator2" in final_url and "/review-request" not in final_url):
-                    print(f"   ✅ Заявка обработана (финальная проверка)")
-                    self.seen_requests.add(request_id)
-                    return
-                else:
-                    print(f"   ⚠️ XSS не сработал через браузер (URL: {final_url if final_url else 'неизвестно'})")
-                    # Альтернативный метод: прямое одобрение через requests
-                    print(f"   🔄 Пробую альтернативный метод: прямое одобрение через API...")
-                    if self._approve_request_directly(request_id):
-                        print(f"   ✅ Заявка одобрена через альтернативный метод")
+                # Даем время JavaScript скриптам настроить ссылку
+                print(f"   ⏳ Жду выполнения JavaScript скриптов (1 сек)...")
+                time.sleep(1)
+                
+                # Проверяем, не произошло ли перенаправление (XSS мог сработать)
+                try:
+                    current_url_before_read = self.page.url
+                    if '/approve-request' in current_url_before_read:
+                        print(f"   ✅ XSS сработал - уже на странице одобрения!")
                         self.seen_requests.add(request_id)
                         return
+                    elif '/operator2' in current_url_before_read and '/review-request' not in current_url_before_read:
+                        print(f"   ✅ Заявка обработана - уже на дашборде")
+                        self.seen_requests.add(request_id)
+                        return
+                except:
+                    pass
+                
+                # Имитируем чтение оператором - ждем 2-4 секунды
+                import random
+                read_time = random.uniform(2, 4)
+                print(f"   ⏳ Оператор читает заявку ({read_time:.1f} сек)...")
+                time.sleep(read_time)
+                
+                # Еще раз проверяем перенаправление после чтения
+                try:
+                    current_url_after_read = self.page.url
+                    if '/approve-request' in current_url_after_read:
+                        print(f"   ✅ XSS сработал во время чтения - редирект на страницу одобрения!")
+                        self.seen_requests.add(request_id)
+                        return
+                    elif '/operator2' in current_url_after_read and '/review-request' not in current_url_after_read:
+                        print(f"   ✅ Заявка обработана во время чтения - на дашборде")
+                        self.seen_requests.add(request_id)
+                        return
+                except:
+                    pass
+                
+                # Проверяем, не произошло ли уже перенаправление на страницу одобрения
+                try:
+                    current_url_check = self.page.url
+                    print(f"   📍 Текущий URL перед проверкой описания: {current_url_check}")
+                    if '/approve-request' in current_url_check:
+                        print(f"   ✅ XSS сработал - произошел редирект на страницу одобрения!")
+                        self.seen_requests.add(request_id)
+                        return
+                    elif '/operator2' in current_url_check and '/review-request' not in current_url_check:
+                        print(f"   ✅ Заявка обработана - на дашборде")
+                        self.seen_requests.add(request_id)
+                        return
+                except:
+                    pass
+                
+                # Получаем и выводим содержимое описания для отладки
+                print(f"   📄 Проверяю содержимое описания...")
+                try:
+                    # Сначала выводим общий HTML страницы для отладки
+                    # Обрабатываем ошибку навигации - если страница перенаправляется
+                    try:
+                        page_html = self.page.content()
+                        print(f"   📝 HTML всей страницы (первые 2000 символов):")
+                        print(f"      {page_html[:2000]}")
+                    except Exception as nav_error:
+                        if "navigating" in str(nav_error).lower():
+                            print(f"   ⚠️ Страница находится в процессе навигации (XSS скрипт перенаправляет)")
+                            # Ждем завершения навигации
+                            try:
+                                self.page.wait_for_load_state("networkidle", timeout=5000)
+                                current_url_after_nav = self.page.url
+                                print(f"   📍 URL после навигации: {current_url_after_nav}")
+                                if '/approve-request' in current_url_after_nav:
+                                    print(f"   ✅ XSS сработал - редирект на страницу одобрения!")
+                                    self.seen_requests.add(request_id)
+                                    return
+                                elif '/operator2' in current_url_after_nav:
+                                    print(f"   ✅ Заявка обработана - на дашборде")
+                                    self.seen_requests.add(request_id)
+                                    return
+                            except:
+                                # Если не удалось дождаться, просто проверяем текущий URL
+                                try:
+                                    current_url_after_nav = self.page.url
+                                    if '/approve-request' in current_url_after_nav or '/operator2' in current_url_after_nav:
+                                        print(f"   ✅ Произошел редирект: {current_url_after_nav}")
+                                        self.seen_requests.add(request_id)
+                                        return
+                                except:
+                                    pass
+                            print(f"   ⚠️ Не удалось получить содержимое из-за навигации, продолжаю...")
+                        else:
+                            raise
+                    
+                    # Ищем div с классом "prose dark:prose-invert max-w-none"
+                    prose_div = self.page.query_selector('.prose.dark\\:prose-invert.max-w-none')
+                    if not prose_div:
+                        # Пробуем альтернативные варианты
+                        prose_div = self.page.query_selector('div.prose')
+                    if not prose_div:
+                        prose_div = self.page.query_selector('.prose')
+                    if prose_div:
+                        prose_text = prose_div.inner_text()
+                        prose_html = prose_div.inner_html()
+                        print(f"   📝 Текст описания (первые 500 символов):")
+                        print(f"      {prose_text[:500]}")
+                        print(f"   📝 HTML описания (первые 1000 символов):")
+                        print(f"      {prose_html[:1000]}")
+                        
+                        # Улучшенная проверка на эксплуатацию XSS
+                        print(f"   🔍 Детальная проверка на XSS уязвимость...")
+                        
+                        # 1. Проверяем, что HTML не экранирован (признак использования |safe)
+                        is_escaped = '&lt;script' in prose_html or '&lt;a' in prose_html or '&lt;img' in prose_html
+                        if is_escaped:
+                            print(f"   🔒 HTML экранирован (используется |escape) - XSS не активна")
+                            print(f"   ✅ Оператор защищен от XSS атаки")
+                            self.seen_requests.add(request_id)
+                            return
+                        
+                        # 2. Проверяем наличие JavaScript маркеров
+                        js_indicators = [
+                            '<script', 
+                            'javascript:', 
+                            'onclick=', 
+                            'onerror=', 
+                            'onload=', 
+                            'eval(', 
+                            'function(',
+                            'document.',
+                            'window.location',
+                            'fetch(',
+                            'FormData(',
+                            'addEventListener'
+                        ]
+                        found_js_markers = []
+                        for indicator in js_indicators:
+                            if indicator.lower() in prose_html.lower():
+                                found_js_markers.append(indicator)
+                        
+                        # 3. Проверяем наличие специфичных XSS элементов
+                        has_xss_elements = False
+                        xss_elements = [
+                            'operator-info-link',  # ID ссылки из XSS payload
+                            'img src=x onerror',   # Автоматическое выполнение через img
+                            'svg onload',          # Автоматическое выполнение через svg
+                        ]
+                        found_xss_elements = []
+                        for element in xss_elements:
+                            if element.lower() in prose_html.lower():
+                                found_xss_elements.append(element)
+                                has_xss_elements = True
+                        
+                        # 4. Ищем конкретную ссылку с id="operator-info-link"
+                        operator_info_link = prose_div.query_selector('a#operator-info-link')
+                        
+                        # 5. Проверяем наличие текста "ознакомиться"
+                        has_operator_text = 'ознакомиться' in prose_text.lower() or 'ознакомиться' in prose_html.lower()
+                        
+                        # Выводим результаты проверки
+                        print(f"   📊 Результаты проверки XSS:")
+                        print(f"      - HTML экранирован: ❌ НЕТ (уязвимо)")
+                        print(f"      - JavaScript маркеры: {'✅ НАЙДЕНЫ' if found_js_markers else '❌ НЕ НАЙДЕНЫ'}")
+                        if found_js_markers:
+                            print(f"         Найдены: {', '.join(found_js_markers[:5])}")
+                        print(f"      - XSS элементы: {'✅ НАЙДЕНЫ' if found_xss_elements else '❌ НЕ НАЙДЕНЫ'}")
+                        if found_xss_elements:
+                            print(f"         Найдены: {', '.join(found_xss_elements)}")
+                        print(f"      - Ссылка operator-info-link: {'✅ НАЙДЕНА' if operator_info_link else '❌ НЕ НАЙДЕНА'}")
+                        print(f"      - Текст 'ознакомиться': {'✅ НАЙДЕН' if has_operator_text else '❌ НЕ НАЙДЕН'}")
+                        
+                        # Определяем, есть ли активная XSS уязвимость
+                        is_xss_vulnerable = (
+                            not is_escaped and  # HTML не экранирован
+                            (found_js_markers or has_xss_elements) and  # Есть JS или XSS элементы
+                            (operator_info_link is not None or has_operator_text)  # Есть целевая ссылка или текст
+                        )
+                        
+                        if not is_xss_vulnerable:
+                            print(f"   ⚠️ XSS уязвимость не обнаружена или не активна")
+                            print(f"   ✅ Оператор просмотрел заявку")
+                            self.seen_requests.add(request_id)
+                            return
+                        
+                        print(f"   🚨 ОБНАРУЖЕНА АКТИВНАЯ XSS УЯЗВИМОСТЬ!")
+                        print(f"   🔍 Ищу ссылку для перехода...")
+                        
+                        # Ищем все ссылки в .prose
+                        all_links = prose_div.query_selector_all('a')
+                        print(f"   🔍 Найдено ссылок в описании: {len(all_links)}")
+                        
+                        # Ищем ссылку по приоритету: сначала по ID, потом по тексту, потом по href
+                        target_link = None
+                        if operator_info_link:
+                            target_link = operator_info_link
+                            print(f"   ✅ Найдена ссылка по ID 'operator-info-link'")
+                        else:
+                            for link in all_links:
+                                try:
+                                    link_text = link.inner_text().lower().strip()
+                                    link_href = link.get_attribute('href') or ''
+                                    link_id = link.get_attribute('id') or ''
+                                    print(f"   🔍 Проверяю ссылку: id='{link_id}', текст='{link_text[:50]}', href='{link_href[:100]}'")
+                                    
+                                    # Приоритет: ID > текст > href
+                                    if link_id == 'operator-info-link':
+                                        target_link = link
+                                        print(f"   ✅ Найдена ссылка по ID!")
+                                        break
+                                    elif "ознакомиться" in link_text:
+                                        target_link = link
+                                        print(f"   ✅ Найдена ссылка по тексту 'ознакомиться'!")
+                                        break
+                                    elif "/approve-request" in link_href:
+                                        target_link = link
+                                        print(f"   ✅ Найдена ссылка по href '/approve-request'!")
+                                        break
+                                except Exception as e:
+                                    print(f"   ⚠️ Ошибка проверки ссылки: {str(e)[:50]}")
+                        
+                        if not target_link:
+                            print(f"   ⚠️ Целевая ссылка не найдена, но XSS обнаружен")
+                            print(f"   ✅ Оператор просмотрел заявку")
+                            self.seen_requests.add(request_id)
+                            return
+                        
+                        if target_link:
+                            # Получаем href ссылки
+                            link_href = target_link.get_attribute('href')
+                            print(f"   ✅ Найдена ссылка: href='{link_href}'")
+                            print(f"   ✅ XSS уязвимость активна (используется |safe) - ссылка найдена")
+                            
+                            # Извлекаем request_id из href или из текущего URL
+                            approve_request_id = None
+                            if link_href and '/approve-request/' in link_href:
+                                import re
+                                match = re.search(r'/approve-request/(\d+)/', link_href)
+                                if match:
+                                    approve_request_id = match.group(1)
+                            if not approve_request_id:
+                                approve_request_id = request_id
+                            
+                            print(f"   📝 ID заявки для одобрения: {approve_request_id}")
+                            
+                            # Отправляем POST запрос напрямую через Playwright
+                            print(f"   👆 Оператор переходит по ссылке (отправляется POST запрос)...")
+                            try:
+                                # Получаем CSRF токен из формы на странице
+                                csrf_token = None
+                                try:
+                                    csrf_input = self.page.query_selector('input[name="csrfmiddlewaretoken"]')
+                                    if csrf_input:
+                                        csrf_token = csrf_input.get_attribute('value')
+                                except:
+                                    pass
+                                
+                                # Если не нашли в форме, получаем из cookie
+                                if not csrf_token:
+                                    cookies = self.context.cookies()
+                                    for cookie in cookies:
+                                        if cookie['name'] == 'csrftoken':
+                                            csrf_token = cookie['value']
+                                            break
+                                
+                                if csrf_token:
+                                    print(f"   ✅ CSRF токен получен")
+                                    
+                                    # Отправляем POST запрос через Playwright
+                                    approve_url = self._url(f"/approve-request/{approve_request_id}/")
+                                    print(f"   📤 Отправка POST запроса на: {approve_url}")
+                                    
+                                    response = self.page.request.post(
+                                        approve_url,
+                                        data={'csrfmiddlewaretoken': csrf_token},
+                                        headers={
+                                            'Referer': self.page.url,
+                                            'X-CSRFToken': csrf_token,
+                                        }
+                                    )
+                                    
+                                    print(f"   📥 Ответ получен: статус {response.status}")
+                                    
+                                    # Ждем навигации после POST запроса
+                                    try:
+                                        self.page.wait_for_url('**/operator2/**', timeout=5000)
+                                        current_url = self.page.url
+                                        print(f"   ✅ XSS сработал - произошло перенаправление на: {current_url}")
+                                        self.seen_requests.add(request_id)
+                                        return
+                                    except:
+                                        pass
+                                    
+                                    # Если редирект не произошел автоматически, переходим вручную
+                                    if response.status in [200, 302]:
+                                        # Перезагружаем страницу или переходим на дашборд
+                                        try:
+                                            self.page.goto(self._url("/operator2/"), wait_until="networkidle", timeout=5000)
+                                            current_url = self.page.url
+                                            print(f"   ✅ Переход на дашборд выполнен: {current_url}")
+                                            self.seen_requests.add(request_id)
+                                            return
+                                        except:
+                                            pass
+                                    
+                                    # Проверяем текущий URL
+                                    time.sleep(1)
+                                    current_url = self.page.url
+                                    print(f"   📍 Текущий URL после POST: {current_url}")
+                                    
+                                    if '/operator2' in current_url:
+                                        print(f"   ✅ XSS сработал - на дашборде!")
+                                        self.seen_requests.add(request_id)
+                                        return
+                                else:
+                                    print(f"   ⚠️ CSRF токен не найден, пробую альтернативный способ...")
+                                    
+                                    # Альтернативный способ - через JavaScript
+                                    post_success = self.page.evaluate(f"""
+                                        (function() {{
+                                            var csrfToken = null;
+                                            var form = document.querySelector('form[action*="approve-request"]');
+                                            if(form){{
+                                                var csrfInput = form.querySelector('input[name="csrfmiddlewaretoken"]');
+                                                if(csrfInput){{
+                                                    csrfToken = csrfInput.value;
+                                                }}
+                                            }}
+                                            if(!csrfToken){{
+                                                var cookies = document.cookie.split(';');
+                                                for(var i=0; i<cookies.length; i++){{
+                                                    var cookie = cookies[i].trim();
+                                                    if(cookie.indexOf('csrftoken=') === 0){{
+                                                        csrfToken = cookie.substring('csrftoken='.length);
+                                                        break;
+                                                    }}
+                                                }}
+                                            }}
+                                            
+                                            if(csrfToken) {{
+                                                var hiddenForm = document.createElement('form');
+                                                hiddenForm.method = 'POST';
+                                                hiddenForm.action = '/approve-request/{approve_request_id}/';
+                                                hiddenForm.style.display = 'none';
+                                                
+                                                var csrfInput = document.createElement('input');
+                                                csrfInput.type = 'hidden';
+                                                csrfInput.name = 'csrfmiddlewaretoken';
+                                                csrfInput.value = csrfToken;
+                                                hiddenForm.appendChild(csrfInput);
+                                                
+                                                document.body.appendChild(hiddenForm);
+                                                hiddenForm.submit();
+                                                return true;
+                                            }}
+                                            return false;
+                                        }})();
+                                    """)
+                                    
+                                    if post_success:
+                                        print(f"   ✅ POST запрос отправлен через JavaScript")
+                                        time.sleep(2)
+                                        
+                                        try:
+                                            self.page.wait_for_url('**/operator2/**', timeout=5000)
+                                            current_url = self.page.url
+                                            print(f"   ✅ XSS сработал - произошло перенаправление на: {current_url}")
+                                            self.seen_requests.add(request_id)
+                                            return
+                                        except:
+                                            pass
+                                        
+                                        current_url = self.page.url
+                                        if '/operator2' in current_url:
+                                            print(f"   ✅ XSS сработал - на дашборде!")
+                                            self.seen_requests.add(request_id)
+                                            return
+                                    
+                            except Exception as click_error:
+                                print(f"   ⚠️ Ошибка при выполнении POST запроса: {str(click_error)[:200]}")
+                            
+                            self.seen_requests.add(request_id)
+                            return
+                        else:
+                            print(f"   ⚠️ Ссылка не найдена в описании")
+                            print(f"   ✅ Оператор просмотрел заявку")
+                            self.seen_requests.add(request_id)
+                            return
                     else:
-                        print(f"   ⚠️ Альтернативный метод также не сработал")
-                        print(f"   💡 Попробуйте проверить логи браузера или CSP настройки")
-            except:
-                print(f"   ⚠️ Не удалось проверить финальный статус")
+                        print(f"   ⚠️ Div.prose не найден на странице")
+                        # Пробуем найти через XPath или другие селекторы
+                        try:
+                            # Ищем через XPath
+                            prose_xpath = self.page.query_selector('xpath=//div[contains(@class, "prose")]')
+                            if prose_xpath:
+                                print(f"   ✅ Найден div.prose через XPath")
+                                prose_div = prose_xpath
+                                prose_text = prose_div.inner_text()
+                                prose_html = prose_div.inner_html()
+                                print(f"   📝 Текст описания (первые 500 символов):")
+                                print(f"      {prose_text[:500]}")
+                                print(f"   📝 HTML описания (первые 1000 символов):")
+                                print(f"      {prose_html[:1000]}")
+                                
+                                # Улучшенная проверка на эксплуатацию XSS (через XPath)
+                                print(f"   🔍 Детальная проверка на XSS уязвимость (XPath)...")
+                                
+                                # 1. Проверяем, что HTML не экранирован
+                                is_escaped = '&lt;script' in prose_html or '&lt;a' in prose_html or '&lt;img' in prose_html
+                                if is_escaped:
+                                    print(f"   🔒 HTML экранирован (используется |escape) - XSS не активна")
+                                    print(f"   ✅ Оператор защищен от XSS атаки")
+                                    self.seen_requests.add(request_id)
+                                    return
+                                
+                                # 2. Проверяем наличие JavaScript маркеров
+                                js_indicators = [
+                                    '<script', 
+                                    'javascript:', 
+                                    'onclick=', 
+                                    'onerror=', 
+                                    'onload=', 
+                                    'eval(', 
+                                    'function(',
+                                    'document.',
+                                    'window.location',
+                                    'fetch(',
+                                    'FormData(',
+                                    'addEventListener'
+                                ]
+                                found_js_markers = []
+                                for indicator in js_indicators:
+                                    if indicator.lower() in prose_html.lower():
+                                        found_js_markers.append(indicator)
+                                
+                                # 3. Проверяем наличие специфичных XSS элементов
+                                has_xss_elements = False
+                                xss_elements = [
+                                    'operator-info-link',
+                                    'img src=x onerror',
+                                    'svg onload',
+                                ]
+                                found_xss_elements = []
+                                for element in xss_elements:
+                                    if element.lower() in prose_html.lower():
+                                        found_xss_elements.append(element)
+                                        has_xss_elements = True
+                                
+                                # 4. Ищем конкретную ссылку с id="operator-info-link"
+                                operator_info_link = prose_div.query_selector('a#operator-info-link')
+                                
+                                # 5. Проверяем наличие текста "ознакомиться"
+                                has_operator_text = 'ознакомиться' in prose_text.lower() or 'ознакомиться' in prose_html.lower()
+                                
+                                # Выводим результаты проверки
+                                print(f"   📊 Результаты проверки XSS:")
+                                print(f"      - HTML экранирован: ❌ НЕТ (уязвимо)")
+                                print(f"      - JavaScript маркеры: {'✅ НАЙДЕНЫ' if found_js_markers else '❌ НЕ НАЙДЕНЫ'}")
+                                if found_js_markers:
+                                    print(f"         Найдены: {', '.join(found_js_markers[:5])}")
+                                print(f"      - XSS элементы: {'✅ НАЙДЕНЫ' if found_xss_elements else '❌ НЕ НАЙДЕНЫ'}")
+                                if found_xss_elements:
+                                    print(f"         Найдены: {', '.join(found_xss_elements)}")
+                                print(f"      - Ссылка operator-info-link: {'✅ НАЙДЕНА' if operator_info_link else '❌ НЕ НАЙДЕНА'}")
+                                print(f"      - Текст 'ознакомиться': {'✅ НАЙДЕН' if has_operator_text else '❌ НЕ НАЙДЕН'}")
+                                
+                                # Определяем, есть ли активная XSS уязвимость
+                                is_xss_vulnerable = (
+                                    not is_escaped and
+                                    (found_js_markers or has_xss_elements) and
+                                    (operator_info_link is not None or has_operator_text)
+                                )
+                                
+                                if not is_xss_vulnerable:
+                                    print(f"   ⚠️ XSS уязвимость не обнаружена или не активна")
+                                    print(f"   ✅ Оператор просмотрел заявку")
+                                    self.seen_requests.add(request_id)
+                                    return
+                                
+                                print(f"   🚨 ОБНАРУЖЕНА АКТИВНАЯ XSS УЯЗВИМОСТЬ!")
+                                print(f"   🔍 Ищу ссылку для перехода...")
+                                
+                                # Ищем ссылки
+                                all_links = prose_div.query_selector_all('a')
+                                print(f"   🔍 Найдено ссылок в описании: {len(all_links)}")
+                                
+                                # Ищем ссылку по приоритету
+                                target_link = None
+                                if operator_info_link:
+                                    target_link = operator_info_link
+                                    print(f"   ✅ Найдена ссылка по ID 'operator-info-link'")
+                                else:
+                                    for link in all_links:
+                                        try:
+                                            link_text = link.inner_text().lower().strip()
+                                            link_href = link.get_attribute('href') or ''
+                                            link_id = link.get_attribute('id') or ''
+                                            print(f"   🔍 Проверяю ссылку: id='{link_id}', текст='{link_text[:50]}', href='{link_href[:100]}'")
+                                            
+                                            if link_id == 'operator-info-link':
+                                                target_link = link
+                                                print(f"   ✅ Найдена ссылка по ID!")
+                                                break
+                                            elif "ознакомиться" in link_text:
+                                                target_link = link
+                                                print(f"   ✅ Найдена ссылка по тексту 'ознакомиться'!")
+                                                break
+                                            elif "/approve-request" in link_href:
+                                                target_link = link
+                                                print(f"   ✅ Найдена ссылка по href '/approve-request'!")
+                                                break
+                                        except Exception as e:
+                                            print(f"   ⚠️ Ошибка проверки ссылки: {str(e)[:50]}")
+                                
+                                if not target_link:
+                                    print(f"   ⚠️ Целевая ссылка не найдена, но XSS обнаружен")
+                                    print(f"   ✅ Оператор просмотрел заявку")
+                                    self.seen_requests.add(request_id)
+                                    return
+                                
+                                if target_link:
+                                    link_href = target_link.get_attribute('href')
+                                    print(f"   ✅ Найдена ссылка: href='{link_href}'")
+                                    print(f"   ✅ XSS уязвимость активна (используется |safe) - ссылка найдена")
+                                    target_link.scroll_into_view_if_needed()
+                                    time.sleep(0.3)
+                                    print(f"   👆 Оператор кликает на ссылку (отправится POST запрос)...")
+                                    try:
+                                        target_link.click()
+                                        print(f"   ✅ Клик выполнен, ждем обработки POST запроса...")
+                                        
+                                        time.sleep(2)
+                                        
+                                        try:
+                                            self.page.wait_for_load_state("networkidle", timeout=5000)
+                                        except:
+                                            pass
+                                        
+                                        current_url = self.page.url
+                                        print(f"   📍 Текущий URL после клика: {current_url}")
+                                        
+                                        if '/operator2' in current_url or '/approve-request' in current_url:
+                                            print(f"   ✅ XSS сработал - произошло перенаправление!")
+                                            self.seen_requests.add(request_id)
+                                            return
+                                        else:
+                                            time.sleep(2)
+                                            current_url = self.page.url
+                                            if '/operator2' in current_url or '/approve-request' in current_url:
+                                                print(f"   ✅ XSS сработал - произошло перенаправление!")
+                                                self.seen_requests.add(request_id)
+                                                return
+                                    except Exception as click_error:
+                                        print(f"   ⚠️ Ошибка при клике на ссылку: {str(click_error)[:100]}")
+                                else:
+                                    print(f"   ⚠️ Ссылка 'ознакомиться' не найдена в описании")
+                                    print(f"   🔒 XSS уязвимость НЕ активна (используется |escape) - ссылка не найдена")
+                                    print(f"   ✅ Оператор защищен от XSS атаки")
+                                    self.seen_requests.add(request_id)
+                                    return
+                                    current_url = self.page.url
+                                    print(f"   📍 Текущий URL: {current_url}")
+                                    self.seen_requests.add(request_id)
+                                    return
+                        except Exception as e:
+                            print(f"   ⚠️ Ошибка поиска через XPath: {str(e)[:50]}")
+                        
+                        # Ищем все ссылки на странице, если .prose не найден
+                        print(f"   🔍 Ищу все ссылки на странице...")
+                        all_links = self.page.query_selector_all('a')
+                        print(f"   🔍 Всего ссылок на странице: {len(all_links)}")
+                        for i, link in enumerate(all_links[:10]):  # Проверяем первые 10
+                            try:
+                                link_text = link.inner_text().lower().strip()
+                                link_href = link.get_attribute('href') or ''
+                                print(f"   🔍 Ссылка #{i}: текст='{link_text[:50]}', href='{link_href[:100]}'")
+                            except:
+                                pass
+                except Exception as e:
+                    print(f"   ⚠️ Ошибка при работе с описанием: {str(e)[:100]}")
+                    import traceback
+                    traceback.print_exc()
+                
+                print(f"   💡 Оператор просмотрел заявку")
+                    
+            except PlaywrightTimeoutError:
+                print(f"   ⚠️ Таймаут загрузки страницы")
+                # Проверяем, может быть страница все-таки загрузилась
+                try:
+                    current_url = self.page.url
+                    print(f"   📍 Текущий URL после таймаута: {current_url}")
+                    if '/approve-request' in current_url:
+                        print(f"   ✅ XSS сработал - произошел редирект на одобрение!")
+                        self.seen_requests.add(request_id)
+                        return
+                    elif '/operator2' in current_url:
+                        print(f"   ✅ Заявка обработана - на дашборде")
+                        self.seen_requests.add(request_id)
+                        return
+                except:
+                    pass
+            except Exception as e:
+                print(f"   ⚠️ Ошибка загрузки страницы: {str(e)[:100]}")
+                # Проверяем текущий URL даже при ошибке
+                try:
+                    current_url = self.page.url
+                    if '/approve-request' in current_url or '/operator2' in current_url:
+                        print(f"   ✅ Несмотря на ошибку, произошел редирект: {current_url}")
+                        self.seen_requests.add(request_id)
+                        return
+                except:
+                    pass
             
+            # Помечаем заявку как просмотренную
             print(f"   ✅ Просмотрена заявка #{request_id}")
             self.seen_requests.add(request_id)
-            
-        except Exception as e:
-            print(f"   ❌ Ошибка просмотра #{request_id}: {e}")
-            import traceback
-            traceback.print_exc()
-    
-    def _approve_request_directly(self, request_id: str) -> bool:
-        """Альтернативный метод: прямое одобрение заявки через requests (если XSS не работает)"""
-        try:
-            approve_url = self._url(f"/approve-request/{request_id}/")
-            
-            # Убеждаемся, что авторизованы
-            if not self.logged_in:
-                if not self.login():
-                    return False
-            
-            # Получаем CSRF токен
-            csrf_token = None
-            try:
-                # Пробуем получить со страницы заявки
-                review_url = self._url(f"/review-request/{request_id}/")
-                response = self.session.get(review_url, timeout=10)
-                if response.status_code == 200:
-                    soup = BeautifulSoup(response.text, 'html.parser')
-                    csrf_input = soup.find('input', {'name': 'csrfmiddlewaretoken'})
-                    if csrf_input:
-                        csrf_token = csrf_input.get('value')
-            except:
-                pass
-            
-            if not csrf_token and 'csrftoken' in self.session.cookies:
-                csrf_token = self.session.cookies['csrftoken']
-            
-            if not csrf_token:
-                print(f"      ⚠️ Не удалось получить CSRF токен")
-                return False
-            
-            # Отправляем POST запрос на одобрение
-            headers = {
-                'Referer': self._url(f"/review-request/{request_id}/"),
-                'X-CSRFToken': csrf_token,
-            }
-            
-            data = {
-                'csrfmiddlewaretoken': csrf_token,
-            }
-            
-            response = self.session.post(approve_url, data=data, headers=headers, allow_redirects=True, timeout=10)
-            
-            # Проверяем успешность
-            if response.status_code in [200, 302]:
-                if "/operator2" in response.url or "одобрена" in response.text.lower():
-                    return True
-            
-            return False
-        except Exception as e:
-            print(f"      ⚠️ Ошибка прямого одобрения: {str(e)[:100]}")
-            return False
             
         except Exception as e:
             print(f"   ❌ Ошибка просмотра #{request_id}: {e}")

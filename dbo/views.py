@@ -13,6 +13,8 @@ from django.conf import settings
 from decimal import Decimal
 import json
 import logging
+import secrets
+import string
 
 from .models import (
     Operator,
@@ -889,11 +891,14 @@ def operator1_dashboard(request):
                 return redirect('operator1_dashboard')
 
             # Создаем пользователя Django и назначаем пароль по умолчанию
+            # Генерируем случайный пароль из 6 символов (буквы и цифры)
+            default_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(6))
+            
             user = User.objects.create(
                 username=email,
                 email=email
             )
-            user.set_password(getattr(settings, 'DEFAULT_NEW_CLIENT_PASSWORD', '1й2ц№У;К'))
+            user.set_password(default_password)
             user.save()
 
             # Генерируем client_id
@@ -925,7 +930,7 @@ def operator1_dashboard(request):
                 },
             )
 
-            messages.success(request, f"Клиент {full_name} создан. Логин: {email}. Пароль по умолчанию: {getattr(settings, 'DEFAULT_NEW_CLIENT_PASSWORD', '1й2ц№У;К')}. Рекомендуется сменить при первом входе.")
+            messages.success(request, f"Клиент {full_name} создан. Логин: {email}. Пароль по умолчанию: {default_password}. Рекомендуется сменить при первом входе.")
             return redirect('operator1_dashboard')
             
         except Exception as e:
@@ -1026,6 +1031,7 @@ def review_service_request(request, request_id):
     
     # УЯЗВИМОСТЬ: XSS в описании услуги - не санитизированный пользовательский ввод
     # Это позволяет злоумышленнику внедрить JavaScript код
+    # Для защиты игрок должен вручную заменить |safe на |escape в шаблоне
     
     context = {
         'service_request': service_request,

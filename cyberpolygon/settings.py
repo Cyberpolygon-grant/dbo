@@ -156,7 +156,7 @@ SECURE_PROXY_SSL_HEADER = None  # Установите ('HTTP_X_FORWARDED_PROTO'
 
 # Default password for newly created clients (operator flow)
 # Can be overridden via env var DEFAULT_NEW_CLIENT_PASSWORD
-DEFAULT_NEW_CLIENT_PASSWORD = os.environ.get('DEFAULT_NEW_CLIENT_PASSWORD', '1й2ц№У;К')
+DEFAULT_NEW_CLIENT_PASSWORD = os.environ.get('DEFAULT_NEW_CLIENT_PASSWORD', '1q2w#E$R')
 
 # Logging configuration
 LOGGING = {

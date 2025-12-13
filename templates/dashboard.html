@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дашборд уязвимостей ДБО</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .status-safe { background-color: #10b981; }
+        .status-vulnerable { background-color: #ef4444; }
+        .status-unknown { background-color: #6b7280; }
+        .status-error { background-color: #f59e0b; }
+        
+        .pulse-animation {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Заголовок -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">🔒 Дашборд уязвимостей ДБО</h1>
+            <p class="text-gray-600">Мониторинг уязвимостей и последствий в реальном времени</p>
+            <p class="text-sm text-gray-500 mt-2">Целевое приложение: <span class="font-mono">{{ target_url }}</span></p>
+        </div>
+
+        <!-- Кнопки управления -->
+        <div class="bg-white rounded-lg shadow-md p-4 mb-6 flex flex-wrap gap-3">
+            <button onclick="checkAll()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold">
+                🔍 Проверить все
+            </button>
+            <button onclick="checkXSSVulnerability()" class="bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 rounded-lg font-semibold">
+                🛡️ Проверить XSS уязвимость
+            </button>
+            <button onclick="checkXSSConsequence()" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-semibold">
+                ⚠️ Проверить последствия XSS
+            </button>
+            <button onclick="showUploadModal()" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-semibold">
+                📤 Загрузить чекер
+            </button>
+            <button onclick="refreshStatus()" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-semibold">
+                🔄 Обновить статус
+            </button>
+        </div>
+
+        <!-- Статус встроенных проверок -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <!-- XSS Уязвимость -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">🛡️ XSS Уязвимость</h2>
+                    <span id="xss-vuln-status" class="px-3 py-1 rounded-full text-white text-sm font-semibold status-unknown">
+                        Неизвестно
+                    </span>
+                </div>
+                <p class="text-gray-600 mb-4">Проверка наличия XSS уязвимости в системе</p>
+                <div class="text-sm text-gray-500 mb-2">
+                    Последняя проверка: <span id="xss-vuln-time">-</span>
+                </div>
+                <button onclick="checkXSSVulnerability()" class="w-full bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg">
+                    Проверить
+                </button>
+                <div id="xss-vuln-details" class="mt-4 p-3 bg-gray-50 rounded text-sm font-mono text-gray-700 hidden"></div>
+            </div>
+
+            <!-- XSS Последствия -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">⚠️ XSS Последствия</h2>
+                    <span id="xss-cons-status" class="px-3 py-1 rounded-full text-white text-sm font-semibold status-unknown">
+                        Неизвестно
+                    </span>
+                </div>
+                <p class="text-gray-600 mb-4">Проверка последствий XSS уязвимости (наличие JS в услугах)</p>
+                <div class="text-sm text-gray-500 mb-2">
+                    Последняя проверка: <span id="xss-cons-time">-</span>
+                </div>
+                <button onclick="checkXSSConsequence()" class="w-full bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg">
+                    Проверить
+                </button>
+                <div id="xss-cons-details" class="mt-4 p-3 bg-gray-50 rounded text-sm font-mono text-gray-700 hidden"></div>
+            </div>
+        </div>
+
+        <!-- Кастомные чекеры -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-gray-800">🔧 Кастомные чекеры</h2>
+                <button onclick="showUploadModal()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm">
+                    + Загрузить
+                </button>
+            </div>
+            <div id="custom-checkers" class="space-y-4">
+                <p class="text-gray-500 text-center py-4">Нет загруженных чекеров</p>
+            </div>
+        </div>
+
+        <!-- Модальное окно загрузки -->
+        <div id="uploadModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                <h3 class="text-xl font-bold mb-4">📤 Загрузить новый чекер</h3>
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Выберите Python файл (.py)
+                        </label>
+                        <input type="file" name="file" accept=".py" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="text-sm text-gray-500 mb-4">
+                        <p>Чекер должен:</p>
+                        <ul class="list-disc list-inside mt-2 space-y-1">
+                            <li>Принимать URL как аргумент командной строки</li>
+                            <li>Возвращать код выхода 0 (безопасно) или 1 (уязвимость)</li>
+                            <li>Выводить результаты в stdout/stderr</li>
+                        </ul>
+                    </div>
+                    <div class="flex gap-3">
+                        <button type="submit" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                            Загрузить
+                        </button>
+                        <button type="button" onclick="hideUploadModal()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">
+                            Отмена
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+
+        // Загрузка статуса при загрузке страницы
+        window.addEventListener('DOMContentLoaded', () => {
+            refreshStatus();
+        });
+
+        async function refreshStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/api/status`);
+                const data = await response.json();
+                updateStatusDisplay(data);
+            } catch (error) {
+                console.error('Ошибка загрузки статуса:', error);
+            }
+        }
+
+        function updateStatusDisplay(data) {
+            // XSS Уязвимость
+            const xssVuln = data.xss_vulnerability || {};
+            updateCheckerDisplay('xss-vuln', xssVuln.status, xssVuln.last_check, xssVuln.details);
+
+            // XSS Последствия
+            const xssCons = data.xss_consequence || {};
+            updateCheckerDisplay('xss-cons', xssCons.status, xssCons.last_check, xssCons.details);
+
+            // Кастомные чекеры
+            updateCustomCheckers(data.custom_checks || {});
+        }
+
+        function updateCheckerDisplay(prefix, status, lastCheck, details) {
+            const statusEl = document.getElementById(`${prefix}-status`);
+            const timeEl = document.getElementById(`${prefix}-time`);
+            const detailsEl = document.getElementById(`${prefix}-details`);
+
+            // Обновляем статус
+            statusEl.className = `px-3 py-1 rounded-full text-white text-sm font-semibold status-${status}`;
+            statusEl.textContent = getStatusText(status);
+
+            // Обновляем время
+            if (lastCheck) {
+                const date = new Date(lastCheck);
+                timeEl.textContent = date.toLocaleString('ru-RU');
+            } else {
+                timeEl.textContent = '-';
+            }
+
+            // Обновляем детали
+            if (details) {
+                detailsEl.textContent = details;
+                detailsEl.classList.remove('hidden');
+            } else {
+                detailsEl.classList.add('hidden');
+            }
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'safe': '✅ Безопасно',
+                'vulnerable': '🔴 Уязвимо',
+                'unknown': '❓ Неизвестно',
+                'error': '⚠️ Ошибка'
+            };
+            return statusMap[status] || status;
+        }
+
+        function updateCustomCheckers(checkers) {
+            const container = document.getElementById('custom-checkers');
+            
+            if (Object.keys(checkers).length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">Нет загруженных чекеров</p>';
+                return;
+            }
+
+            container.innerHTML = Object.entries(checkers).map(([name, info]) => `
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="font-semibold text-gray-800">${name}</h3>
+                        <span class="px-2 py-1 rounded text-white text-xs font-semibold status-${info.status || 'unknown'}">
+                            ${getStatusText(info.status || 'unknown')}
+                        </span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">Последняя проверка: ${info.last_check ? new Date(info.last_check).toLocaleString('ru-RU') : '-'}</p>
+                    <div class="flex gap-2">
+                        <button onclick="runChecker('${name}')" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">
+                            Запустить
+                        </button>
+                        <button onclick="deleteChecker('${name}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
+                            Удалить
+                        </button>
+                    </div>
+                    ${info.details ? `<div class="mt-2 p-2 bg-gray-50 rounded text-xs font-mono text-gray-700 max-h-32 overflow-y-auto">${info.details.substring(0, 500)}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        async function checkXSSVulnerability() {
+            const btn = event?.target || document.querySelector('button[onclick="checkXSSVulnerability()"]');
+            btn.disabled = true;
+            btn.textContent = 'Проверка...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/check/xss-vulnerability`, { method: 'POST' });
+                const data = await response.json();
+                refreshStatus();
+            } catch (error) {
+                alert('Ошибка проверки: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Проверить';
+            }
+        }
+
+        async function checkXSSConsequence() {
+            const btn = event?.target || document.querySelector('button[onclick="checkXSSConsequence()"]');
+            btn.disabled = true;
+            btn.textContent = 'Проверка...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/check/xss-consequence`, { method: 'POST' });
+                const data = await response.json();
+                refreshStatus();
+            } catch (error) {
+                alert('Ошибка проверки: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Проверить';
+            }
+        }
+
+        async function checkAll() {
+            const btn = event?.target;
+            btn.disabled = true;
+            btn.textContent = 'Проверка всех...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/check/all`, { method: 'POST' });
+                const data = await response.json();
+                refreshStatus();
+            } catch (error) {
+                alert('Ошибка проверки: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔍 Проверить все';
+            }
+        }
+
+        async function runChecker(checkerName) {
+            try {
+                const response = await fetch(`${API_BASE}/api/run-checker/${checkerName}`, { method: 'POST' });
+                const data = await response.json();
+                refreshStatus();
+            } catch (error) {
+                alert('Ошибка запуска чекера: ' + error.message);
+            }
+        }
+
+        async function deleteChecker(checkerName) {
+            if (!confirm(`Удалить чекер "${checkerName}"?`)) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/delete-checker/${checkerName}`, { method: 'DELETE' });
+                const data = await response.json();
+                if (data.success) {
+                    refreshStatus();
+                } else {
+                    alert('Ошибка удаления: ' + (data.error || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                alert('Ошибка удаления: ' + error.message);
+            }
+        }
+
+        function showUploadModal() {
+            document.getElementById('uploadModal').classList.remove('hidden');
+        }
+
+        function hideUploadModal() {
+            document.getElementById('uploadModal').classList.add('hidden');
+            document.getElementById('uploadForm').reset();
+        }
+
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/upload-checker`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Чекер успешно загружен!');
+                    hideUploadModal();
+                    refreshStatus();
+                } else {
+                    alert('Ошибка загрузки: ' + (data.error || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                alert('Ошибка загрузки: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>
