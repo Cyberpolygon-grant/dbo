@@ -1,4 +1,4 @@
-# DBO - Digital Banking Operations
+# Система ДБО
 
 Django-приложение для управления банковскими операциями.
 
