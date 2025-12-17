@@ -999,7 +999,6 @@ def operator1_logs(request):
     
     return render(request, 'operator1_logs.html', context)
 
-@login_required
 def operator2_dashboard(request):
     """Дашборд оператора ДБО #2"""
     try:
