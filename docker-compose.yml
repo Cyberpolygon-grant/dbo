@@ -79,7 +79,7 @@ services:
     environment:
       - APP_URL=http://app:8000
       - BOT_USERNAME=operator2@financepro.ru
-      - BOT_PASSWORD=password123
+      - BOT_PASSWORD=1q2w#E$R%T
       - CHECK_INTERVAL=30
     restart: unless-stopped
     networks:
