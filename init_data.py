@@ -65,7 +65,7 @@ def create_demo_data():
         defaults={'email': 'operator1@financepro.ru', 'first_name': 'Анна', 'last_name': 'Петрова'}
     )
     if created:
-        user1.set_password('password123')
+        user1.set_password('1q2w#E$R')
         user1.save()
         print("Создан пользователь operator1")
     
@@ -86,7 +86,7 @@ def create_demo_data():
         defaults={'email': 'operator2@financepro.ru', 'first_name': 'Иван', 'last_name': 'Сидоров'}
     )
     if created:
-        user2.set_password('password123')
+        user2.set_password('1q2w#E$R%T')
         user2.save()
         print("Создан пользователь operator2")
     
@@ -107,7 +107,7 @@ def create_demo_data():
         defaults={'email': 'client1@financepro.ru', 'first_name': 'Петр', 'last_name': 'Иванов'}
     )
     if created:
-        user3.set_password('password123')
+        user3.set_password('1q2w#E$R%T')
         user3.save()
         print("Создан пользователь client1")
     
@@ -301,7 +301,7 @@ def create_demo_data():
     clients_data = [
         {
             'username': 'client2',
-            'password': 'password123',
+            'password': '1q2w#E$R%T',
             'email': 'client2@financepro.ru',
             'first_name': 'Мария',
             'last_name': 'Смирнова',
@@ -311,7 +311,7 @@ def create_demo_data():
         },
         {
             'username': 'client3',
-            'password': 'password123',
+            'password': '1q2w#E$R%T',
             'email': 'client3@financepro.ru',
             'first_name': 'Алексей',
             'last_name': 'Козлов',
@@ -321,7 +321,7 @@ def create_demo_data():
         },
         {
             'username': 'client4',
-            'password': 'password123',
+            'password': '1q2w#E$R%T',
             'email': 'client4@financepro.ru',
             'first_name': 'Елена',
             'last_name': 'Морозова',
@@ -331,7 +331,7 @@ def create_demo_data():
         },
         {
             'username': 'client5',
-            'password': 'password123',
+            'password': '1q2w#E$R%T',
             'email': 'client5@financepro.ru',
             'first_name': 'Дмитрий',
             'last_name': 'Волков',
@@ -484,13 +484,13 @@ def create_demo_data():
 
     print("\nДемо-данные успешно созданы!")
     print("Доступные аккаунты:")
-    print("- Оператор ДБО #1: operator1 / password123")
-    print("- Оператор ДБО #2: operator2 / password123")
-    print("- Клиент ДБО: client1 / password123")
-    print("- Клиент ДБО: client2 / password123")
-    print("- Клиент ДБО: client3 / password123")
-    print("- Клиент ДБО: client4 / password123 (не верифицирован)")
-    print("- Клиент ДБО: client5 / password123 (не верифицирован)")
+    print("- Оператор ДБО #1: operator1 / 1q2w#E$R")
+    print("- Оператор ДБО #2: operator2 / 1q2w#E$R%T")
+    print("- Клиент ДБО: client1 / 1q2w#E$R%T")
+    print("- Клиент ДБО: client2 / 1q2w#E$R%T")
+    print("- Клиент ДБО: client3 / 1q2w#E$R%T")
+    print("- Клиент ДБО: client4 / 1q2w#E$R%T (не верифицирован)")
+    print("- Клиент ДБО: client5 / 1q2w#E$R%T (не верифицирован)")
     print("\nСоздано:")
     print(f"- {Service.objects.count()} услуг")
     print(f"- {ServiceCategory.objects.count()} категорий услуг")
@@ -526,13 +526,13 @@ def create_demo_data():
     
     print("\nДемо-данные успешно созданы!")
     print("Доступные аккаунты:")
-    print("- Оператор ДБО #1: operator1 / password123")
-    print("- Оператор ДБО #2: operator2 / password123")
-    print("- Клиент ДБО: client1 / password123")
-    print("- Клиент ДБО: client2 / password123")
-    print("- Клиент ДБО: client3 / password123")
-    print("- Клиент ДБО: client4 / password123 (не верифицирован)")
-    print("- Клиент ДБО: client5 / password123 (не верифицирован)")
+    print("- Оператор ДБО #1: operator1 / 1q2w#E$R")
+    print("- Оператор ДБО #2: operator2 / 1q2w#E$R%T")
+    print("- Клиент ДБО: client1 / 1q2w#E$R%T")
+    print("- Клиент ДБО: client2 / 1q2w#E$R%T")
+    print("- Клиент ДБО: client3 / 1q2w#E$R%T")
+    print("- Клиент ДБО: client4 / 1q2w#E$R%T (не верифицирован)")
+    print("- Клиент ДБО: client5 / 1q2w#E$R%T (не верифицирован)")
     print("\nСоздано:")
     print(f"- {Service.objects.count()} услуг")
     print(f"- {ServiceCategory.objects.count()} категорий услуг")
