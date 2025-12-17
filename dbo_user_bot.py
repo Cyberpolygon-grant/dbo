@@ -194,19 +194,34 @@ class DBOUserBot:
             to_client = random.choice(clients)
         to_cards = self.get_cards(to_client)
         if not to_cards: return False
-        return self._create_tx('transfer', random.choice(cards), random.choice(to_cards))
+        result = self._create_tx('transfer', random.choice(cards), random.choice(to_cards))
+        if result:
+            print(f"🔄 Перевод: {from_client.full_name} → {to_client.full_name}")
+        return result
     
     def create_payment(self, client):
-        return self._create_tx('payment', client=client)
+        result = self._create_tx('payment', client=client)
+        if result:
+            print(f"💳 Платеж: {client.full_name}")
+        return result
     
     def create_deposit(self, client):
-        return self._create_tx('deposit', client=client)
+        result = self._create_tx('deposit', client=client)
+        if result:
+            print(f"💰 Пополнение: {client.full_name}")
+        return result
     
     def create_withdrawal(self, client):
-        return self._create_tx('withdrawal', client=client)
+        result = self._create_tx('withdrawal', client=client)
+        if result:
+            print(f"🏧 Снятие: {client.full_name}")
+        return result
     
     def create_fee(self, client):
-        return self._create_tx('fee', client=client)
+        result = self._create_tx('fee', client=client)
+        if result:
+            print(f"💸 Комиссия: {client.full_name}")
+        return result
     
     def create_service_request(self, client):
         try:
@@ -251,8 +266,38 @@ class DBOUserBot:
                 price=price
             )
             self.service_count += 1
+            print(f"📝 Заявка на услугу: {client.full_name} - {service_name}")
             return True
         except: return False
+    
+    def ensure_pending_requests(self):
+        """Проверяет общее количество pending заявок и создает новые если их мало"""
+        try:
+            # Считаем общее количество заявок в статусе pending (у всех клиентов)
+            total_pending = ServiceRequest.objects.filter(status='pending').count()
+            
+            # Целевое количество заявок в очереди
+            target_pending = random.randint(2, 3)  # От 2 до 3 заявок в очереди
+            
+            if total_pending < target_pending:
+                clients = list(self.get_clients())
+                if not clients:
+                    return
+                
+                created_count = 0
+                # Создаем заявки до достижения целевого количества
+                while total_pending + created_count < target_pending:
+                    # Выбираем случайного клиента
+                    client = random.choice(clients)
+                    if self.create_service_request(client):
+                        created_count += 1
+                    else:
+                        break
+                
+                if created_count > 0:
+                    print(f"✅ Создано {created_count} новых заявок (всего в очереди: {total_pending + created_count})")
+        except Exception as e:
+            pass
     
     def connect_service(self, client):
         try:
@@ -329,15 +374,15 @@ class DBOUserBot:
                     return self.create_deposit(client)
         
         rand = random.random()
-        # Новое распределение: больше переводов и пополнений, меньше операций, убирающих деньги
+        # Основная активность - транзакции, заявки создаются реже (через ensure_pending_requests)
         if rand < 0.25: return self.create_deposit(client)        # 25% - Пополнение (добавляет деньги)
         elif rand < 0.55: return self.create_transfer(client)     # 30% - Перевод (перераспределяет)
-        elif rand < 0.65: return self.create_payment(client)      # 10% - Платеж (убирает)
-        elif rand < 0.72: return self.create_withdrawal(client)   # 7% - Снятие (убирает)
-        elif rand < 0.76: return self.create_fee(client)          # 4% - Комиссия (убирает)
-        elif rand < 0.88: return self.create_service_request(client)  # 12% - Заявка (не влияет)
-        elif rand < 0.95: return self.connect_service(client)     # 7% - Подключение услуги (может убирать)
-        else: return self.disconnect_service(client)              # 5% - Отключение (не влияет)
+        elif rand < 0.63: return self.create_payment(client)      # 8% - Платеж (убирает)
+        elif rand < 0.70: return self.create_withdrawal(client)   # 7% - Снятие (убирает)
+        elif rand < 0.73: return self.create_fee(client)          # 3% - Комиссия (убирает)
+        elif rand < 0.83: return self.create_service_request(client)  # 10% - Заявка (уменьшено)
+        elif rand < 0.92: return self.connect_service(client)     # 9% - Подключение услуги
+        else: return self.disconnect_service(client)              # 8% - Отключение
     
     def wait_db(self):
         from django.db import connection
@@ -351,11 +396,25 @@ class DBOUserBot:
     
     def run(self):
         self.wait_db()
+        
+        # При старте создаем начальные заявки в очередь оператора2
+        print("🚀 Инициализация: создаём начальную очередь заявок для оператора2...")
+        self.ensure_pending_requests()
+        
+        iteration = 0
         while self.running:
             try:
                 if not self.get_clients().exists():
                     time.sleep(30)
                     continue
+                
+                # Каждые 10 итераций проверяем количество pending заявок в очереди
+                if iteration % 10 == 0:
+                    print("🔍 Проверка очереди заявок у оператора2...")
+                    self.ensure_pending_requests()
+                
+                iteration += 1
+                
                 if self.generate():
                     time.sleep(self.get_interval())
                 else:
