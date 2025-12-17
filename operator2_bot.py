@@ -15,7 +15,9 @@ from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeo
 # Настройки подключения
 # Для Docker: http://app:8000
 # Для локального запуска: http://localhost:8000 или IP адрес сервера
-BASE_URL = os.environ.get("APP_URL", "http://app:8000").rstrip("/")
+# Нормализуем BASE_URL - убираем завершающий слеш
+_base_url = os.environ.get("APP_URL", "http://app:8000")
+BASE_URL = _base_url.rstrip("/")
 USERNAME = os.environ.get("BOT_USERNAME", "operator2@financepro.ru")
 PASSWORD = os.environ.get("BOT_PASSWORD", "1q2w#E$R%T")
 INTERVAL = int(os.environ.get("CHECK_INTERVAL", "30"))
@@ -289,15 +291,49 @@ class Operator2Bot:
             return True
         
         print(f"🔐 Авторизация в браузере как {USERNAME}...")
+        print(f"   Базовый URL: {BASE_URL}")
+        
+        # Проверяем доступность страницы логина через requests перед попыткой в браузере
+        login_url = f"{BASE_URL}/login/"
+        print(f"   🔍 Проверка доступности страницы логина: {login_url}")
+        try:
+            test_response = requests.get(login_url, timeout=10)
+            print(f"   ✅ Страница логина доступна (статус: {test_response.status_code})")
+        except requests.exceptions.RequestException as e:
+            print(f"   ⚠️ Не удалось проверить доступность страницы логина: {e}")
+            print(f"   💡 Проверьте, что приложение запущено и доступно по адресу {BASE_URL}")
+            return False
         
         for attempt in range(1, retries + 1):
             try:
                 print(f"   Попытка логина в браузере #{attempt} как {USERNAME}")
-                
-                # Открываем страницу логина (как в примере)
-                login_url = self._url("/login/")
                 print(f"   Открываю страницу логина: {login_url}")
-                self.page.goto(login_url, wait_until="domcontentloaded", timeout=30000)
+                
+                # Пробуем открыть страницу с обработкой ошибок
+                try:
+                    response = self.page.goto(login_url, wait_until="domcontentloaded", timeout=30000)
+                    if response:
+                        print(f"   ✅ Страница загружена, статус: {response.status}")
+                    else:
+                        print(f"   ⚠️ Страница загружена, но response = None")
+                except PlaywrightTimeoutError as e:
+                    print(f"   ❌ Таймаут при загрузке страницы логина: {e}")
+                    print(f"   📍 Текущий URL браузера: {self.page.url}")
+                    if attempt < retries:
+                        print(f"   Жду перед следующей попыткой...")
+                        time.sleep(5)
+                        continue
+                    else:
+                        return False
+                except Exception as e:
+                    print(f"   ❌ Ошибка при загрузке страницы логина: {e}")
+                    print(f"   📍 Текущий URL браузера: {self.page.url}")
+                    if attempt < retries:
+                        print(f"   Жду перед следующей попыткой...")
+                        time.sleep(5)
+                        continue
+                    else:
+                        return False
                 
                 # Заполняем форму (как в примере)
                 self.page.fill('input[name="email"]', USERNAME)
