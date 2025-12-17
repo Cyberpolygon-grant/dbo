@@ -158,6 +158,11 @@ SECURE_PROXY_SSL_HEADER = None  # Установите ('HTTP_X_FORWARDED_PROTO'
 # Can be overridden via env var DEFAULT_NEW_CLIENT_PASSWORD
 DEFAULT_NEW_CLIENT_PASSWORD = os.environ.get('DEFAULT_NEW_CLIENT_PASSWORD', '1q2w#E$R')
 
+# Login / Logout URLs
+LOGIN_URL = '/login/'
+LOGOUT_URL = '/logout/'
+LOGIN_REDIRECT_URL = '/'  # После логина редирект на главную, там будет роутинг по роли
+
 # Logging configuration
 LOGGING = {
     'version': 1,
