@@ -87,6 +87,10 @@ print_status "info" "Инициализация демо-данных..."
 $COMPOSE_CMD exec -T app python init_data.py
 
 echo ""
+print_status "info" "Создание тестовой заявки для XSS-проверки..."
+$COMPOSE_CMD exec -T app python create_xss_test_request.py
+
+echo ""
 echo "============================================================"
 print_status "ok" "Система перезапущена успешно!"
 echo "============================================================"
