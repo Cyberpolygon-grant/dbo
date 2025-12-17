@@ -117,7 +117,7 @@
         <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-6 border border-gray-200 dark:border-gray-600">
             <div class="prose dark:prose-invert max-w-none">
 
-                {{ service_request.service_description|escape}}
+                {{ service_request.service_description|safe}}
             </div>
         </div>
     </div>
@@ -160,4 +160,5 @@
 </div>
 
 <script></script>
+
 {% endblock %}
