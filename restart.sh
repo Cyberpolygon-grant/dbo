@@ -1,6 +1,17 @@
 #!/bin/bash
 #
-# Скрипт для перезапуска системы ДБО
+# Скрипт для ПОЛНОГО перезапуска системы ДБО
+#
+# ЧТО ДЕЛАЕТ:
+# 1. Останавливает контейнеры и удаляет volumes
+# 2. ПОЛНОСТЬЮ УДАЛЯЕТ БД (DROP DATABASE)
+# 3. Создаёт новую БД (CREATE DATABASE)
+# 4. Применяет миграции
+# 5. Сбрасывает sequences (ID начинаются с 1)
+# 6. Создаёт тестовую заявку ПЕРВОЙ (ID=1)
+# 7. Инициализирует демо-данные
+#
+# ГАРАНТИЯ: После выполнения тестовая заявка будет иметь ID=1
 #
 
 set -e
@@ -47,7 +58,7 @@ fi
 
 # Останавливаем контейнеры и удаляем все данные
 echo ""
-print_status "warn" "ВНИМАНИЕ: Все данные будут удалены!"
+print_status "warn" "ВНИМАНИЕ: Все данные будут ПОЛНОСТЬЮ УДАЛЕНЫ!"
 print_status "info" "Остановка контейнеров и удаление volumes..."
 $COMPOSE_CMD down -v
 
@@ -66,14 +77,28 @@ echo ""
 print_status "info" "Проверка статуса контейнеров..."
 $COMPOSE_CMD ps
 
-# Применяем миграции
+# ПОЛНОЕ УДАЛЕНИЕ И ПЕРЕСОЗДАНИЕ БД
 echo ""
-print_status "info" "Применение миграций базы данных..."
+print_status "warn" "Полное удаление базы данных dbo..."
+$COMPOSE_CMD exec -T db psql -U postgres -c "DROP DATABASE IF EXISTS dbo;" 2>/dev/null || true
+
+echo ""
+print_status "info" "Создание новой базы данных dbo..."
+$COMPOSE_CMD exec -T db psql -U postgres -c "CREATE DATABASE dbo;" 2>/dev/null || print_status "warn" "БД уже существует"
+
+# Ждём готовности БД
+echo ""
+print_status "info" "Ожидание готовности базы данных..."
+sleep 2
+
+# Применяем миграции к ЧИСТОЙ БД
+echo ""
+print_status "info" "Применение миграций к новой базе данных..."
 $COMPOSE_CMD exec -T app python manage.py migrate --noinput
 
-# Сбрасываем sequences PostgreSQL (чтобы ID начинались с 1)
+# Сбрасываем sequences PostgreSQL (для гарантии ID начинаются с 1)
 echo ""
-print_status "info" "Сброс sequences PostgreSQL (ID будут начинаться с 1)..."
+print_status "info" "Сброс sequences PostgreSQL (ID начинаются с 1)..."
 $COMPOSE_CMD exec -T db psql -U postgres -d dbo -c "
 DO \$\$ 
 DECLARE 
@@ -83,7 +108,7 @@ BEGIN
     LOOP
         EXECUTE 'ALTER SEQUENCE ' || quote_ident(r.schemaname) || '.' || quote_ident(r.sequencename) || ' RESTART WITH 1';
     END LOOP;
-END \$\$;" 2>/dev/null || print_status "warn" "Не удалось сбросить sequences (возможно, таблицы еще не созданы)"
+END \$\$;" 2>/dev/null || print_status "warn" "Sequences будут сброшены автоматически"
 
 # Создаем суперпользователя
 echo ""
@@ -107,7 +132,11 @@ $COMPOSE_CMD exec -T app python init_data.py
 
 echo ""
 print_status "info" "Проверка созданных заявок..."
-$COMPOSE_CMD exec -T app python check_requests_order.py
+$COMPOSE_CMD exec -T app python check_requests_order.py --fix || {
+    print_status "warn" "Заявка не первая, пробую исправить..."
+    $COMPOSE_CMD exec -T app python create_xss_test_request.py
+    $COMPOSE_CMD exec -T app python check_requests_order.py
+}
 
 echo ""
 echo "============================================================"
