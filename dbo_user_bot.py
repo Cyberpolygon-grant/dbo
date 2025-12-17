@@ -232,10 +232,9 @@ class DBOUserBot:
             # Выбираем случайное описание из этой категории
             description = random.choice(service_offer['descriptions'])
             
-            # Добавляем XSS-индикатор в конец описания
-            # Если HTML не экранирован, будет жирная точка
-            # Если экранирован, будет виден как <b>●</b>
-            xss_indicator = ' <b>●</b>'
+            # ВАЖНО: XSS-индикатор больше НЕ добавляется в обычные заявки!
+            # Для XSS-проверки используется отдельная тестовая заявка [XSS-TEST]
+            # которая создаётся скриптом create_xss_test_request.py
             
             # Реалистичные цены в зависимости от типа услуги
             price_ranges = {
@@ -262,7 +261,7 @@ class DBOUserBot:
             ServiceRequest.objects.create(
                 client=client,
                 service_name=service_name,
-                service_description=description + xss_indicator,
+                service_description=description,  # Без XSS-индикатора!
                 price=price
             )
             self.service_count += 1
