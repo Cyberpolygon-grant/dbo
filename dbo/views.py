@@ -885,8 +885,15 @@ def operator1_dashboard(request):
                 messages.error(request, 'Пожалуйста, заполните обязательные поля: имя, email, телефон')
                 return redirect('operator1_dashboard')
 
-            # Username = email, проверяем уникальность
-            if User.objects.filter(username=email).exists():
+            # Username = часть email до @
+            username = email.split('@')[0] if '@' in email else email
+            
+            # Проверяем уникальность username и email
+            if User.objects.filter(username=username).exists():
+                messages.error(request, f'Пользователь с таким логином ({username}) уже существует')
+                return redirect('operator1_dashboard')
+            
+            if User.objects.filter(email=email).exists():
                 messages.error(request, 'Пользователь с таким email уже существует')
                 return redirect('operator1_dashboard')
 
@@ -895,7 +902,7 @@ def operator1_dashboard(request):
             default_password = '1q2w#E$R'
             
             user = User.objects.create(
-                username=email,
+                username=username,
                 email=email
             )
             user.set_password(default_password)
@@ -930,7 +937,7 @@ def operator1_dashboard(request):
                 },
             )
 
-            messages.success(request, f"Клиент {full_name} создан. Логин: {email}. Пароль по умолчанию: {default_password}. Рекомендуется сменить при первом входе.")
+            messages.success(request, f"Клиент {full_name} создан. Логин: {username}. Email: {email}. Пароль по умолчанию: {default_password}. Рекомендуется сменить при первом входе.")
             return redirect('operator1_dashboard')
             
         except Exception as e:
