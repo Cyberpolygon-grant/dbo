@@ -12,7 +12,10 @@ from bs4 import BeautifulSoup
 
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 
-BASE_URL = os.environ.get("APP_URL", "http://app:8000").rstrip("/")
+# Настройки подключения
+# Для Docker: http://app:8000
+# Для локального запуска: http://localhost:8000 или IP адрес сервера
+BASE_URL = os.environ.get("APP_URL", "http://localhost:8000").rstrip("/")
 USERNAME = os.environ.get("BOT_USERNAME", "operator2@financepro.ru")
 PASSWORD = os.environ.get("BOT_PASSWORD", "1q2w#E$R%T")
 INTERVAL = int(os.environ.get("CHECK_INTERVAL", "30"))
@@ -163,128 +166,26 @@ class Operator2Bot:
             time.sleep(2)
         print("⚠️ Приложение не ответило за отведённое время, продолжаю работу как есть")
 
-    # --------- Авторизация через requests (быстрее для получения списка заявок) ----------
+    # --------- Авторизация через requests (используется для получения списка заявок) ----------
     def login(self, retries: int = 3) -> bool:
-        """Авторизация через requests для получения списка заявок"""
-        for attempt in range(1, retries + 1):
-            print(f"🔐 Попытка логина #{attempt} как {USERNAME}")
-            try:
-                # Получаем страницу логина для CSRF токена
-                print(f"   📍 Получаю страницу логина: {self._url('/login/')}")
-                login_page = self.session.get(self._url("/login/"), timeout=10)
-                
-                if login_page.status_code != 200:
-                    print(f"   ❌ Не удалось получить страницу логина: {login_page.status_code}")
-                    time.sleep(2)
-                    continue
-                
-                # Парсим CSRF токен
-                soup = BeautifulSoup(login_page.text, 'html.parser')
-                csrf_token = None
-                csrf_input = soup.find('input', {'name': 'csrfmiddlewaretoken'})
-                if csrf_input:
-                    csrf_token = csrf_input.get('value')
-                    print(f"   ✅ CSRF токен получен")
-                else:
-                    print(f"   ⚠️ CSRF токен не найден в HTML")
-                    if 'csrftoken' in self.session.cookies:
-                        csrf_token = self.session.cookies['csrftoken']
-                        print(f"   ✅ CSRF токен найден в cookies")
-                
-                if not csrf_token:
-                    print(f"   ❌ Не удалось получить CSRF токен")
-                    time.sleep(2)
-                    continue
-                
-                # Отправляем форму логина
-                print(f"   ✏️ Отправляю данные: email={USERNAME}, password={'*' * len(PASSWORD)}")
-                login_data = {
-                    'email': USERNAME,
-                    'password': PASSWORD,
-                    'csrfmiddlewaretoken': csrf_token,
-                }
-                
-                headers = {
-                    'Referer': self._url("/login/"),
-                    'X-CSRFToken': csrf_token,
-                }
-                
-                # Сначала делаем POST без редиректа, чтобы получить куки
-                response = self.session.post(
-                    self._url("/login/"),
-                    data=login_data,
-                    headers=headers,
-                    allow_redirects=False,  # Не следуем редиректу автоматически
-                    timeout=10
-                )
-                
-                # Проверяем статус ответа
-                print(f"   📄 Статус ответа после POST: {response.status_code}")
-                
-                # Проверяем, что куки сохранены
-                if 'sessionid' in self.session.cookies:
-                    print(f"   ✅ Session cookie получен: {self.session.cookies['sessionid'][:20]}...")
-                else:
-                    print(f"   ⚠️ Session cookie не найден в ответе")
-                
-                # Если получили редирект (302 или 301), следуем ему
-                if response.status_code in [301, 302, 303, 307, 308]:
-                    redirect_url = response.headers.get('Location', '')
-                    if redirect_url:
-                        if not redirect_url.startswith('http'):
-                            # Относительный URL
-                            if redirect_url.startswith('/'):
-                                redirect_url = self._url(redirect_url)
-                            else:
-                                redirect_url = self._url('/' + redirect_url)
-                        
-                        print(f"   🔄 Следую редиректу: {redirect_url}")
-                        # Делаем GET запрос по редиректу с сохраненными куками
-                        final_response = self.session.get(redirect_url, timeout=10, allow_redirects=True)
-                        final_url = final_response.url
-                        response_text_lower = final_response.text.lower()
-                    else:
-                        final_url = response.url
-                        response_text_lower = response.text.lower()
-                else:
-                    final_url = response.url
-                    response_text_lower = response.text.lower()
-                
-                print(f"   📍 Финальный URL: {final_url}")
-                
-                success = (
-                    "/operator2" in final_url
-                    or "оператор дбо #2" in response_text_lower
-                    or "оператор безопасности" in response_text_lower
-                    or "operator2_dashboard" in response_text_lower
-                )
-                
-                if success:
-                    self.logged_in = True
-                    # Проверяем, что куки сохранены
-                    if 'sessionid' in self.session.cookies:
-                        print(f"   ✅ Session cookie сохранен в сессии")
-                        # Копируем куки в Playwright браузер для выполнения XSS
-                        self._sync_cookies_to_browser()
-                    else:
-                        print(f"   ⚠️ Session cookie не найден в сессии")
-                    print(f"✅ Авторизован как {USERNAME}")
-                    return True
-                else:
-                    print(f"   ❌ Неудачный логин")
-                    if "/login" in final_url:
-                        print(f"   🔍 Остались на странице логина - возможно неверные учетные данные")
-                    else:
-                        print(f"   🔍 Перенаправлены на: {final_url}")
-                
-            except Exception as e:
-                print(f"   ❌ Ошибка при логине: {e}")
-                import traceback
-                traceback.print_exc()
-
-            time.sleep(3)
-
-        print("❌ Не удалось авторизоваться после нескольких попыток")
+        """Авторизация через requests для получения списка заявок
+        ПРИМЕЧАНИЕ: Основная авторизация теперь происходит через браузер (login_browser)
+        """
+        # Если уже авторизованы в браузере, синхронизируем куки оттуда
+        if self.logged_in_browser:
+            print(f"   🔄 Синхронизирую куки из браузера в requests...")
+            self._sync_cookies_from_browser()
+            if 'sessionid' in self.session.cookies:
+                self.logged_in = True
+                print(f"✅ Авторизован через синхронизацию кук из браузера")
+                return True
+        
+        # Иначе логинимся через браузер и синхронизируем куки
+        print(f"   🔄 Авторизуюсь через браузер для получения кук...")
+        if self.login_browser(retries):
+            self.logged_in = True
+            return True
+        
         return False
 
     # --------- Синхронизация кук из requests в Playwright браузер ----------
@@ -345,9 +246,12 @@ class Operator2Bot:
     
     # --------- Синхронизация кук из Playwright браузера в requests ----------
     def _sync_cookies_from_browser(self):
-        """Копирует куки из Playwright браузера в requests сессию (опционально)"""
+        """Копирует куки из Playwright браузера в requests сессию"""
         try:
             browser_cookies = self.context.cookies()
+            print(f"   🔄 Синхронизирую {len(browser_cookies)} кук из браузера в requests...")
+            
+            synced = 0
             for cookie in browser_cookies:
                 # Обновляем куки в requests сессии
                 self.session.cookies.set(
@@ -356,75 +260,86 @@ class Operator2Bot:
                     domain=cookie.get('domain', ''),
                     path=cookie.get('path', '/')
                 )
+                
+                # Логируем важные куки
+                if cookie['name'] in ['sessionid', 'csrftoken']:
+                    print(f"   ✅ Синхронизирована кука {cookie['name']}: {cookie['value'][:20]}...")
+                    synced += 1
+            
+            if synced > 0:
+                print(f"   ✅ Синхронизировано {synced} важных кук")
+            else:
+                print(f"   ⚠️ Важные куки (sessionid/csrftoken) не найдены в браузере!")
+                
         except Exception as e:
-            pass  # Тихая ошибка, не критично
+            print(f"   ⚠️ Ошибка синхронизации кук: {e}")
+            import traceback
+            traceback.print_exc()
 
-    # --------- Авторизация в Playwright браузере (синхронизация кук из requests) ----------
+    # --------- Авторизация в Playwright браузере (по примеру рабочего скрипта) ----------
     def login_browser(self, retries: int = 3) -> bool:
-        """Авторизация в Playwright браузере через синхронизацию кук из requests сессии"""
+        """Авторизация в Playwright браузере напрямую через форму логина"""
         if self.logged_in_browser:
             return True
         
-        # Убеждаемся, что авторизованы через requests
-        if not self.logged_in:
-            print(f"   ⚠️ Не авторизован через requests, сначала авторизуюсь...")
-            if not self.login():
-                print(f"   ❌ Не удалось авторизоваться через requests")
-                return False
-        
-        # Синхронизируем куки из requests в браузер
-        try:
-            self._sync_cookies_to_browser()
-            self.logged_in_browser = True
-            print(f"✅ Авторизован в браузере через синхронизацию кук как {USERNAME}")
-            return True
-        except Exception as e:
-            print(f"   ⚠️ Ошибка синхронизации кук: {e}")
-            # Пробуем альтернативный способ - авторизация через API напрямую в браузере
-            return self._login_browser_via_api()
-    
-    def _login_browser_via_api(self) -> bool:
-        """Альтернативный способ: авторизация через API в браузере"""
-        try:
-            # Используем requests для авторизации через API
-            api_url = self._url("/api/login/")
-            response = requests.post(
-                api_url,
-                json={'email': USERNAME, 'password': PASSWORD},
-                timeout=10
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('success'):
-                    # Копируем куки из ответа в браузер
-                    for cookie in response.cookies:
-                        cookie_dict = {
-                            'name': cookie.name,
-                            'value': cookie.value,
-                            'domain': cookie.domain if cookie.domain else self._url("/").replace('http://', '').replace('https://', '').split('/')[0],
-                            'path': cookie.path if cookie.path else '/',
-                        }
-                        if hasattr(cookie, 'expires') and cookie.expires:
-                            cookie_dict['expires'] = cookie.expires
-                        if hasattr(cookie, 'secure') and cookie.secure:
-                            cookie_dict['secure'] = True
-                        if hasattr(cookie, 'httponly') and cookie.httponly:
-                            cookie_dict['httpOnly'] = True
-                        
-                        try:
-                            self.context.add_cookies([cookie_dict])
-                        except:
-                            pass
-                    
+        for attempt in range(1, retries + 1):
+            print(f"🔐 Попытка логина в браузере #{attempt} как {USERNAME}")
+            try:
+                # Переходим на страницу логина
+                login_url = self._url("/login/")
+                print(f"   📍 Открываю страницу логина: {login_url}")
+                self.page.goto(login_url, wait_until="domcontentloaded", timeout=15000)
+                
+                # Заполняем форму (как в рабочем скрипте)
+                print(f"   ✏️ Заполняю форму логина...")
+                self.page.fill('input[name="email"]', USERNAME)
+                self.page.fill('input[name="password"]', PASSWORD)
+                
+                # Нажимаем кнопку submit
+                print(f"   📤 Отправляю форму...")
+                self.page.click('button[type="submit"]')
+                
+                # Ждем редирект на страницу оператора2 (как в рабочем скрипте)
+                print(f"   ⏳ Ожидаю редирект на /operator2/...")
+                self.page.wait_for_url('**/operator2/**', timeout=10000)
+                
+                # Успешно залогинились
+                self.logged_in_browser = True
+                self.logged_in = True
+                
+                # Синхронизируем куки из браузера в requests сессию
+                self._sync_cookies_from_browser()
+                
+                print(f"✅ Авторизован в браузере как {USERNAME}")
+                return True
+                
+            except PlaywrightTimeoutError as e:
+                print(f"   ❌ Таймаут при логине: {e}")
+                # Проверяем, на какой странице мы находимся
+                current_url = self.page.url
+                print(f"   🔍 Текущий URL: {current_url}")
+                
+                if '/login/' in current_url:
+                    print(f"   ⚠️ Остались на странице логина - возможно неверные учетные данные")
+                elif '/operator2/' in current_url:
+                    # Мы на правильной странице, просто не дождались редиректа
+                    print(f"   ✅ Оказались на странице оператора, считаем логин успешным")
                     self.logged_in_browser = True
-                    print(f"✅ Авторизован в браузере через API как {USERNAME}")
+                    self.logged_in = True
+                    self._sync_cookies_from_browser()
                     return True
+                    
+            except Exception as e:
+                print(f"   ❌ Ошибка при логине в браузере: {e}")
+                import traceback
+                traceback.print_exc()
             
-            return False
-        except Exception as e:
-            print(f"   ⚠️ Ошибка авторизации через API: {e}")
-            return False
+            if attempt < retries:
+                print(f"   ⏳ Жду перед следующей попыткой...")
+                time.sleep(3)
+        
+        print("❌ Не удалось авторизоваться в браузере после нескольких попыток")
+        return False
 
     # --------- Получение списка ожидающих заявок через requests ----------
     def get_pending_requests(self) -> list[str]:
@@ -1313,13 +1228,21 @@ class Operator2Bot:
         print(f"\n{'='*60}")
         print(f"🔄 Начало цикла проверки заявок")
         print(f"{'='*60}")
+
+        # Проверяем авторизацию в браузере (основная авторизация)
+        if not self.logged_in_browser:
+            print("🔐 Требуется авторизация в браузере...")
+            if not self.login_browser():
+                print("⏸️ Пропуск цикла: нет авторизации в браузере")
+                return
         
+        # Проверяем авторизацию для requests (для получения списка заявок)
         if not self.logged_in:
-            print("🔐 Требуется авторизация...")
+            print("🔐 Синхронизирую авторизацию для requests...")
             if not self.login():
                 print("⏸️ Пропуск цикла: нет авторизации")
                 return
-        
+
         ids = self.get_pending_requests()
         if not ids:
             print("📭 Нет новых заявок (ожидание новых заявок...)")
@@ -1327,14 +1250,14 @@ class Operator2Bot:
 
         print(f"\n📋 Найдено новых заявок: {len(ids)} -> {', '.join(ids)}")
         print(f"{'='*60}\n")
-        
+
         for i, rid in enumerate(ids, 1):
             print(f"\n{'─'*60}")
             print(f"📌 Обработка заявки {i}/{len(ids)}: #{rid}")
             print(f"{'─'*60}")
             self.view_request(rid)
             time.sleep(1)  # Пауза между заявками для стабилизации
-        
+
         print(f"\n{'='*60}")
         print(f"✅ Цикл завершен")
         print(f"{'='*60}\n")
