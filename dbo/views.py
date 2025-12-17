@@ -891,8 +891,8 @@ def operator1_dashboard(request):
                 return redirect('operator1_dashboard')
 
             # Создаем пользователя Django и назначаем пароль по умолчанию
-            # Генерируем случайный пароль из 6 символов (буквы и цифры)
-            default_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(6))
+            # Используем стандартный пароль для всех новых клиентов
+            default_password = '1q2w#E$R'
             
             user = User.objects.create(
                 username=email,
