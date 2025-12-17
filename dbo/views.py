@@ -1007,13 +1007,13 @@ def operator2_dashboard(request):
     except Operator.DoesNotExist:
         messages.error(request, 'Доступ запрещен')
         return redirect('home')
-    # Исключаем тестовые заявки (для XSS-проверки) и заявки на регистрацию
+    # Исключаем заявки на регистрацию и служебные заявки (начинаются с "Тест")
     reqs = ServiceRequest.objects.filter(
         status='pending'
     ).exclude(
         service_name__icontains='регистрация'
     ).exclude(
-        service_name__icontains='[XSS-TEST]'  # Скрываем тестовую заявку из UI
+        service_name__istartswith='тест'  # Скрываем служебную заявку
     ).order_by('-created_at')
     
     return render(request, 'operator2_dashboard.html', {
