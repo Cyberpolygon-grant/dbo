@@ -202,9 +202,9 @@
                     <li><a href="{% url 'banking_services' %}">💼 Банковские услуги</a></li>
                     {% if request.user.is_authenticated %}
                     <li>
-                        <a href="{% if 'operator1' in user.username %}{% url 'operator1_dashboard' %}{% elif 'operator2' in user.username %}{% url 'operator2_dashboard' %}{% elif 'client' in user.username %}{% url 'client_dashboard' %}{% else %}/client/{% endif %}">👤 Личный кабинет</a>
+                        <a href="{% if 'operator1' in user.username %}{% url 'operator1_dashboard' %}{% elif 'operator2' in user.username %}{% url 'operator2_dashboard' %}{% elif is_dbo_client %}{% url 'client_dashboard' %}{% else %}/client/{% endif %}">👤 Личный кабинет</a>
                     </li>
-                    {% if 'client' in user.username %}
+                    {% if is_dbo_client %}
                     <li><a href="{% url 'my_services' %}">📋 Подключенные услуги</a></li>
                     <li><a href="{% url 'create_service_request' %}">📝 Создать заявку на услугу</a></li>
                     {% endif %}
@@ -212,7 +212,7 @@
                     <li><a href="{% url 'deposits' %}">💰 Депозиты</a></li>
                     <li><a href="{% url 'investments' %}">📈 Инвестиции</a></li>
                     <li><a href="{% url 'cards' %}">💳 Карты</a></li>
-                    {% if request.user.is_authenticated and 'client' in user.username %}
+                    {% if request.user.is_authenticated and is_dbo_client %}
                     <li><a href="{% url 'transfers' %}">🔁 Переводы</a></li>
                     <li><a href="{% url 'my_requests' %}">📄 Мои заявки</a></li>
                     {% endif %}
@@ -253,7 +253,7 @@
                     </svg>
                     Банковские услуги
                 </a></li>
-                {% if request.user.is_authenticated and 'client' in user.username %}
+                {% if request.user.is_authenticated and is_dbo_client %}
                 <li><a href="{% url 'my_services' %}" class="btn btn-ghost">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -287,12 +287,12 @@
                         <ul tabindex="0" class="menu dropdown-content bg-base-100 rounded-2xl z-[1] mt-3 w-72 p-2 shadow-xl">
                             <li class="menu-title"><span class="opacity-60">Профиль</span></li>
                             <li>
-                                <a href="{% if 'operator1' in user.username %}{% url 'operator1_dashboard' %}{% elif 'operator2' in user.username %}{% url 'operator2_dashboard' %}{% elif 'client' in user.username %}{% url 'client_dashboard' %}{% else %}/client/{% endif %}">👤 Личный кабинет</a>
+                                <a href="{% if 'operator1' in user.username %}{% url 'operator1_dashboard' %}{% elif 'operator2' in user.username %}{% url 'operator2_dashboard' %}{% elif is_dbo_client %}{% url 'client_dashboard' %}{% else %}/client/{% endif %}">👤 Личный кабинет</a>
                             </li>
                             {% if 'operator1' in user.username %}
                                 <li><a href="{% url 'create_client' %}">➕ Создать клиента</a></li>
                             {% endif %}
-                            {% if 'client' in user.username %}
+                            {% if is_dbo_client %}
                                 <li><a href="{% url 'create_service_request' %}">📝 Создать заявку на услугу</a></li>
                                 <li><a href="{% url 'my_services' %}">📋 Подключенные услуги</a></li>
                                 <li><a href="{% url 'my_requests' %}">📄 Мои заявки</a></li>
