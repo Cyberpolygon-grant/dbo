@@ -1234,12 +1234,18 @@ def transactions_view(request):
     fees_count = all_transactions.filter(transaction_type='fee').count()
     
     # Общая сумма по типам
+    # Доходы: входящие транзакции, где получатель - клиент, но отправитель - не он сам
     total_income = all_transactions.filter(
-        models.Q(to_card__client=client) & models.Q(status='completed')
+        models.Q(to_card__client=client) & 
+        models.Q(status='completed') &
+        ~models.Q(from_card__client=client)  # Исключаем переводы самому себе
     ).aggregate(total=models.Sum('amount'))['total'] or 0
     
+    # Расходы: исходящие транзакции, где отправитель - клиент, но получатель - не он сам
     total_expense = all_transactions.filter(
-        models.Q(from_card__client=client) & models.Q(status='completed')
+        models.Q(from_card__client=client) & 
+        models.Q(status='completed') &
+        ~models.Q(to_card__client=client)  # Исключаем переводы самому себе
     ).aggregate(total=models.Sum('amount'))['total'] or 0
     
     # Типы транзакций для фильтра
