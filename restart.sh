@@ -51,10 +51,10 @@ print_status "warn" "ВНИМАНИЕ: Все данные будут удале
 print_status "info" "Остановка контейнеров и удаление volumes..."
 $COMPOSE_CMD down -v
 
-# Запускаем контейнеры
+# Пересобираем и запускаем контейнеры
 echo ""
-print_status "info" "Запуск контейнеров..."
-$COMPOSE_CMD up -d
+print_status "info" "Пересборка и запуск контейнеров..."
+$COMPOSE_CMD up -d --build
 
 # Ждём запуска
 echo ""
@@ -70,6 +70,11 @@ $COMPOSE_CMD ps
 echo ""
 print_status "info" "Применение миграций базы данных..."
 $COMPOSE_CMD exec -T app python manage.py migrate --noinput
+
+# Собираем статические файлы
+echo ""
+print_status "info" "Сборка статических файлов..."
+$COMPOSE_CMD exec -T app python manage.py collectstatic --noinput
 
 # Инициализируем демо-данные
 echo ""
