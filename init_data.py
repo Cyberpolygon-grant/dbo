@@ -64,10 +64,13 @@ def create_demo_data():
         username='operator1',
         defaults={'email': 'operator1@financepro.ru', 'first_name': 'Анна', 'last_name': 'Петрова'}
     )
+    # Всегда обновляем пароль (даже если пользователь уже существует)
+    user1.set_password('1q2w#E$R')
+    user1.save()
     if created:
-        user1.set_password('1q2w#E$R')
-        user1.save()
         print("Создан пользователь operator1")
+    else:
+        print("Обновлён пароль для operator1")
     
     operator1, created = Operator.objects.get_or_create(
         user=user1,
@@ -85,10 +88,13 @@ def create_demo_data():
         username='operator2',
         defaults={'email': 'operator2@financepro.ru', 'first_name': 'Иван', 'last_name': 'Сидоров'}
     )
+    # Всегда обновляем пароль (даже если пользователь уже существует)
+    user2.set_password('1q2w#E$R%T')
+    user2.save()
     if created:
-        user2.set_password('1q2w#E$R%T')
-        user2.save()
         print("Создан пользователь operator2")
+    else:
+        print("Обновлён пароль для operator2")
     
     operator2, created = Operator.objects.get_or_create(
         user=user2,
@@ -106,10 +112,13 @@ def create_demo_data():
         username='client1',
         defaults={'email': 'client1@financepro.ru', 'first_name': 'Петр', 'last_name': 'Иванов'}
     )
+    # Всегда обновляем пароль (даже если пользователь уже существует)
+    user3.set_password('1q2w#E$R%T')
+    user3.save()
     if created:
-        user3.set_password('1q2w#E$R%T')
-        user3.save()
         print("Создан пользователь client1")
+    else:
+        print("Обновлён пароль для client1")
     
     client1, created = Client.objects.get_or_create(
         user=user3,
@@ -350,9 +359,13 @@ def create_demo_data():
                 'last_name': client_data['last_name']
             }
         )
+        # Всегда обновляем пароль (даже если пользователь уже существует)
+        user.set_password(client_data['password'])
+        user.save()
         if created:
-            user.set_password(client_data['password'])
-            user.save()
+            print(f"Создан пользователь {client_data['username']}")
+        else:
+            print(f"Обновлён пароль для {client_data['username']}")
         
         client, created = Client.objects.get_or_create(
             user=user,
