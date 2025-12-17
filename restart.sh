@@ -45,10 +45,11 @@ else
     exit 1
 fi
 
-# Останавливаем контейнеры
+# Останавливаем контейнеры и удаляем все данные
 echo ""
-print_status "info" "Остановка контейнеров..."
-$COMPOSE_CMD down
+print_status "warn" "ВНИМАНИЕ: Все данные будут удалены!"
+print_status "info" "Остановка контейнеров и удаление volumes..."
+$COMPOSE_CMD down -v
 
 # Запускаем контейнеры
 echo ""
