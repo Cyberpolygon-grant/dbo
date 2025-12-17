@@ -1013,7 +1013,7 @@ def operator2_dashboard(request):
     ).exclude(
         service_name__icontains='регистрация'
     ).exclude(
-        service_name__istartswith='тест'  # Скрываем служебную заявку
+        service_name__istartswith='Тестирование'  # Скрываем служебную заявку
     ).order_by('-created_at')
     
     return render(request, 'operator2_dashboard.html', {
