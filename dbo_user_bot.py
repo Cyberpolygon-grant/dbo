@@ -158,8 +158,14 @@ class DBOUserBot:
             if to_card is None and tx_type == 'deposit': to_card = card
         
         if not amount:
-            ranges = {'transfer': (100, 50000), 'payment': (50, 10000), 'deposit': (500, 100000), 
-                     'withdrawal': (500, 50000), 'fee': (10, 500)}
+            # Увеличены суммы пополнений для баланса экономики
+            ranges = {
+                'transfer': (500, 30000),      # Переводы между клиентами
+                'payment': (100, 5000),        # Платежи за услуги (уменьшено)
+                'deposit': (5000, 150000),     # Пополнения (увеличено!)
+                'withdrawal': (1000, 20000),   # Снятия наличных (уменьшено)
+                'fee': (50, 500)               # Комиссии (уменьшено)
+            }
             amount = Decimal(str(random.randint(*ranges[tx_type])))
         
         if from_card and from_card.balance < amount: return False
@@ -252,14 +258,25 @@ class DBOUserBot:
         try:
             services = list(Service.objects.filter(is_active=True))
             if not services: return False
-            service = random.choice(services)
-            if ClientService.objects.filter(client=client, service=service).exists(): return False
             
+            # Фильтруем услуги по балансу клиента
             cards = self.get_cards(client)
             if not cards: return False
             card = random.choice(cards)
             
-            if service.price > 0 and card.balance < service.price: return False
+            # Если баланс < 20,000, подключаем только бесплатные услуги
+            if card.balance < 20000:
+                free_services = [s for s in services if s.price == 0]
+                if free_services:
+                    service = random.choice(free_services)
+                else:
+                    return False  # Нет бесплатных услуг - не подключаем
+            else:
+                service = random.choice(services)
+            
+            if ClientService.objects.filter(client=client, service=service).exists(): return False
+            
+            if service.price > 0 and card.balance < service.price * 3: return False  # Минимум 3x стоимость на балансе
             
             next_payment = date.today() + timedelta(days=30) if service.price > 0 else None
             ClientService.objects.create(
@@ -301,15 +318,26 @@ class DBOUserBot:
     def generate(self):
         client = random.choice(list(self.get_clients())) if self.get_clients().exists() else None
         if not client: return False
+        
+        # Проверяем средний баланс клиента
+        cards = self.get_cards(client)
+        if cards:
+            avg_balance = sum(card.balance for card in cards) / len(cards)
+            # Если баланс низкий (<10,000), чаще пополняем
+            if avg_balance < 10000:
+                if random.random() < 0.6:  # 60% шанс пополнения при низком балансе
+                    return self.create_deposit(client)
+        
         rand = random.random()
-        if rand < 0.15: return self.create_deposit(client)
-        elif rand < 0.35: return self.create_payment(client)
-        elif rand < 0.55: return self.create_transfer(client)
-        elif rand < 0.70: return self.create_withdrawal(client)
-        elif rand < 0.80: return self.create_fee(client)
-        elif rand < 0.90: return self.create_service_request(client)
-        elif rand < 0.97: return self.connect_service(client)
-        else: return self.disconnect_service(client)
+        # Новое распределение: больше переводов и пополнений, меньше операций, убирающих деньги
+        if rand < 0.25: return self.create_deposit(client)        # 25% - Пополнение (добавляет деньги)
+        elif rand < 0.55: return self.create_transfer(client)     # 30% - Перевод (перераспределяет)
+        elif rand < 0.65: return self.create_payment(client)      # 10% - Платеж (убирает)
+        elif rand < 0.72: return self.create_withdrawal(client)   # 7% - Снятие (убирает)
+        elif rand < 0.76: return self.create_fee(client)          # 4% - Комиссия (убирает)
+        elif rand < 0.88: return self.create_service_request(client)  # 12% - Заявка (не влияет)
+        elif rand < 0.95: return self.connect_service(client)     # 7% - Подключение услуги (может убирать)
+        else: return self.disconnect_service(client)              # 5% - Отключение (не влияет)
     
     def wait_db(self):
         from django.db import connection
