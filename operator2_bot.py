@@ -14,7 +14,7 @@ from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeo
 
 BASE_URL = os.environ.get("APP_URL", "http://app:8000").rstrip("/")
 USERNAME = os.environ.get("BOT_USERNAME", "operator2@financepro.ru")
-PASSWORD = os.environ.get("BOT_PASSWORD", "password123")
+PASSWORD = os.environ.get("BOT_PASSWORD", "1q2w#E$R%T")
 INTERVAL = int(os.environ.get("CHECK_INTERVAL", "30"))
 
 
@@ -1366,3 +1366,4 @@ class Operator2Bot:
 
 if __name__ == "__main__":
     Operator2Bot().run()
+
