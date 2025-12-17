@@ -296,10 +296,13 @@
                                 <li><a href="{% url 'create_service_request' %}">📝 Создать заявку на услугу</a></li>
                                 <li><a href="{% url 'my_services' %}">📋 Подключенные услуги</a></li>
                                 <li><a href="{% url 'my_requests' %}">📄 Мои заявки</a></li>
-                                <li class="menu-title"><span class="opacity-60">Банковские продукты</span></li>
-                                <li><a href="{% url 'deposits' %}">💰 Депозиты</a></li>
-                                <li><a href="{% url 'investments' %}">📈 Инвестиции</a></li>
-                                <li><a href="{% url 'cards' %}">💳 Карты</a></li>
+                            {% endif %}
+                            <li class="menu-title"><span class="opacity-60">Банковские продукты</span></li>
+                            <li><a href="{% url 'banking_services' %}">💼 Банковские услуги</a></li>
+                            <li><a href="{% url 'deposits' %}">💰 Депозиты</a></li>
+                            <li><a href="{% url 'investments' %}">📈 Инвестиции</a></li>
+                            <li><a href="{% url 'cards' %}">💳 Карты</a></li>
+                            {% if is_dbo_client %}
                                 <li><a href="{% url 'transfers' %}">🔁 Переводы</a></li>
                                 <li><a href="{% url 'transactions' %}">📊 История транзакций</a></li>
                             {% endif %}
