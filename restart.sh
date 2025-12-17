@@ -71,6 +71,20 @@ echo ""
 print_status "info" "Применение миграций базы данных..."
 $COMPOSE_CMD exec -T app python manage.py migrate --noinput
 
+# Сбрасываем sequences PostgreSQL (чтобы ID начинались с 1)
+echo ""
+print_status "info" "Сброс sequences PostgreSQL (ID будут начинаться с 1)..."
+$COMPOSE_CMD exec -T db psql -U postgres -d dbo -c "
+DO \$\$ 
+DECLARE 
+    r RECORD;
+BEGIN
+    FOR r IN (SELECT schemaname, sequencename FROM pg_sequences WHERE schemaname = 'public') 
+    LOOP
+        EXECUTE 'ALTER SEQUENCE ' || quote_ident(r.schemaname) || '.' || quote_ident(r.sequencename) || ' RESTART WITH 1';
+    END LOOP;
+END \$\$;" 2>/dev/null || print_status "warn" "Не удалось сбросить sequences (возможно, таблицы еще не созданы)"
+
 # Создаем суперпользователя
 echo ""
 print_status "info" "Создание суперпользователя admin..."
@@ -92,6 +106,10 @@ print_status "info" "Инициализация демо-данных..."
 $COMPOSE_CMD exec -T app python init_data.py
 
 echo ""
+print_status "info" "Проверка созданных заявок..."
+$COMPOSE_CMD exec -T app python check_requests_order.py
+
+echo ""
 echo "============================================================"
 print_status "ok" "Система перезапущена успешно!"
 echo "============================================================"
@@ -103,7 +121,7 @@ echo "  - Оператор ДБО #2: operator2@financepro.ru / 1q2w#E\$R%T"
 echo "  - Клиенты: client1-5@financepro.ru / 1q2w#E\$R"
 echo ""
 print_status "info" "Тестовая заявка (не отображается у оператора):"
-echo "  - URL: http://localhost:8000/review-services/1"
+echo "  - URL: http://10.18.2.7:8000/review-services/1"
 echo "  - Доступ: только от client1"
 echo ""
 
