@@ -81,14 +81,15 @@ echo ""
 print_status "info" "Сборка статических файлов..."
 $COMPOSE_CMD exec -T app python manage.py collectstatic --noinput
 
-# Инициализируем демо-данные
+# Создаем тестовую заявку ПЕРВОЙ (чтобы у неё был ID=1)
+echo ""
+print_status "info" "Создание тестовой заявки (будет /review-services/1)..."
+$COMPOSE_CMD exec -T app python create_xss_test_request.py
+
+# Инициализируем остальные демо-данные
 echo ""
 print_status "info" "Инициализация демо-данных..."
 $COMPOSE_CMD exec -T app python init_data.py
-
-echo ""
-print_status "info" "Создание тестовой заявки для XSS-проверки..."
-$COMPOSE_CMD exec -T app python create_xss_test_request.py
 
 echo ""
 echo "============================================================"
@@ -99,7 +100,11 @@ print_status "info" "Учетные записи:"
 echo "  - Суперпользователь: admin / admin"
 echo "  - Оператор ДБО #1: operator1@financepro.ru / 1q2w#E\$R"
 echo "  - Оператор ДБО #2: operator2@financepro.ru / 1q2w#E\$R%T"
-echo "  - Клиенты: client1-5@financepro.ru / 1q2w#E\$R%T"
+echo "  - Клиенты: client1-5@financepro.ru / 1q2w#E\$R"
+echo ""
+print_status "info" "Тестовая заявка (не отображается у оператора):"
+echo "  - URL: http://localhost:8000/review-services/1"
+echo "  - Доступ: только от client1"
 echo ""
 
 exit 0
