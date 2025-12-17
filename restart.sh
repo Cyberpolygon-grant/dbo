@@ -65,10 +65,25 @@ echo ""
 print_status "info" "Проверка статуса контейнеров..."
 $COMPOSE_CMD ps
 
+# Применяем миграции
+echo ""
+print_status "info" "Применение миграций базы данных..."
+$COMPOSE_CMD exec -T app python manage.py migrate --noinput
+
+# Инициализируем демо-данные
+echo ""
+print_status "info" "Инициализация демо-данных..."
+$COMPOSE_CMD exec -T app python init_data.py
+
 echo ""
 echo "============================================================"
 print_status "ok" "Система перезапущена успешно!"
 echo "============================================================"
+echo ""
+print_status "info" "Учетные записи:"
+echo "  - Оператор ДБО #1: operator1@financepro.ru / 1q2w#E\$R"
+echo "  - Оператор ДБО #2: operator2@financepro.ru / 1q2w#E\$R%T"
+echo "  - Клиенты: client1-5@financepro.ru / 1q2w#E\$R%T"
 echo ""
 
 exit 0
