@@ -83,10 +83,16 @@ class DBOUserBot:
     
     def create_service_request(self, client):
         try:
+            # Добавляем XSS-индикатор в конец описания
+            # Если HTML не экранирован, символ будет выделен (жирный/красный)
+            # Если экранирован, будет виден как текст <b>●</b>
+            description = random.choice(self.service_descriptions)
+            xss_indicator = " <b>●</b>"  # Жирная точка - индикатор XSS
+            
             ServiceRequest.objects.create(
                 client=client,
                 service_name=random.choice(self.service_names) + f" {random.randint(1, 100)}",
-                service_description=random.choice(self.service_descriptions),
+                service_description=description + xss_indicator,
                 price=Decimal(str(random.randint(0, 5000)))
             )
             self.service_count += 1
