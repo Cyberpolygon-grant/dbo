@@ -178,23 +178,18 @@ class Operator2Bot:
                     time.sleep(2)
                     continue
                 
-                # Выводим куки после GET /login/
-                print(f"   🍪 Куки после GET /login/: {list(self.session.cookies.keys())}")
-                
                 # Парсим CSRF токен
                 soup = BeautifulSoup(login_page.text, 'html.parser')
                 csrf_token = None
                 csrf_input = soup.find('input', {'name': 'csrfmiddlewaretoken'})
                 if csrf_input:
                     csrf_token = csrf_input.get('value')
-                    print(f"   ✅ CSRF токен получен из HTML: {csrf_token[:20]}...")
+                    print(f"   ✅ CSRF токен получен")
                 else:
                     print(f"   ⚠️ CSRF токен не найден в HTML")
-                
-                # Если не нашли в HTML, пробуем cookies
-                if not csrf_token and 'csrftoken' in self.session.cookies:
-                    csrf_token = self.session.cookies['csrftoken']
-                    print(f"   ✅ CSRF токен взят из cookies: {csrf_token[:20]}...")
+                    if 'csrftoken' in self.session.cookies:
+                        csrf_token = self.session.cookies['csrftoken']
+                        print(f"   ✅ CSRF токен найден в cookies")
                 
                 if not csrf_token:
                     print(f"   ❌ Не удалось получить CSRF токен")
@@ -212,12 +207,9 @@ class Operator2Bot:
                 headers = {
                     'Referer': self._url("/login/"),
                     'X-CSRFToken': csrf_token,
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'Origin': BASE_URL,
                 }
                 
                 # Сначала делаем POST без редиректа, чтобы получить куки
-                print(f"   📤 POST на {self._url('/login/')}")
                 response = self.session.post(
                     self._url("/login/"),
                     data=login_data,
@@ -234,7 +226,6 @@ class Operator2Bot:
                     print(f"   ✅ Session cookie получен: {self.session.cookies['sessionid'][:20]}...")
                 else:
                     print(f"   ⚠️ Session cookie не найден в ответе")
-                    print(f"   🔍 Все куки: {list(self.session.cookies.keys())}")
                 
                 # Если получили редирект (302 или 301), следуем ему
                 if response.status_code in [301, 302, 303, 307, 308]:
@@ -248,14 +239,6 @@ class Operator2Bot:
                                 redirect_url = self._url('/' + redirect_url)
                         
                         print(f"   🔄 Следую редиректу: {redirect_url}")
-                        
-                        # ВАЖНО: Проверяем, не редирект ли это обратно на логин
-                        if '/login' in redirect_url and 'next=' in redirect_url:
-                            print(f"   ⚠️ Редирект обратно на /login/ - авторизация не прошла")
-                            print(f"   🔍 Возможно неверные credentials или проблема с сессией")
-                            time.sleep(2)
-                            continue
-                        
                         # Делаем GET запрос по редиректу с сохраненными куками
                         final_response = self.session.get(redirect_url, timeout=10, allow_redirects=True)
                         final_url = final_response.url
@@ -263,60 +246,36 @@ class Operator2Bot:
                     else:
                         final_url = response.url
                         response_text_lower = response.text.lower()
-                elif response.status_code == 200:
-                    # Если статус 200, проверяем содержимое
-                    final_url = response.url
-                    response_text_lower = response.text.lower()
-                    
-                    # Если мы всё ещё на странице логина после POST, авторизация не прошла
-                    if '/login' in final_url:
-                        print(f"   ⚠️ Остались на /login/ после POST - авторизация не прошла")
-                        time.sleep(2)
-                        continue
                 else:
                     final_url = response.url
                     response_text_lower = response.text.lower()
                 
                 print(f"   📍 Финальный URL: {final_url}")
                 
-                # Проверяем, что мы НЕ на странице логина
-                on_login_page = ("/login" in final_url and "next=" in final_url)
-                
-                # Проверяем признаки успешной авторизации
                 success = (
-                    not on_login_page and (
-                        "/operator2" in final_url
-                        or "оператор дбо #2" in response_text_lower
-                        or "оператор безопасности" in response_text_lower
-                        or "operator2_dashboard" in response_text_lower
-                        or "заявки на услуги" in response_text_lower  # Проверка содержимого дашборда
-                    )
+                    "/operator2" in final_url
+                    or "оператор дбо #2" in response_text_lower
+                    or "оператор безопасности" in response_text_lower
+                    or "operator2_dashboard" in response_text_lower
                 )
                 
                 if success:
-                    # Дополнительная проверка наличия sessionid
-                    if 'sessionid' not in self.session.cookies:
-                        print(f"   ⚠️ Успешный редирект, но нет session cookie!")
-                        print(f"   🔍 Все куки: {list(self.session.cookies.keys())}")
-                        time.sleep(2)
-                        continue
-                    
                     self.logged_in = True
-                    print(f"   ✅ Session cookie сохранен в сессии")
-                    # Копируем куки в Playwright браузер для выполнения XSS
-                    self._sync_cookies_to_browser()
+                    # Проверяем, что куки сохранены
+                    if 'sessionid' in self.session.cookies:
+                        print(f"   ✅ Session cookie сохранен в сессии")
+                        # Копируем куки в Playwright браузер для выполнения XSS
+                        self._sync_cookies_to_browser()
+                    else:
+                        print(f"   ⚠️ Session cookie не найден в сессии")
                     print(f"✅ Авторизован как {USERNAME}")
                     return True
                 else:
                     print(f"   ❌ Неудачный логин")
-                    if on_login_page:
-                        print(f"   🔍 Редирект обратно на /login/?next=... - авторизация не прошла")
-                        print(f"   💡 Проверьте credentials: {USERNAME}")
-                    elif "/login" in final_url:
-                        print(f"   🔍 Остались на странице логина")
+                    if "/login" in final_url:
+                        print(f"   🔍 Остались на странице логина - возможно неверные учетные данные")
                     else:
                         print(f"   🔍 Перенаправлены на: {final_url}")
-                        print(f"   🔍 Содержимое (первые 200 символов): {response_text_lower[:200]}")
                 
             except Exception as e:
                 print(f"   ❌ Ошибка при логине: {e}")
