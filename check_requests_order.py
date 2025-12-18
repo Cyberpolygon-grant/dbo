@@ -56,9 +56,9 @@ def check_requests_order(auto_fix=False):
         
         if auto_fix:
             print("\n🔧 АВТОМАТИЧЕСКОЕ ИСПРАВЛЕНИЕ...")
-            print("   🔄 Перезапуск create_xss_test_request.py...")
+            print("   🔄 Перезапуск init_test_request.py...")
             import subprocess
-            result = subprocess.run(['python', 'create_xss_test_request.py'], 
+            result = subprocess.run(['python', 'init_test_request.py'], 
                                   capture_output=True, text=True)
             if result.returncode == 0:
                 print("   ✅ Заявка пересоздана!")
@@ -76,9 +76,9 @@ def check_requests_order(auto_fix=False):
         
         if auto_fix:
             print("\n🔧 АВТОМАТИЧЕСКОЕ ИСПРАВЛЕНИЕ...")
-            print("   🔄 Перезапуск create_xss_test_request.py...")
+            print("   🔄 Перезапуск init_test_request.py...")
             import subprocess
-            result = subprocess.run(['python', 'create_xss_test_request.py'], 
+            result = subprocess.run(['python', 'init_test_request.py'], 
                                   capture_output=True, text=True)
             if result.returncode == 0:
                 print("   ✅ Заявка пересоздана!")
