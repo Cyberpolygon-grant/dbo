@@ -54,13 +54,13 @@ echo "✓"
 echo -n "[7/8] Инициализация данных... "
 $COMPOSE_CMD exec -T -e DJANGO_SUPERUSER_USERNAME=admin -e DJANGO_SUPERUSER_PASSWORD=admin -e DJANGO_SUPERUSER_EMAIL=admin@example.com app python manage.py createsuperuser --noinput >/dev/null 2>&1 || true
 $COMPOSE_CMD exec -T app python manage.py collectstatic --noinput >/dev/null 2>&1
-$COMPOSE_CMD exec -T app python create_xss_test_request.py >/dev/null 2>&1
+$COMPOSE_CMD exec -T app python create_test_request.py >/dev/null 2>&1
 $COMPOSE_CMD exec -T app python init_data.py >/dev/null 2>&1
 echo "✓"
 
 echo -n "[8/8] Проверка заявок... "
 $COMPOSE_CMD exec -T app python check_requests_order.py --fix >/dev/null 2>&1 || {
-    $COMPOSE_CMD exec -T app python create_xss_test_request.py >/dev/null 2>&1
+    $COMPOSE_CMD exec -T app python create_test_request.py >/dev/null 2>&1
     $COMPOSE_CMD exec -T app python check_requests_order.py >/dev/null 2>&1 || true
 }
 echo "✓"
