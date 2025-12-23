@@ -12,10 +12,6 @@ from bs4 import BeautifulSoup
 
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 
-# Настройки подключения
-# Для Docker: http://app:8000
-# Для локального запуска: http://localhost:8000 или IP адрес сервера
-# Нормализуем BASE_URL - убираем завершающий слеш
 _base_url = os.environ.get("APP_URL", "http://app:8000")
 BASE_URL = _base_url.rstrip("/")
 USERNAME = os.environ.get("BOT_USERNAME", "operator2@financepro.ru")
@@ -29,10 +25,10 @@ class Operator2Bot:
         self.browser = None
         self.context = None
         self.page = None
-        self.session = requests.Session()  # Сессия для requests (получение списка заявок)
+        self.session = requests.Session()
         self.logged_in = False
-        self.logged_in_browser = False  # Флаг авторизации в Playwright браузере
-        self.seen_requests = set()  # чтобы не обрабатывать одни и те же заявки
+        self.logged_in_browser = False
+        self.seen_requests = set()
         self._init_browser()
 
     def _init_browser(self):
@@ -40,8 +36,6 @@ class Operator2Bot:
         print("🔧 Инициализация Playwright...")
         self.playwright = sync_playwright().start()
         
-        # Запускаем браузер в headful режиме (реальный браузер) для обхода защит XSS
-        # В Docker может не работать headful, поэтому пробуем сначала headless с максимальными обходами
         use_headful = os.environ.get("USE_HEADFUL_BROWSER", "false").lower() == "true"
         
         browser_args = [
@@ -58,23 +52,21 @@ class Operator2Bot:
             '--mute-audio',
             '--no-first-run',
             '--safebrowsing-disable-auto-update',
-            '--disable-images',  # Отключаем загрузку изображений для скорости
-            # Отключаем защиты для выполнения XSS
-            '--disable-web-security',  # Отключает CORS и другие веб-безопасности
-            '--disable-features=IsolateOrigins,site-per-process,VizDisplayCompositor',  # Отключает изоляцию сайтов
-            '--disable-site-isolation-trials',  # Отключает изоляцию сайтов
-            '--disable-blink-features=AutomationControlled',  # Скрывает автоматизацию
-            '--disable-infobars',  # Отключает информационные панели
-            '--disable-notifications',  # Отключает уведомления
-            '--disable-popup-blocking',  # Отключает блокировку popup
-            '--allow-running-insecure-content',  # Разрешает небезопасный контент
-            '--disable-background-timer-throttling',  # Отключает throttling таймеров
-            '--disable-renderer-backgrounding',  # Отключает фоновый рендеринг
-            '--disable-backgrounding-occluded-windows',  # Отключает фоновую обработку окон
-            '--js-flags=--expose-gc',  # Экспонирует GC для отладки
+            '--disable-images',
+            '--disable-web-security',
+            '--disable-features=IsolateOrigins,site-per-process,VizDisplayCompositor',
+            '--disable-site-isolation-trials',
+            '--disable-blink-features=AutomationControlled',
+            '--disable-infobars',
+            '--disable-notifications',
+            '--disable-popup-blocking',
+            '--allow-running-insecure-content',
+            '--disable-background-timer-throttling',
+            '--disable-renderer-backgrounding',
+            '--disable-backgrounding-occluded-windows',
+            '--js-flags=--expose-gc',
         ]
         
-        # Если headful режим, добавляем специальные флаги
         if use_headful:
             browser_args.extend([
                 '--start-maximized',
@@ -89,29 +81,22 @@ class Operator2Bot:
             args=browser_args
         )
         
-        # Создаём контекст с настройками и отключенным CSP
-        # Используем более реалистичный user-agent для обхода защит
         self.context = self.browser.new_context(
             viewport={'width': 1920, 'height': 1080},
             user_agent='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             ignore_https_errors=True,
             java_script_enabled=True,
-            # Отключаем все возможные защиты
-            bypass_csp=True,  # Обход CSP
-            # Добавляем дополнительные разрешения
+            bypass_csp=True,
             permissions=['geolocation', 'notifications'],
-            # Отключаем проверку происхождения
             locale='ru-RU',
             timezone_id='Europe/Moscow',
         )
         
-        # Отключаем CSP через перехват заголовков (синхронная версия)
         def remove_csp_headers(route):
             """Перехватываем ответы и удаляем CSP заголовки"""
             try:
                 response = route.fetch()
                 headers = dict(response.headers)
-                # Удаляем CSP заголовки
                 headers.pop('content-security-policy', None)
                 headers.pop('content-security-policy-report-only', None)
                 headers.pop('x-content-security-policy', None)
@@ -121,16 +106,11 @@ class Operator2Bot:
                     headers=headers
                 )
             except:
-                # Если не удалось перехватить, просто продолжаем
                 route.continue_()
         
-        # Перехватываем HTML ответы для удаления CSP
         self.context.route("**/review-request/**", remove_csp_headers)
-        # Также перехватываем главную страницу и дашборд
         self.context.route("**/operator2/**", remove_csp_headers)
         
-        # Отключаем загрузку изображений и других ресурсов для скорости
-        # НО не блокируем HTML и JS файлы, чтобы XSS мог выполниться
         def abort_resources(route):
             """Блокируем только ресурсы, но не HTML/JS"""
             if route.request.resource_type in ['image', 'font', 'media']:
@@ -142,8 +122,7 @@ class Operator2Bot:
         
         self.page = self.context.new_page()
         
-        # Устанавливаем таймауты (увеличено для Docker окружения)
-        self.page.set_default_timeout(30000)  # 30 секунд
+        self.page.set_default_timeout(30000)
         self.page.set_default_navigation_timeout(30000)
         
         print("✅ Playwright браузер инициализирован")
@@ -153,7 +132,6 @@ class Operator2Bot:
             path = "/" + path
         return BASE_URL + path
 
-    # --------- Ожидание готовности приложения ----------
     def wait_for_app(self, max_wait: int = 60):
         print("⏳ Ожидание готовности приложения...")
         start = time.time()
@@ -168,25 +146,20 @@ class Operator2Bot:
             time.sleep(2)
         print("⚠️ Приложение не ответило за отведённое время, продолжаю работу как есть")
 
-    # --------- Авторизация через requests (использует login_browser) ----------
     def login(self, retries: int = 3) -> bool:
         """Авторизация - использует login_browser() и синхронизирует куки в requests"""
         if self.logged_in:
             return True
         
-        # Используем login_browser() для авторизации через Playwright
         if not self.login_browser(retries=retries):
             return False
         
-        # После успешного логина в браузере, куки уже синхронизированы через _sync_cookies_from_browser()
-        # Проверяем, что куки есть в requests сессии
         if 'sessionid' in self.session.cookies:
             print(f"   ✅ Session cookie в requests сессии: {self.session.cookies['sessionid'][:20]}...")
             self.logged_in = True
             return True
         else:
             print(f"   ⚠️ Session cookie не найден в requests сессии после синхронизации")
-            # Пробуем еще раз синхронизировать
             self._sync_cookies_from_browser()
             if 'sessionid' in self.session.cookies:
                 self.logged_in = True
@@ -195,13 +168,11 @@ class Operator2Bot:
                 print(f"   ❌ Не удалось синхронизировать куки в requests")
                 return False
 
-    # --------- Синхронизация кук из requests в Playwright браузер ----------
     def _sync_cookies_to_browser(self):
         """Копирует куки из requests сессии в Playwright браузер"""
         try:
             cookies_list = []
             base_url_parsed = self._url("/")
-            # Извлекаем домен из URL (например, app:8000 или localhost:8000)
             domain = base_url_parsed.replace('http://', '').replace('https://', '').split('/')[0]
             print(f"   🔧 Синхронизация кук для домена: {domain}")
             
@@ -209,14 +180,11 @@ class Operator2Bot:
                 cookie_dict = {
                     'name': cookie.name,
                     'value': cookie.value,
-                    # Используем домен из cookie, если есть, иначе из URL
                     'domain': cookie.domain if cookie.domain else domain,
                     'path': cookie.path if cookie.path else '/',
                 }
                 
-                # Для localhost и IP адресов domain должен быть пустым или точным
                 if domain.startswith('localhost') or domain.startswith('127.0.0.1') or ':' in domain:
-                    # Для localhost и портов не указываем domain (или используем точный)
                     cookie_dict['domain'] = domain.split(':')[0] if ':' in domain else domain
                 
                 if hasattr(cookie, 'expires') and cookie.expires:
@@ -230,7 +198,6 @@ class Operator2Bot:
                 cookies_list.append(cookie_dict)
             
             if cookies_list:
-                # Очищаем старые куки и добавляем новые
                 try:
                     self.context.clear_cookies()
                 except:
@@ -238,7 +205,6 @@ class Operator2Bot:
                 self.context.add_cookies(cookies_list)
                 print(f"   ✅ Синхронизировано {len(cookies_list)} кук в браузер")
                 
-                # Проверяем, что куки действительно добавлены
                 check_cookies = self.context.cookies()
                 print(f"   🔍 Проверка: кук в браузере после синхронизации: {len(check_cookies)}")
                 for c in check_cookies:
@@ -251,7 +217,6 @@ class Operator2Bot:
             import traceback
             traceback.print_exc()
     
-    # --------- Синхронизация кук из Playwright браузера в requests ----------
     def _sync_cookies_from_browser(self):
         """Копирует куки из Playwright браузера в requests сессию"""
         try:
@@ -262,7 +227,6 @@ class Operator2Bot:
                 cookie_name = cookie.get('name', '')
                 cookie_value = cookie.get('value', '')
                 
-                # Обновляем куки в requests сессии
                 self.session.cookies.set(
                     cookie_name,
                     cookie_value,
@@ -273,7 +237,6 @@ class Operator2Bot:
                 if cookie_name == 'sessionid':
                     print(f"   ✅ Session cookie синхронизирован: {cookie_value[:20]}...")
             
-            # Проверяем результат
             if 'sessionid' in self.session.cookies:
                 print(f"   ✅ Session cookie в requests сессии после синхронизации")
             else:
@@ -284,16 +247,14 @@ class Operator2Bot:
             import traceback
             traceback.print_exc()
 
-    # --------- Авторизация в Playwright браузере (прямой логин через форму) ----------
     def login_browser(self, retries: int = 3) -> bool:
-        """Авторизация в Playwright браузере через форму логина (как в check_sqli.py)"""
+        """Авторизация в Playwright браузере через форму логина"""
         if self.logged_in_browser:
             return True
         
         print(f"🔐 Авторизация в браузере как {USERNAME}...")
         print(f"   Базовый URL: {BASE_URL}")
         
-        # Проверяем доступность страницы логина через requests перед попыткой в браузере
         login_url = f"{BASE_URL}/login/"
         print(f"   🔍 Проверка доступности страницы логина: {login_url}")
         try:
@@ -309,7 +270,6 @@ class Operator2Bot:
                 print(f"   Попытка логина в браузере #{attempt} как {USERNAME}")
                 print(f"   Открываю страницу логина: {login_url}")
                 
-                # Пробуем открыть страницу с обработкой ошибок
                 try:
                     response = self.page.goto(login_url, wait_until="domcontentloaded", timeout=30000)
                     if response:
@@ -335,17 +295,14 @@ class Operator2Bot:
                     else:
                         return False
                 
-                # Заполняем форму (как в примере)
                 self.page.fill('input[name="email"]', USERNAME)
                 self.page.fill('input[name="password"]', PASSWORD)
                 self.page.click('button[type="submit"]')
                 
-                # Ждем успешной авторизации (как в примере)
                 try:
                     self.page.wait_for_url('**/operator2/**', timeout=15000)
                     print("   ✅ Авторизован как operator2")
                 except PlaywrightTimeoutError:
-                    # Пробуем альтернативный способ проверки (как в примере)
                     self.page.wait_for_timeout(2000)
                     current_url = self.page.url
                     print(f"   📍 Текущий URL: {current_url}")
@@ -358,11 +315,10 @@ class Operator2Bot:
                             continue
                         raise Exception("Не удалось авторизоваться как operator2")
                 
-                # Синхронизируем куки из браузера в requests для дальнейшего использования
                 self._sync_cookies_from_browser()
                 
                 self.logged_in_browser = True
-                self.logged_in = True  # Помечаем как авторизованного и в requests
+                self.logged_in = True
                 print(f"✅ Авторизован в браузере как {USERNAME}")
                 return True
                 
@@ -389,7 +345,6 @@ class Operator2Bot:
     def _login_browser_via_api(self) -> bool:
         """Альтернативный способ: авторизация через API в браузере"""
         try:
-            # Используем requests для авторизации через API
             api_url = self._url("/api/login/")
             response = requests.post(
                 api_url,
@@ -400,7 +355,6 @@ class Operator2Bot:
             if response.status_code == 200:
                 data = response.json()
                 if data.get('success'):
-                    # Копируем куки из ответа в браузер
                     for cookie in response.cookies:
                         cookie_dict = {
                             'name': cookie.name,
@@ -429,28 +383,24 @@ class Operator2Bot:
             print(f"   ⚠️ Ошибка авторизации через API: {e}")
             return False
 
-    # --------- Получение списка ожидающих заявок через requests ----------
     def get_pending_requests(self) -> list[str]:
         """Получает список ID ожидающих заявок через requests"""
         try:
             url = self._url("/operator2/")
             print(f"   📍 Запрашиваю дашборд: {url}")
             
-            # Убеждаемся, что мы авторизованы
             if not self.logged_in:
                 print(f"   ⚠️ Не авторизован, пытаюсь войти...")
                 if not self.login():
                     print(f"   ❌ Не удалось авторизоваться")
                     return []
             
-            # Проверяем наличие session cookie
             if 'sessionid' not in self.session.cookies:
                 print(f"   ⚠️ Session cookie отсутствует, переавторизуюсь...")
                 self.logged_in = False
                 if not self.login():
                     return []
             
-            # Добавляем заголовки для правильной работы с Django
             headers = {
                 'Referer': self._url("/"),
                 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36',
@@ -463,12 +413,10 @@ class Operator2Bot:
             
             if response.status_code != 200:
                 print(f"   ⚠️ Не удалось получить дашборд: {response.status_code}")
-                # Если получили редирект на логин, значит сессия истекла
                 if '/login' in response.url or response.status_code == 302:
                     print(f"   🔄 Сессия истекла, переавторизуюсь...")
                     self.logged_in = False
                     if self.login():
-                        # Повторяем запрос после переавторизации
                         response = self.session.get(url, headers=headers, timeout=15, allow_redirects=True)
                         if response.status_code != 200:
                             print(f"   ❌ Не удалось получить дашборд после переавторизации: {response.status_code}")
@@ -476,21 +424,16 @@ class Operator2Bot:
                     else:
                         return []
                 else:
-                    # Сохраняем HTML для отладки
                     if len(response.text) < 1000:
                         print(f"   📄 Ответ сервера: {response.text[:500]}")
                     return []
             
-            # Парсим HTML для поиска заявок
             soup = BeautifulSoup(response.text, 'html.parser')
             
-            # Ищем ссылки на заявки
             links = soup.find_all('a', href=re.compile(r'/review-request/(\d+)/'))
             print(f"   🔍 Найдено ссылок на заявки: {len(links)}")
             
-            # Также ищем в таблице заявок
             if not links:
-                # Пробуем найти в таблице
                 table_rows = soup.find_all('tr')
                 for row in table_rows:
                     row_links = row.find_all('a', href=re.compile(r'/review-request/(\d+)/'))
@@ -519,7 +462,6 @@ class Operator2Bot:
             traceback.print_exc()
             return []
 
-    # --------- Просмотр заявки оператором ----------
     def view_request(self, request_id: str):
         """Оператор открывает страницу заявки и переходит по ссылке в описании, если она есть"""
         url = self._url(f"/review-request/{request_id}/")
@@ -527,7 +469,6 @@ class Operator2Bot:
             print(f"   🌐 Просматриваю заявку #{request_id}")
             print(f"   📍 URL: {url}")
 
-            # Убеждаемся, что авторизованы в браузере
             if not self.logged_in_browser:
                 print(f"   🔐 Требуется авторизация в браузере...")
                 if not self.login_browser():
@@ -535,19 +476,16 @@ class Operator2Bot:
                     return
                 print(f"   ✅ Авторизован в браузере")
             
-            # Проверяем и синхронизируем куки в браузере
             browser_cookies = self.context.cookies()
             print(f"   🍪 Кук в браузере: {len(browser_cookies)}")
             session_cookie = [c for c in browser_cookies if c.get('name') == 'sessionid']
             
-            # Проверяем куки в requests сессии
             requests_session_cookie = self.session.cookies.get('sessionid') if 'sessionid' in self.session.cookies else None
             print(f"   🍪 Session cookie в requests: {requests_session_cookie[:20] if requests_session_cookie else 'НЕТ'}...")
             
             if session_cookie:
                 browser_session_value = session_cookie[0].get('value', '')
                 print(f"   ✅ Session cookie найден в браузере: {browser_session_value[:20]}...")
-                # Проверяем, совпадают ли куки
                 if requests_session_cookie and browser_session_value != requests_session_cookie:
                     print(f"   ⚠️ Куки не совпадают! Синхронизирую...")
                     self._sync_cookies_to_browser()
@@ -555,7 +493,6 @@ class Operator2Bot:
                 print(f"   ⚠️ Session cookie не найден в браузере, синхронизирую...")
                 self._sync_cookies_to_browser()
             
-            # Повторно проверяем куки после синхронизации
             browser_cookies = self.context.cookies()
             session_cookie = [c for c in browser_cookies if c.get('name') == 'sessionid']
             if session_cookie:
@@ -563,12 +500,10 @@ class Operator2Bot:
             else:
                 print(f"   ❌ Session cookie все еще не найден в браузере после синхронизации!")
             
-            # Проверяем существование заявки через requests перед открытием в браузере
             try:
                 check_url = self._url(f"/review-request/{request_id}/")
                 print(f"   🔍 Проверяю существование заявки через requests: {check_url}")
                 
-                # Убеждаемся, что сессия активна
                 if not self.logged_in:
                     print(f"   ⚠️ Сессия requests не активна, авторизуюсь...")
                     if not self.login():
@@ -590,7 +525,6 @@ class Operator2Bot:
                     if not self.login():
                         print(f"   ❌ Не удалось переавторизоваться")
                         return
-                    # Повторяем проверку
                     check_response = self.session.get(check_url, timeout=10, allow_redirects=True)
                     print(f"   📄 Статус после переавторизации: {check_response.status_code}")
                     if check_response.status_code == 404:
@@ -605,22 +539,17 @@ class Operator2Bot:
                 import traceback
                 traceback.print_exc()
 
-            # Открываем страницу и ждем загрузки
             print(f"   📍 Открываю страницу в браузере: {url}")
             
-            # Перед открытием страницы еще раз синхронизируем куки
             print(f"   🔄 Финальная синхронизация кук перед открытием страницы...")
             self._sync_cookies_to_browser()
             
             try:
-                # Используем domcontentloaded для быстрой загрузки DOM
-                # Для XSS заявок может быть таймаут, если скрипты выполняются долго
                 try:
                     response = self.page.goto(url, wait_until="domcontentloaded", timeout=10000)
                     status_code = response.status if response else 'N/A'
                     print(f"   ✅ Страница загружена (статус: {status_code})")
                 except PlaywrightTimeoutError:
-                    # Если таймаут, проверяем, может быть страница все-таки загрузилась
                     print(f"   ⚠️ Таймаут загрузки, но проверяю текущее состояние...")
                     current_url_check = self.page.url
                     if '/approve-request' in current_url_check:
@@ -635,10 +564,8 @@ class Operator2Bot:
                         print(f"   ⚠️ Страница не загрузилась за 10 секунд, продолжаю...")
                         status_code = 'TIMEOUT'
                 
-                # Даем немного времени для выполнения JavaScript
                 time.sleep(1)
                 
-                # Проверяем текущий URL - возможно был редирект
                 current_url_after_load = self.page.url
                 if current_url_after_load != url:
                     print(f"   ⚠️ Произошел редирект: {url} -> {current_url_after_load}")
@@ -652,7 +579,6 @@ class Operator2Bot:
                         return
                     elif '/login' in current_url_after_load or '/accounts/login' in current_url_after_load:
                         print(f"   ❌ Редирект на страницу логина - куки не работают!")
-                        # Пробуем еще раз синхронизировать и открыть
                         print(f"   🔄 Повторная синхронизация кук...")
                         self._sync_cookies_to_browser()
                         try:
@@ -668,7 +594,6 @@ class Operator2Bot:
                         except PlaywrightTimeoutError:
                             print(f"   ⚠️ Таймаут при повторной загрузке")
                 
-                # Проверяем статус ответа только если не было таймаута
                 if status_code != 'TIMEOUT' and status_code != 200:
                     print(f"   ⚠️ Страница вернула статус {status_code}, проверяю содержимое...")
                     page_content = self.page.content()
@@ -676,7 +601,6 @@ class Operator2Bot:
                     print(f"      {page_content[:1000]}")
                     if status_code == 404:
                         print(f"   ❌ Заявка #{request_id} не найдена (404) - возможно, проблема с авторизацией или заявка не существует")
-                        # Проверяем текущий URL - может быть редирект на логин
                         current_url = self.page.url
                         print(f"   📍 Текущий URL после загрузки: {current_url}")
                         if '/login' in current_url:
@@ -685,18 +609,14 @@ class Operator2Bot:
                         self.seen_requests.add(request_id)
                         return
                 
-                
-                # Дополнительно ждем выполнения JavaScript
                 try:
                     self.page.wait_for_load_state("networkidle", timeout=5000)
                 except:
                     pass
                 
-                # Даем время JavaScript скриптам настроить ссылку
                 print(f"   ⏳ Жду выполнения JavaScript скриптов (1 сек)...")
                 time.sleep(1)
                 
-                # Проверяем, не произошло ли перенаправление (XSS мог сработать)
                 try:
                     current_url_before_read = self.page.url
                     if '/approve-request' in current_url_before_read:
@@ -710,13 +630,11 @@ class Operator2Bot:
                 except:
                     pass
                 
-                # Имитируем чтение оператором - ждем 2-4 секунды
                 import random
                 read_time = random.uniform(2, 4)
                 print(f"   ⏳ Оператор читает заявку ({read_time:.1f} сек)...")
                 time.sleep(read_time)
                 
-                # Еще раз проверяем перенаправление после чтения
                 try:
                     current_url_after_read = self.page.url
                     if '/approve-request' in current_url_after_read:
@@ -730,7 +648,6 @@ class Operator2Bot:
                 except:
                     pass
                 
-                # Проверяем, не произошло ли уже перенаправление на страницу одобрения
                 try:
                     current_url_check = self.page.url
                     print(f"   📍 Текущий URL перед проверкой описания: {current_url_check}")
@@ -745,11 +662,8 @@ class Operator2Bot:
                 except:
                     pass
                 
-                # Получаем и выводим содержимое описания для отладки
                 print(f"   📄 Проверяю содержимое описания...")
                 try:
-                    # Сначала выводим общий HTML страницы для отладки
-                    # Обрабатываем ошибку навигации - если страница перенаправляется
                     try:
                         page_html = self.page.content()
                         print(f"   📝 HTML всей страницы (первые 2000 символов):")
@@ -757,7 +671,6 @@ class Operator2Bot:
                     except Exception as nav_error:
                         if "navigating" in str(nav_error).lower():
                             print(f"   ⚠️ Страница находится в процессе навигации (XSS скрипт перенаправляет)")
-                            # Ждем завершения навигации
                             try:
                                 self.page.wait_for_load_state("networkidle", timeout=5000)
                                 current_url_after_nav = self.page.url
@@ -771,7 +684,6 @@ class Operator2Bot:
                                     self.seen_requests.add(request_id)
                                     return
                             except:
-                                # Если не удалось дождаться, просто проверяем текущий URL
                                 try:
                                     current_url_after_nav = self.page.url
                                     if '/approve-request' in current_url_after_nav or '/operator2' in current_url_after_nav:
@@ -784,10 +696,8 @@ class Operator2Bot:
                         else:
                             raise
                     
-                    # Ищем div с классом "prose dark:prose-invert max-w-none"
                     prose_div = self.page.query_selector('.prose.dark\\:prose-invert.max-w-none')
                     if not prose_div:
-                        # Пробуем альтернативные варианты
                         prose_div = self.page.query_selector('div.prose')
                     if not prose_div:
                         prose_div = self.page.query_selector('.prose')
@@ -799,10 +709,8 @@ class Operator2Bot:
                         print(f"   📝 HTML описания (первые 1000 символов):")
                         print(f"      {prose_html[:1000]}")
                         
-                        # Улучшенная проверка на эксплуатацию XSS
                         print(f"   🔍 Детальная проверка на XSS уязвимость...")
                         
-                        # 1. Проверяем, что HTML не экранирован (признак использования |safe)
                         is_escaped = '&lt;script' in prose_html or '&lt;a' in prose_html or '&lt;img' in prose_html
                         if is_escaped:
                             print(f"   🔒 HTML экранирован (используется |escape) - XSS не активна")
@@ -810,7 +718,6 @@ class Operator2Bot:
                             self.seen_requests.add(request_id)
                             return
                         
-                        # 2. Проверяем наличие JavaScript маркеров
                         js_indicators = [
                             '<script', 
                             'javascript:', 
@@ -830,12 +737,11 @@ class Operator2Bot:
                             if indicator.lower() in prose_html.lower():
                                 found_js_markers.append(indicator)
                         
-                        # 3. Проверяем наличие специфичных XSS элементов
                         has_xss_elements = False
                         xss_elements = [
-                            'operator-info-link',  # ID ссылки из XSS payload
-                            'img src=x onerror',   # Автоматическое выполнение через img
-                            'svg onload',          # Автоматическое выполнение через svg
+                            'operator-info-link',
+                            'img src=x onerror',
+                            'svg onload',
                         ]
                         found_xss_elements = []
                         for element in xss_elements:
@@ -843,13 +749,10 @@ class Operator2Bot:
                                 found_xss_elements.append(element)
                                 has_xss_elements = True
                         
-                        # 4. Ищем конкретную ссылку с id="operator-info-link"
                         operator_info_link = prose_div.query_selector('a#operator-info-link')
                         
-                        # 5. Проверяем наличие текста "ознакомиться"
                         has_operator_text = 'ознакомиться' in prose_text.lower() or 'ознакомиться' in prose_html.lower()
                         
-                        # Выводим результаты проверки
                         print(f"   📊 Результаты проверки XSS:")
                         print(f"      - HTML экранирован: ❌ НЕТ (уязвимо)")
                         print(f"      - JavaScript маркеры: {'✅ НАЙДЕНЫ' if found_js_markers else '❌ НЕ НАЙДЕНЫ'}")
@@ -861,11 +764,10 @@ class Operator2Bot:
                         print(f"      - Ссылка operator-info-link: {'✅ НАЙДЕНА' if operator_info_link else '❌ НЕ НАЙДЕНА'}")
                         print(f"      - Текст 'ознакомиться': {'✅ НАЙДЕН' if has_operator_text else '❌ НЕ НАЙДЕН'}")
                         
-                        # Определяем, есть ли активная XSS уязвимость
                         is_xss_vulnerable = (
-                            not is_escaped and  # HTML не экранирован
-                            (found_js_markers or has_xss_elements) and  # Есть JS или XSS элементы
-                            (operator_info_link is not None or has_operator_text)  # Есть целевая ссылка или текст
+                            not is_escaped and
+                            (found_js_markers or has_xss_elements) and
+                            (operator_info_link is not None or has_operator_text)
                         )
                         
                         if not is_xss_vulnerable:
@@ -877,11 +779,9 @@ class Operator2Bot:
                         print(f"   🚨 ОБНАРУЖЕНА АКТИВНАЯ XSS УЯЗВИМОСТЬ!")
                         print(f"   🔍 Ищу ссылку для перехода...")
                         
-                        # Ищем все ссылки в .prose
                         all_links = prose_div.query_selector_all('a')
                         print(f"   🔍 Найдено ссылок в описании: {len(all_links)}")
                         
-                        # Ищем ссылку по приоритету: сначала по ID, потом по тексту, потом по href
                         target_link = None
                         if operator_info_link:
                             target_link = operator_info_link
@@ -894,7 +794,6 @@ class Operator2Bot:
                                     link_id = link.get_attribute('id') or ''
                                     print(f"   🔍 Проверяю ссылку: id='{link_id}', текст='{link_text[:50]}', href='{link_href[:100]}'")
                                     
-                                    # Приоритет: ID > текст > href
                                     if link_id == 'operator-info-link':
                                         target_link = link
                                         print(f"   ✅ Найдена ссылка по ID!")
@@ -917,12 +816,10 @@ class Operator2Bot:
                             return
                         
                         if target_link:
-                            # Получаем href ссылки
                             link_href = target_link.get_attribute('href')
                             print(f"   ✅ Найдена ссылка: href='{link_href}'")
                             print(f"   ✅ XSS уязвимость активна (используется |safe) - ссылка найдена")
                             
-                            # Извлекаем request_id из href или из текущего URL
                             approve_request_id = None
                             if link_href and '/approve-request/' in link_href:
                                 import re
@@ -934,10 +831,8 @@ class Operator2Bot:
                             
                             print(f"   📝 ID заявки для одобрения: {approve_request_id}")
                             
-                            # Отправляем POST запрос напрямую через Playwright
                             print(f"   👆 Оператор переходит по ссылке (отправляется POST запрос)...")
                             try:
-                                # Получаем CSRF токен из формы на странице
                                 csrf_token = None
                                 try:
                                     csrf_input = self.page.query_selector('input[name="csrfmiddlewaretoken"]')
@@ -946,7 +841,6 @@ class Operator2Bot:
                                 except:
                                     pass
                                 
-                                # Если не нашли в форме, получаем из cookie
                                 if not csrf_token:
                                     cookies = self.context.cookies()
                                     for cookie in cookies:
@@ -957,7 +851,6 @@ class Operator2Bot:
                                 if csrf_token:
                                     print(f"   ✅ CSRF токен получен")
                                     
-                                    # Отправляем POST запрос через Playwright
                                     approve_url = self._url(f"/approve-request/{approve_request_id}/")
                                     print(f"   📤 Отправка POST запроса на: {approve_url}")
                                     
@@ -972,7 +865,6 @@ class Operator2Bot:
                                     
                                     print(f"   📥 Ответ получен: статус {response.status}")
                                     
-                                    # Ждем навигации после POST запроса
                                     try:
                                         self.page.wait_for_url('**/operator2/**', timeout=5000)
                                         current_url = self.page.url
@@ -982,9 +874,7 @@ class Operator2Bot:
                                     except:
                                         pass
                                     
-                                    # Если редирект не произошел автоматически, переходим вручную
                                     if response.status in [200, 302]:
-                                        # Перезагружаем страницу или переходим на дашборд
                                         try:
                                             self.page.goto(self._url("/operator2/"), wait_until="networkidle", timeout=5000)
                                             current_url = self.page.url
@@ -994,7 +884,6 @@ class Operator2Bot:
                                         except:
                                             pass
                                     
-                                    # Проверяем текущий URL
                                     time.sleep(1)
                                     current_url = self.page.url
                                     print(f"   📍 Текущий URL после POST: {current_url}")
@@ -1006,7 +895,6 @@ class Operator2Bot:
                                 else:
                                     print(f"   ⚠️ CSRF токен не найден, пробую альтернативный способ...")
                                     
-                                    # Альтернативный способ - через JavaScript
                                     post_success = self.page.evaluate(f"""
                                         (function() {{
                                             var csrfToken = null;
@@ -1079,9 +967,7 @@ class Operator2Bot:
                             return
                     else:
                         print(f"   ⚠️ Div.prose не найден на странице")
-                        # Пробуем найти через XPath или другие селекторы
                         try:
-                            # Ищем через XPath
                             prose_xpath = self.page.query_selector('xpath=//div[contains(@class, "prose")]')
                             if prose_xpath:
                                 print(f"   ✅ Найден div.prose через XPath")
@@ -1093,10 +979,8 @@ class Operator2Bot:
                                 print(f"   📝 HTML описания (первые 1000 символов):")
                                 print(f"      {prose_html[:1000]}")
                                 
-                                # Улучшенная проверка на эксплуатацию XSS (через XPath)
                                 print(f"   🔍 Детальная проверка на XSS уязвимость (XPath)...")
                                 
-                                # 1. Проверяем, что HTML не экранирован
                                 is_escaped = '&lt;script' in prose_html or '&lt;a' in prose_html or '&lt;img' in prose_html
                                 if is_escaped:
                                     print(f"   🔒 HTML экранирован (используется |escape) - XSS не активна")
@@ -1104,7 +988,6 @@ class Operator2Bot:
                                     self.seen_requests.add(request_id)
                                     return
                                 
-                                # 2. Проверяем наличие JavaScript маркеров
                                 js_indicators = [
                                     '<script', 
                                     'javascript:', 
@@ -1124,7 +1007,6 @@ class Operator2Bot:
                                     if indicator.lower() in prose_html.lower():
                                         found_js_markers.append(indicator)
                                 
-                                # 3. Проверяем наличие специфичных XSS элементов
                                 has_xss_elements = False
                                 xss_elements = [
                                     'operator-info-link',
@@ -1137,13 +1019,10 @@ class Operator2Bot:
                                         found_xss_elements.append(element)
                                         has_xss_elements = True
                                 
-                                # 4. Ищем конкретную ссылку с id="operator-info-link"
                                 operator_info_link = prose_div.query_selector('a#operator-info-link')
                                 
-                                # 5. Проверяем наличие текста "ознакомиться"
                                 has_operator_text = 'ознакомиться' in prose_text.lower() or 'ознакомиться' in prose_html.lower()
                                 
-                                # Выводим результаты проверки
                                 print(f"   📊 Результаты проверки XSS:")
                                 print(f"      - HTML экранирован: ❌ НЕТ (уязвимо)")
                                 print(f"      - JavaScript маркеры: {'✅ НАЙДЕНЫ' if found_js_markers else '❌ НЕ НАЙДЕНЫ'}")
@@ -1155,7 +1034,6 @@ class Operator2Bot:
                                 print(f"      - Ссылка operator-info-link: {'✅ НАЙДЕНА' if operator_info_link else '❌ НЕ НАЙДЕНА'}")
                                 print(f"      - Текст 'ознакомиться': {'✅ НАЙДЕН' if has_operator_text else '❌ НЕ НАЙДЕН'}")
                                 
-                                # Определяем, есть ли активная XSS уязвимость
                                 is_xss_vulnerable = (
                                     not is_escaped and
                                     (found_js_markers or has_xss_elements) and
@@ -1171,11 +1049,9 @@ class Operator2Bot:
                                 print(f"   🚨 ОБНАРУЖЕНА АКТИВНАЯ XSS УЯЗВИМОСТЬ!")
                                 print(f"   🔍 Ищу ссылку для перехода...")
                                 
-                                # Ищем ссылки
                                 all_links = prose_div.query_selector_all('a')
                                 print(f"   🔍 Найдено ссылок в описании: {len(all_links)}")
                                 
-                                # Ищем ссылку по приоритету
                                 target_link = None
                                 if operator_info_link:
                                     target_link = operator_info_link
@@ -1256,11 +1132,10 @@ class Operator2Bot:
                         except Exception as e:
                             print(f"   ⚠️ Ошибка поиска через XPath: {str(e)[:50]}")
                         
-                        # Ищем все ссылки на странице, если .prose не найден
                         print(f"   🔍 Ищу все ссылки на странице...")
                         all_links = self.page.query_selector_all('a')
                         print(f"   🔍 Всего ссылок на странице: {len(all_links)}")
-                        for i, link in enumerate(all_links[:10]):  # Проверяем первые 10
+                        for i, link in enumerate(all_links[:10]):
                             try:
                                 link_text = link.inner_text().lower().strip()
                                 link_href = link.get_attribute('href') or ''
@@ -1276,7 +1151,6 @@ class Operator2Bot:
                     
             except PlaywrightTimeoutError:
                 print(f"   ⚠️ Таймаут загрузки страницы")
-                # Проверяем, может быть страница все-таки загрузилась
                 try:
                     current_url = self.page.url
                     print(f"   📍 Текущий URL после таймаута: {current_url}")
@@ -1292,7 +1166,6 @@ class Operator2Bot:
                     pass
             except Exception as e:
                 print(f"   ⚠️ Ошибка загрузки страницы: {str(e)[:100]}")
-                # Проверяем текущий URL даже при ошибке
                 try:
                     current_url = self.page.url
                     if '/approve-request' in current_url or '/operator2' in current_url:
@@ -1302,7 +1175,6 @@ class Operator2Bot:
                 except:
                     pass
             
-            # Помечаем заявку как просмотренную
             print(f"   ✅ Просмотрена заявка #{request_id}")
             self.seen_requests.add(request_id)
             
@@ -1311,7 +1183,6 @@ class Operator2Bot:
             import traceback
             traceback.print_exc()
     
-    # --------- Основной цикл ----------
     def run_cycle(self):
         print(f"\n{'='*60}")
         print(f"🔄 Начало цикла проверки заявок")
@@ -1336,7 +1207,7 @@ class Operator2Bot:
             print(f"📌 Обработка заявки {i}/{len(ids)}: #{rid}")
             print(f"{'─'*60}")
             self.view_request(rid)
-            time.sleep(1)  # Пауза между заявками для стабилизации
+            time.sleep(1)
         
         print(f"\n{'='*60}")
         print(f"✅ Цикл завершен")
